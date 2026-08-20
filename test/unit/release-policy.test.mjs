@@ -8,6 +8,23 @@ import releaseConfiguration from "../../release.config.cjs";
 const silentLogger = { log() {} };
 const repositoryDirectory = resolve(import.meta.dirname, "../..");
 
+function workflowJobBlock(workflowSource, jobName) {
+  const workflowLines = workflowSource.split("\n");
+  const jobLineIndex = workflowLines.indexOf(`  ${jobName}:`);
+  assert.notEqual(jobLineIndex, -1, `Workflow defines the ${jobName} job`);
+
+  const nextJobLineIndex = workflowLines.findIndex(
+    (workflowLine, lineIndex) =>
+      lineIndex > jobLineIndex &&
+      workflowLine.startsWith("  ") &&
+      !workflowLine.startsWith("   ") &&
+      workflowLine.endsWith(":")
+  );
+  return workflowLines
+    .slice(jobLineIndex, nextJobLineIndex === -1 ? undefined : nextJobLineIndex)
+    .join("\n");
+}
+
 async function releaseTypeFor(commitMessage) {
   return analyzeCommits(
     { preset: "conventionalcommits" },
@@ -32,10 +49,14 @@ test("publishes only from main with a versioned tag", () => {
 });
 
 test("publishes the VSIX and checksum to GitHub without issue permissions", () => {
+  const [, releaseNotesConfiguration] = releaseConfiguration.plugins.find(
+    ([pluginName]) => pluginName === "@semantic-release/release-notes-generator"
+  );
   const [, githubPluginConfiguration] = releaseConfiguration.plugins.find(
     ([pluginName]) => pluginName === "@semantic-release/github"
   );
 
+  assert.deepEqual(releaseNotesConfiguration, { preset: "conventionalcommits" });
   assert.deepEqual(
     githubPluginConfiguration.assets.map(({ path }) => path),
     ["dist/everforest-complete-*.vsix", "dist/everforest-complete-*.vsix.sha256"]
@@ -56,26 +77,67 @@ test("keeps distribution GitHub-only", () => {
     "utf8"
   );
   const readme = readFileSync(resolve(repositoryDirectory, "README.md"), "utf8");
+  const releaseJob = workflowJobBlock(continuousIntegrationWorkflow, "release");
+  const recoveryPublishJob = workflowJobBlock(releaseRecoveryWorkflow, "publish");
+  const releaseSources = `${continuousIntegrationWorkflow}\n${releaseRecoveryWorkflow}`;
 
-  assert.doesNotMatch(
-    `${continuousIntegrationWorkflow}\n${releaseRecoveryWorkflow}`,
-    /azure\/login|entra|marketplace-production|vsce publish|VSCE_PAT/i
-  );
+  for (const prohibitedReleaseTerm of [
+    "azure/login",
+    "marketplace-production",
+    "vsce publish",
+    "VSCE_PAT",
+  ]) {
+    assert.equal(releaseSources.toLowerCase().includes(prohibitedReleaseTerm.toLowerCase()), false);
+  }
   assert.doesNotMatch(continuousIntegrationWorkflow, /secrets\./);
-  assert.match(continuousIntegrationWorkflow, /GITHUB_TOKEN: \$\{\{ github\.token \}\}/);
-  assert.match(
-    continuousIntegrationWorkflow,
-    /needs:\n\s+- static\n\s+- integration\n\s+- web-integration/
-  );
-  assert.match(continuousIntegrationWorkflow, /permissions:\n\s+contents: write/);
-  assert.match(releaseRecoveryWorkflow, /GH_REPO: \$\{\{ github\.repository \}\}/);
+  assert.ok(releaseJob.includes("GITHUB_TOKEN: ${{ github.token }}"));
+  assert.ok(releaseJob.includes("- static"));
+  assert.ok(releaseJob.includes("- tests-summary"));
+  assert.ok(releaseJob.includes("contents: write"));
+  assert.ok(recoveryPublishJob.includes("GH_REPO: ${{ github.repository }}"));
   assert.match(releaseRecoveryWorkflow, /group: production-release/);
-  assert.doesNotMatch(releaseRecoveryWorkflow, /--clobber/);
+  assert.ok(recoveryPublishJob.includes("release_is_draft"));
+  assert.ok(recoveryPublishJob.includes("Release $RELEASE_TAG is immutable"));
   assert.match(readme, /Install from VSIX/);
   assert.match(readme, /releases\/latest/);
+  assert.ok(readme.includes("This creates `dist/everforest-complete.vsix`"));
+  assert.ok(readme.includes("npm run package:vsix"));
   assert.equal(
     existsSync(resolve(repositoryDirectory, ".github/workflows/marketplace-recovery.yml")),
     false
   );
   assert.equal(existsSync(resolve(repositoryDirectory, "docs/MARKETPLACE_PUBLISHING.md")), false);
+});
+
+test("fails the test aggregate unless integration and web integration both pass", () => {
+  const continuousIntegrationWorkflow = readFileSync(
+    resolve(repositoryDirectory, ".github/workflows/ci.yml"),
+    "utf8"
+  );
+  const testsSummaryJob = workflowJobBlock(continuousIntegrationWorkflow, "tests-summary");
+
+  assert.ok(testsSummaryJob.includes("if: always()"));
+  assert.ok(testsSummaryJob.includes("- integration"));
+  assert.ok(testsSummaryJob.includes("- web-integration"));
+  assert.ok(testsSummaryJob.includes("INTEGRATION_RESULT: ${{ needs.integration.result }}"));
+  assert.ok(
+    testsSummaryJob.includes("WEB_INTEGRATION_RESULT: ${{ needs.web-integration.result }}")
+  );
+  assert.ok(
+    testsSummaryJob.includes(
+      'if [[ "$INTEGRATION_RESULT" != success || "$WEB_INTEGRATION_RESULT" != success ]]'
+    )
+  );
+});
+
+test("runs the required Linux 1.95.3 compatibility gate before release", () => {
+  const continuousIntegrationWorkflow = readFileSync(
+    resolve(repositoryDirectory, ".github/workflows/ci.yml"),
+    "utf8"
+  );
+  const integrationJob = workflowJobBlock(continuousIntegrationWorkflow, "integration");
+
+  assert.ok(integrationJob.includes("operating-system: ubuntu-latest"));
+  assert.ok(integrationJob.includes("vscode-version: 1.95.3"));
+  assert.ok(integrationJob.includes("EVERFOREST_VSCODE_VERSION: ${{ matrix.vscode-version }}"));
 });

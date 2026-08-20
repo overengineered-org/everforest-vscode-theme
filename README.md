@@ -1,5 +1,12 @@
 # Everforest Complete
 
+[![CI](https://github.com/overengineered-org/everforest-vscode-theme/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/overengineered-org/everforest-vscode-theme/actions/workflows/ci.yml)
+[![Build](https://img.shields.io/github/check-runs/overengineered-org/everforest-vscode-theme/main?nameFilter=Static%20validation%20and%20VSIX&label=Build)](https://github.com/overengineered-org/everforest-vscode-theme/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/github/check-runs/overengineered-org/everforest-vscode-theme/main?nameFilter=Tests&label=Tests)](https://github.com/overengineered-org/everforest-vscode-theme/actions/workflows/ci.yml)
+[![VS Code 1.95.0+](https://img.shields.io/badge/VS_Code-1.95.0%2B-007ACC?logo=visualstudiocode&logoColor=white)](./package.json)
+
+**Requires VS Code 1.95.0 or later.**
+
 The complete Everforest color theme for Visual Studio Code: Light and Dark, each in Soft, Medium,
 and Hard contrast.
 
@@ -17,14 +24,31 @@ Medium is the balanced default. It follows the system appearance after the setti
 
 ## Installation
 
-No terminal command is required:
+This extension is not published on the VS Code Marketplace. Install a VSIX by one of these paths.
 
-1. Download the `.vsix` and `.vsix.sha256` assets from the
+### 1. Download a GitHub Release
+
+1. Download the versioned `everforest-complete-X.Y.Z.vsix` asset and its `.sha256` checksum from the
    [latest GitHub Release](https://github.com/overengineered-org/everforest-vscode-theme/releases/latest).
 2. In VS Code Desktop, open **Extensions**.
 3. Select **Views and More Actions…** (`…`) → **Install from VSIX…**.
 4. Select the downloaded `.vsix` file.
 5. Run **Preferences: Color Theme** and choose an Everforest Complete variant.
+
+### 2. Build locally
+
+Prerequisites: Node.js 24 and npm.
+
+```sh
+git clone https://github.com/overengineered-org/everforest-vscode-theme.git
+cd everforest-vscode-theme
+npm ci
+npm run package:vsix
+```
+
+This creates `dist/everforest-complete.vsix`. In VS Code Desktop, open **Extensions**, select
+**Views and More Actions…** (`…`) → **Install from VSIX…**, then choose that file. Do not commit
+VSIX binaries to Git.
 
 For SSH, Dev Containers, WSL, or Codespaces through VS Code Desktop, install the theme into the
 **Local** VS Code client when prompted. A theme has no remote runtime. Browser-hosted VS Code,

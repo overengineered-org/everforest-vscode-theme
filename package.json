@@ -18,7 +18,7 @@
   },
   "icon": "media/icon.png",
   "engines": {
-    "vscode": "^1.96.0"
+    "vscode": "^1.95.0"
   },
   "capabilities": {
     "untrustedWorkspaces": {
@@ -78,11 +78,12 @@
     "validate": "node scripts/validate-themes.mjs",
     "check:format": "prettier --check .",
     "test:unit": "node --test test/unit/*.test.mjs",
+    "test:release-package": "node --test test/release-package.test.mjs",
     "build:test-web": "esbuild test/web/index.js --bundle --format=cjs --platform=browser --external:vscode --outfile=dist/web-integration-test.js",
     "test:web": "npm run build:test-web && vscode-test-web --browser=chromium --quality=stable --extensionDevelopmentPath=. --extensionTestsPath=dist/web-integration-test.js --headless fixtures",
     "verify:static": "npm run clean && npm run compile && npm run generate:check && npm run typecheck && npm run test:unit && npm run validate && npm run check:format",
     "test:integration": "npm run package:vsix && node scripts/run-integration-tests.mjs",
-    "test": "npm run test:integration && npm run package:verify && npm run test:web",
+    "test": "npm run test:integration && npm run package:verify && npm run test:release-package && npm run test:web",
     "audit:production": "npm audit --omit=dev",
     "vscode:prepublish": "npm run verify:static",
     "package:vsix": "vsce package --no-dependencies --out dist/everforest-complete.vsix",

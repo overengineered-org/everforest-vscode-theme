@@ -4,7 +4,7 @@ import { Configuration, Palette, ThemeAppearance, ThemeContrast } from "./interf
 import { getPalette } from "./palette";
 import { getSemantic } from "./semantic";
 import { getDefaultSyntax } from "./syntax/default";
-import { materialWorkbench } from "./workbench/material";
+import { getReadableAccentGreen, materialWorkbench } from "./workbench/material";
 
 interface GeneratedTheme {
   $schema: string;
@@ -43,6 +43,7 @@ function createCurrentWorkbenchColors(
   palette: Palette
 ): Record<string, string> {
   const accentForeground = readableAccentForeground(appearance, palette);
+  const readableAccentGreen = getReadableAccentGreen(appearance, palette);
   return {
     "button.foreground": accentForeground,
     "badge.foreground": accentForeground,
@@ -55,16 +56,16 @@ function createCurrentWorkbenchColors(
     "commandCenter.border": palette.bg4,
     "commandCenter.inactiveForeground": palette.grey1,
     "commandCenter.inactiveBorder": palette.bg3,
-    "commandCenter.activeBorder": palette.green,
+    "commandCenter.activeBorder": palette.fg,
     "commandCenter.debuggingBackground": palette.dimOrange,
     "chat.requestBorder": palette.bg4,
     "chat.requestBackground": palette.bg1,
     "chat.slashCommandBackground": palette.bg2,
-    "chat.slashCommandForeground": palette.green,
+    "chat.slashCommandForeground": readableAccentGreen,
     "chat.avatarBackground": palette.green,
     "chat.avatarForeground": accentForeground,
     "chat.editedFileForeground": palette.aqua,
-    "chat.linesAddedForeground": palette.green,
+    "chat.linesAddedForeground": readableAccentGreen,
     "chat.linesRemovedForeground": palette.red,
     "chat.requestCodeBorder": palette.bg4,
     "chat.requestBubbleBackground": palette.bg1,
@@ -72,8 +73,8 @@ function createCurrentWorkbenchColors(
     "chat.checkpointSeparator": palette.bg4,
     "chat.thinkingShimmer": palette.aqua,
     "chatManagement.sashBorder": palette.bg4,
-    "agentSessionReadIndicator.foreground": palette.green,
-    "agentSessionSelectedBadge.border": palette.green,
+    "agentSessionReadIndicator.foreground": readableAccentGreen,
+    "agentSessionSelectedBadge.border": readableAccentGreen,
     "agentSessionSelectedUnfocusedBadge.border": palette.bg5,
     "agentStatusIndicator.background": palette.bg1,
     "aiCustomizationManagement.sashBorder": palette.bg4,
@@ -82,12 +83,12 @@ function createCurrentWorkbenchColors(
     "inlineChat.border": palette.bg4,
     "inlineChat.shadow": palette.shadow,
     "inlineChatInput.border": palette.bg4,
-    "inlineChatInput.focusBorder": palette.green,
+    "inlineChatInput.focusBorder": palette.fg,
     "inlineChatInput.placeholderForeground": palette.grey1,
     "inlineChatInput.background": palette.bg,
     "inlineChatDiff.inserted": `${palette.dimGreen}40`,
     "inlineChatDiff.removed": `${palette.dimRed}40`,
-    "interactive.activeCodeBorder": palette.green,
+    "interactive.activeCodeBorder": palette.fg,
     "interactive.inactiveCodeBorder": palette.bg4,
     "notebook.cellEditorBackground": palette.bg1,
     "terminal.background": palette.bg,

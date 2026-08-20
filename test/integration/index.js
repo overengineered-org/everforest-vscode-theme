@@ -2,6 +2,7 @@ const assert = require("node:assert/strict");
 const { readFile } = require("node:fs/promises");
 const { join } = require("node:path");
 const vscode = require("vscode");
+const { expectedThemeContributions } = require("../support/theme-manifest.cjs");
 
 const extensionIdentifier = "overengineered-org.everforest-complete";
 const fixtureLanguageIdentifiers = new Map([
@@ -77,13 +78,11 @@ async function validateLanguageFixtures() {
     assert.equal(fixtureDocument.languageId, expectedLanguageIdentifier, fixtureName);
   }
 
-  const notebookFixture = await vscode.workspace.openTextDocument(
-    vscode.Uri.joinPath(fixtureWorkspace.uri, "showcase.ipynb")
-  );
-  assert.doesNotThrow(
-    () => JSON.parse(notebookFixture.getText()),
-    "Notebook fixture is valid JSON"
-  );
+  const notebookFixtureUri = vscode.Uri.joinPath(fixtureWorkspace.uri, "showcase.ipynb");
+  const notebookFixture = await vscode.workspace.openNotebookDocument(notebookFixtureUri);
+  assert.equal(notebookFixture.cellCount, 2, "Notebook fixture has two cells");
+  assert.equal(notebookFixture.cellAt(0).kind, vscode.NotebookCellKind.Markup);
+  assert.equal(notebookFixture.cellAt(1).kind, vscode.NotebookCellKind.Code);
 }
 
 async function run() {
@@ -97,7 +96,7 @@ async function run() {
   assert.equal(extension.packageJSON.main, undefined);
   assert.equal(extension.packageJSON.browser, undefined);
   assert.equal(extension.packageJSON.activationEvents, undefined);
-  assert.equal(extension.packageJSON.contributes.themes.length, 6);
+  assert.deepEqual(extension.packageJSON.contributes.themes, expectedThemeContributions);
 
   for (const themeContribution of extension.packageJSON.contributes.themes) {
     const themePath = join(extension.extensionPath, themeContribution.path);
