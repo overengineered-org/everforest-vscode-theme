@@ -85,7 +85,8 @@ source. Download each newer VSIX and repeat **Install from VSIX…**.
 
 ## Follow the system appearance
 
-Add these settings once:
+Open the Command Palette and choose **Preferences: Open User Settings (JSON)**. Add these settings
+to the global VS Code User Settings JSON. Do not add them to a project's `.vscode/settings.json`:
 
 ```json
 {
@@ -95,9 +96,10 @@ Add these settings once:
 }
 ```
 
-VS Code then follows the operating system's Light/Dark setting using its native theme switcher.
-Settings Sync can copy these preferences, but it does not install this VSIX on another machine or
-remote window. Install the VSIX separately in every VS Code Desktop client where the theme is used.
+These settings apply across projects in the current VS Code profile. Repeat them for each profile
+you use. VS Code then follows the operating system's Light/Dark setting using its native theme
+switcher. Settings Sync may sync these settings, but this GitHub-only VSIX must still be installed
+separately on each machine where the theme is used.
 
 ## Coverage
 
