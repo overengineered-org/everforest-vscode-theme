@@ -1,0 +1,9 @@
+:root {
+  --everforest-background: #2d353b;
+  --everforest-foreground: #d3c6aa;
+}
+
+.theme-preview:hover {
+  color: var(--everforest-foreground);
+  background: var(--everforest-background);
+}

@@ -1,0 +1,107 @@
+{
+  "name": "everforest-complete",
+  "displayName": "Everforest Complete",
+  "description": "The complete Everforest color theme: Light and Dark in Soft, Medium, and Hard contrast.",
+  "version": "0.0.0-development",
+  "publisher": "overengineered-org",
+  "author": {
+    "name": "Overengineered Org"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/overengineered-org/everforest-vscode-theme#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/overengineered-org/everforest-vscode-theme.git"
+  },
+  "bugs": {
+    "url": "https://github.com/overengineered-org/everforest-vscode-theme/issues"
+  },
+  "icon": "media/icon.png",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true
+    },
+    "virtualWorkspaces": true
+  },
+  "contributes": {
+    "themes": [
+      {
+        "label": "Everforest Complete Dark Soft",
+        "uiTheme": "vs-dark",
+        "path": "./themes/everforest-complete-dark-soft-color-theme.json"
+      },
+      {
+        "label": "Everforest Complete Dark Medium",
+        "uiTheme": "vs-dark",
+        "path": "./themes/everforest-complete-dark-medium-color-theme.json"
+      },
+      {
+        "label": "Everforest Complete Dark Hard",
+        "uiTheme": "vs-dark",
+        "path": "./themes/everforest-complete-dark-hard-color-theme.json"
+      },
+      {
+        "label": "Everforest Complete Light Soft",
+        "uiTheme": "vs",
+        "path": "./themes/everforest-complete-light-soft-color-theme.json"
+      },
+      {
+        "label": "Everforest Complete Light Medium",
+        "uiTheme": "vs",
+        "path": "./themes/everforest-complete-light-medium-color-theme.json"
+      },
+      {
+        "label": "Everforest Complete Light Hard",
+        "uiTheme": "vs",
+        "path": "./themes/everforest-complete-light-hard-color-theme.json"
+      }
+    ]
+  },
+  "files": [
+    "themes/*.json",
+    "media/icon.png",
+    "README.md",
+    "CHANGELOG.md",
+    "SUPPORT.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "scripts": {
+    "clean": "node scripts/clean.mjs",
+    "compile": "tsc --project tsconfig.json",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "generate": "npm run compile && node dist/generate-themes.js",
+    "generate:check": "node scripts/check-generated-themes.mjs",
+    "validate": "node scripts/validate-themes.mjs",
+    "check:format": "prettier --check .",
+    "test:unit": "node --test test/unit/*.test.mjs",
+    "build:test-web": "esbuild test/web/index.js --bundle --format=cjs --platform=browser --external:vscode --outfile=dist/web-integration-test.js",
+    "test:web": "npm run build:test-web && vscode-test-web --browser=chromium --quality=stable --extensionDevelopmentPath=. --extensionTestsPath=dist/web-integration-test.js --headless fixtures",
+    "verify:static": "npm run clean && npm run compile && npm run generate:check && npm run typecheck && npm run test:unit && npm run validate && npm run check:format",
+    "test:integration": "npm run package:vsix && node scripts/run-integration-tests.mjs",
+    "test": "npm run test:integration && npm run package:verify && npm run test:web",
+    "audit:production": "npm audit --omit=dev",
+    "vscode:prepublish": "npm run verify:static",
+    "package:vsix": "vsce package --no-dependencies --out dist/everforest-complete.vsix",
+    "package:verify": "node scripts/validate-package-contents.mjs",
+    "release": "semantic-release"
+  },
+  "devDependencies": {
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/github": "^12.0.9",
+    "@semantic-release/release-notes-generator": "^14.1.1",
+    "@types/node": "^26.2.0",
+    "@vscode/test-electron": "^3.1.0",
+    "@vscode/test-web": "^0.0.81",
+    "@vscode/vsce": "^3.9.2",
+    "conventional-changelog-conventionalcommits": "^10.4.0",
+    "esbuild": "^0.28.2",
+    "prettier": "^3.9.6",
+    "semantic-release": "25.0.9",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,0 +1,7 @@
+theme: Everforest Complete
+appearance:
+  - light
+  - dark
+contrast:
+  minimum: 4.5
+  audited: true

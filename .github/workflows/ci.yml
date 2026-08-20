@@ -1,0 +1,152 @@
+name: CI and Release
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    name: Static validation and VSIX
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          cache: npm
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci
+      - name: Package VSIX
+        run: npm run package:vsix
+      - name: Verify VSIX contents
+        run: npm run package:verify
+      - name: Audit production dependencies
+        run: npm run audit:production
+
+  integration:
+    name: Extension Host (${{ matrix.operating-system }})
+    needs: static
+    strategy:
+      fail-fast: false
+      matrix:
+        operating-system:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.operating-system }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          cache: npm
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci
+      - name: Test in VS Code on Linux
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum npm run test:integration
+      - name: Test in VS Code
+        if: runner.os != 'Linux'
+        run: npm run test:integration
+
+  web-integration:
+    name: VS Code Web virtual workspace
+    needs: static
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          cache: npm
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci
+      - name: Test in VS Code Web
+        run: npm run test:web
+
+  pull-request-title:
+    name: Conventional PR title
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Validate title
+        env:
+          PULL_REQUEST_TITLE: ${{ github.event.pull_request.title }}
+        run: node scripts/validate-pull-request-title.mjs
+
+  release-dry-run:
+    name: Semantic release dry run
+    if: github.event_name == 'pull_request'
+    needs: static
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          cache: npm
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci
+      - name: Model merged pull request on main
+        run: git switch --force-create main
+      - name: Evaluate release without publishing
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run release -- --dry-run --no-ci
+
+  release:
+    name: GitHub Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs:
+      - static
+      - integration
+      - web-integration
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: production-release
+      cancel-in-progress: false
+    steps:
+      - name: Check out repository history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          cache: npm
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci
+      - name: Create semantic release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run release

@@ -1,0 +1,10 @@
+{
+  "name": "everforest-integration-test-harness",
+  "displayName": "Everforest Integration Test Harness",
+  "version": "0.0.0",
+  "publisher": "overengineered-org",
+  "private": true,
+  "engines": {
+    "vscode": "^1.96.0"
+  }
+}
