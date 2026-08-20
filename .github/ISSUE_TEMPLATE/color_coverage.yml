@@ -1,0 +1,40 @@
+name: Missing color coverage
+description: Request an unmapped VS Code, language, or extension color token.
+title: "feat: add color coverage for "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: missing-coverage
+    attributes:
+      label: Missing coverage
+      description: Name the UI element, token, language scope, or extension contribution.
+    validations:
+      required: true
+  - type: dropdown
+    id: theme-variant
+    attributes:
+      label: Theme variant
+      options:
+        - Dark Soft
+        - Dark Medium
+        - Dark Hard
+        - Light Soft
+        - Light Medium
+        - Light Hard
+    validations:
+      required: true
+  - type: input
+    id: vscode-version
+    attributes:
+      label: VS Code version
+      placeholder: "1.96.0"
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshot and context
+      description: Attach a screenshot and include the language mode or extension name.
+    validations:
+      required: true

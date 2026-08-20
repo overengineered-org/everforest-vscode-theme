@@ -9,10 +9,17 @@ on:
 permissions:
   contents: read
 
+# Newer pull-request commits supersede all checks for that pull request. Main
+# runs are retained so a release can only follow the exact commit it validated.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   static:
     name: Static validation and VSIX
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -29,20 +36,28 @@ jobs:
         run: npm run package:vsix
       - name: Verify VSIX contents
         run: npm run package:verify
+      - name: Verify release package and checksum
+        run: npm run test:release-package
       - name: Audit production dependencies
         run: npm run audit:production
 
   integration:
-    name: Extension Host (${{ matrix.operating-system }})
+    name: Extension Host (${{ matrix.operating-system }}, VS Code ${{ matrix.vscode-version }})
     needs: static
     strategy:
       fail-fast: false
       matrix:
-        operating-system:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
+        include:
+          - operating-system: ubuntu-latest
+            vscode-version: stable
+          - operating-system: macos-latest
+            vscode-version: stable
+          - operating-system: windows-latest
+            vscode-version: stable
+          - operating-system: ubuntu-latest
+            vscode-version: 1.95.3
     runs-on: ${{ matrix.operating-system }}
+    timeout-minutes: 25
     steps:
       - name: Check out repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -57,15 +72,20 @@ jobs:
         run: npm ci
       - name: Test in VS Code on Linux
         if: runner.os == 'Linux'
+        env:
+          EVERFOREST_VSCODE_VERSION: ${{ matrix.vscode-version }}
         run: xvfb-run --auto-servernum npm run test:integration
       - name: Test in VS Code
         if: runner.os != 'Linux'
+        env:
+          EVERFOREST_VSCODE_VERSION: ${{ matrix.vscode-version }}
         run: npm run test:integration
 
   web-integration:
     name: VS Code Web virtual workspace
     needs: static
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Check out repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -81,10 +101,31 @@ jobs:
       - name: Test in VS Code Web
         run: npm run test:web
 
+  tests-summary:
+    name: Tests
+    if: always()
+    needs:
+      - integration
+      - web-integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Require all test jobs to pass
+        env:
+          INTEGRATION_RESULT: ${{ needs.integration.result }}
+          WEB_INTEGRATION_RESULT: ${{ needs.web-integration.result }}
+        run: |
+          if [[ "$INTEGRATION_RESULT" != success || "$WEB_INTEGRATION_RESULT" != success ]]; then
+            echo "Tests failed: integration=$INTEGRATION_RESULT web-integration=$WEB_INTEGRATION_RESULT" >&2
+            exit 1
+          fi
+
   pull-request-title:
     name: Conventional PR title
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Check out repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -100,6 +141,7 @@ jobs:
     if: github.event_name == 'pull_request'
     needs: static
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Check out repository history
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -116,6 +158,8 @@ jobs:
       - name: Model merged pull request on main
         run: git switch --force-create main
       - name: Evaluate release without publishing
+        # @semantic-release/github requires a token during verifyConditions,
+        # even in dry-run mode. This is the read-only workflow token only.
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: npm run release -- --dry-run --no-ci
@@ -125,9 +169,9 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs:
       - static
-      - integration
-      - web-integration
+      - tests-summary
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: write
     concurrency:

@@ -1,4 +1,5 @@
 const vscode = require("vscode");
+const { expectedThemeContributions } = require("../support/theme-manifest.cjs");
 
 const extensionIdentifier = "overengineered-org.everforest-complete";
 
@@ -17,7 +18,11 @@ async function run() {
   assertCondition(extension, "Theme extension is registered in VS Code Web");
   assertEqual(extension.packageJSON.main, undefined, "Extension has no desktop runtime");
   assertEqual(extension.packageJSON.browser, undefined, "Extension has no web runtime");
-  assertEqual(extension.packageJSON.contributes.themes.length, 6, "Theme contribution count");
+  assertEqual(
+    JSON.stringify(extension.packageJSON.contributes.themes),
+    JSON.stringify(expectedThemeContributions),
+    "Exact theme contributions"
+  );
   assertEqual(
     extension.packageJSON.capabilities.virtualWorkspaces,
     true,

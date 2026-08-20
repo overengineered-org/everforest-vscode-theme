@@ -9,6 +9,7 @@ const vscodeTestStateDirectory = mkdtempSync(resolve(temporaryFilesDirectory, "e
 const isolatedExtensionsDirectory = resolve(vscodeTestStateDirectory, "extensions");
 const isolatedUserDataDirectory = resolve(vscodeTestStateDirectory, "user-data");
 const packagedExtensionPath = resolve(repositoryDirectory, "dist", "everforest-complete.vsix");
+const vscodeVersion = process.env.EVERFOREST_VSCODE_VERSION ?? "stable";
 
 function writeSystemThemeSettings(autoDetectColorScheme) {
   const userSettingsDirectory = resolve(isolatedUserDataDirectory, "User");
@@ -45,7 +46,7 @@ async function runExtensionHost(vscodeExecutablePath, integrationTestMode) {
 }
 
 try {
-  const vscodeExecutablePath = await downloadAndUnzipVSCode("stable");
+  const vscodeExecutablePath = await downloadAndUnzipVSCode(vscodeVersion);
   await runVSCodeCommand(
     [
       "--install-extension",
@@ -54,7 +55,7 @@ try {
       `--extensions-dir=${isolatedExtensionsDirectory}`,
       `--user-data-dir=${isolatedUserDataDirectory}`,
     ],
-    { version: "stable" }
+    { version: vscodeVersion }
   );
   writeSystemThemeSettings(true);
   await runExtensionHost(vscodeExecutablePath, "auto-mode");

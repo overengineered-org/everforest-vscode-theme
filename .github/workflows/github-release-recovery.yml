@@ -19,6 +19,7 @@ jobs:
   build:
     name: Rebuild release assets
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Validate release tag
         env:
@@ -58,9 +59,10 @@ jobs:
           retention-days: 1
 
   publish:
-    name: Repair GitHub Release
+    name: Recover GitHub Release
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       actions: read
       contents: write
@@ -70,7 +72,7 @@ jobs:
         with:
           name: recovered-release-assets
           path: dist
-      - name: Create or repair release
+      - name: Create, publish draft, or verify immutable release
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -85,6 +87,8 @@ jobs:
           release_checksum_path="dist/${release_checksum_name}"
           release_api_response="$(mktemp)"
           release_lookup_error="$(mktemp)"
+          release_asset_directory="$(mktemp -d)"
+          trap 'rm -f "$release_api_response" "$release_lookup_error"; rm -rf "$release_asset_directory"' EXIT
 
           if gh api --include "repos/${GH_REPO}/releases/tags/${RELEASE_TAG}" >"$release_api_response" 2>"$release_lookup_error"; then
             release_exists=true
@@ -105,37 +109,37 @@ jobs:
             exit 0
           fi
 
-          existing_assets="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
-          package_exists=false
-          checksum_exists=false
-          grep -Fxq "$release_package_name" <<<"$existing_assets" && package_exists=true
-          grep -Fxq "$release_checksum_name" <<<"$existing_assets" && checksum_exists=true
-
-          if [[ "$package_exists" == true && "$checksum_exists" == true ]]; then
-            rm -f "$release_package_path"
-            gh release download "$RELEASE_TAG" --dir dist --pattern "$release_package_name"
-            rm -f "$release_checksum_path"
-            gh release download "$RELEASE_TAG" --dir dist --pattern "$release_checksum_name"
-            if ! (cd dist && sha256sum --check "$release_checksum_name"); then
-              echo "Replacing an invalid checksum with one generated from the published VSIX." >&2
-              (cd dist && sha256sum "$release_package_name" >"$release_checksum_name")
-              gh release delete-asset "$RELEASE_TAG" "$release_checksum_name" --yes
-              gh release upload "$RELEASE_TAG" "$release_checksum_path"
+          release_is_draft="$(gh api "repos/${GH_REPO}/releases/tags/${RELEASE_TAG}" --jq '.draft')"
+          if [[ "$release_is_draft" == true ]]; then
+            gh release upload "$RELEASE_TAG" \
+              "$release_package_path" \
+              "$release_checksum_path" \
+              --clobber
+            gh release download "$RELEASE_TAG" --dir "$release_asset_directory" --pattern "$release_package_name"
+            gh release download "$RELEASE_TAG" --dir "$release_asset_directory" --pattern "$release_checksum_name"
+            if ! (cd "$release_asset_directory" && sha256sum --check "$release_checksum_name"); then
+              echo "Draft release $RELEASE_TAG has a corrupt checksum and was not published." >&2
+              exit 1
             fi
+            gh release edit "$RELEASE_TAG" --draft=false
             exit 0
           fi
 
-          if [[ "$package_exists" == true ]]; then
-            rm -f "$release_package_path"
-            gh release download "$RELEASE_TAG" --dir dist --pattern "$release_package_name"
-            (cd dist && sha256sum "$release_package_name" >"$release_checksum_name")
-            gh release upload "$RELEASE_TAG" "$release_checksum_path"
-            exit 0
+          if [[ "$release_is_draft" != false ]]; then
+            echo "Could not determine whether release $RELEASE_TAG is immutable." >&2
+            exit 1
           fi
 
-          if [[ "$checksum_exists" == true ]]; then
-            echo "Replacing an orphaned checksum because VSIX packages are not byte-reproducible." >&2
-            gh release delete-asset "$RELEASE_TAG" "$release_checksum_name" --yes
+          existing_assets="$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')"
+          if ! grep -Fxq "$release_package_name" <<<"$existing_assets" || \
+            ! grep -Fxq "$release_checksum_name" <<<"$existing_assets"; then
+            echo "Release $RELEASE_TAG is immutable and missing required assets; it cannot be repaired." >&2
+            exit 1
           fi
 
-          gh release upload "$RELEASE_TAG" "$release_package_path" "$release_checksum_path"
+          gh release download "$RELEASE_TAG" --dir "$release_asset_directory" --pattern "$release_package_name"
+          gh release download "$RELEASE_TAG" --dir "$release_asset_directory" --pattern "$release_checksum_name"
+          if ! (cd "$release_asset_directory" && sha256sum --check "$release_checksum_name"); then
+            echo "Release $RELEASE_TAG is immutable and has a corrupt checksum; it cannot be repaired." >&2
+            exit 1
+          fi

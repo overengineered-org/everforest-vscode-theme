@@ -10,7 +10,9 @@ telemetry, or network access.
    and mapping path. Rust would add a toolchain without improving extension startup because no code
    runs after installation.
 2. After the documented settings are added, VS Code's native `window.autoDetectColorScheme` setting
-   selects the Medium Light/Dark themes. No background watcher is needed.
+   selects the Medium Light/Dark themes. No background watcher is needed. In a connected SSH, Dev
+   Container, WSL, or Codespaces window, the theme is installed in the local VS Code Desktop client
+   because it has no remote runtime.
 3. `@vscode/vsce` creates the exact VSIX. `@vscode/test-electron` installs it into a clean profile
    without relying on a user-configured `code` command, then validates native auto mode and every
    contributed theme.
@@ -24,6 +26,6 @@ telemetry, or network access.
 - [Color theme extension guide](https://code.visualstudio.com/api/extension-guides/color-theme)
 - [Theme contribution point](https://code.visualstudio.com/api/references/contribution-points#contributes.themes)
 - [Extension testing](https://code.visualstudio.com/api/working-with-extensions/testing-extension)
-- [Install from a VSIX](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_install-from-a-vsix)
+- [VSIX installation](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_install-from-a-vsix)
 - [Remote extension installation](https://code.visualstudio.com/api/advanced-topics/remote-extensions)
 - [semantic-release usage](https://semantic-release.gitbook.io/semantic-release/usage/getting-started)

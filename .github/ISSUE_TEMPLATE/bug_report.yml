@@ -1,0 +1,49 @@
+name: Theme defect
+description: Report a reproducible problem in an existing theme mapping.
+title: "fix: "
+labels:
+  - bug
+body:
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: List the smallest steps that show the problem.
+      placeholder: "1. Open ...\n2. Select ...\n3. Observe ..."
+    validations:
+      required: true
+  - type: input
+    id: vscode-version
+    attributes:
+      label: VS Code version
+      placeholder: "1.96.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - Desktop
+        - Remote window
+        - Browser-hosted VS Code
+    validations:
+      required: true
+  - type: dropdown
+    id: theme-variant
+    attributes:
+      label: Theme variant
+      options:
+        - Dark Soft
+        - Dark Medium
+        - Dark Hard
+        - Light Soft
+        - Light Medium
+        - Light Hard
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshot or recording
+      description: Drag an image or recording here when possible.
