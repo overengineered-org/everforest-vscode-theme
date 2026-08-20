@@ -99,7 +99,7 @@
     "@vscode/test-electron": "^3.1.0",
     "@vscode/test-web": "^0.0.81",
     "@vscode/vsce": "^3.9.2",
-    "conventional-changelog-conventionalcommits": "9.3.1",
+    "conventional-changelog-conventionalcommits": "10.3.0",
     "esbuild": "^0.28.2",
     "prettier": "^3.9.6",
     "semantic-release": "25.0.9",
