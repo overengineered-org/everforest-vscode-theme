@@ -13,29 +13,42 @@ and Hard contrast.
 This is a zero-runtime theme extension. It contributes static color-theme JSON and does not start
 extension code, background processes, telemetry, or network requests.
 
-## Variants
+## Quick start
 
-| Appearance | Soft      | Medium    | Hard      |
-| ---------- | --------- | --------- | --------- |
-| Dark       | `#333C43` | `#2D353B` | `#272E33` |
-| Light      | `#F3EAD3` | `#FDF6E3` | `#FFFBEF` |
+This extension is distributed through GitHub Releases, not the VS Code Marketplace.
 
-Medium is the balanced default. It follows the system appearance after the settings below are added.
-
-## Installation
-
-This extension is not published on the VS Code Marketplace. Install a VSIX by one of these paths.
-
-### 1. Download a GitHub Release
-
-1. Download the versioned `everforest-complete-X.Y.Z.vsix` asset and its `.sha256` checksum from the
+1. Download `everforest-complete-X.Y.Z.vsix` from the
    [latest GitHub Release](https://github.com/overengineered-org/everforest-vscode-theme/releases/latest).
 2. In VS Code Desktop, open **Extensions**.
 3. Select **Views and More Actions…** (`…`) → **Install from VSIX…**.
 4. Select the downloaded `.vsix` file.
-5. Run **Preferences: Color Theme** and choose an Everforest Complete variant.
+5. Run **Preferences: Color Theme**, then choose an Everforest Complete variant.
 
-### 2. Build locally
+## Follow system appearance
+
+Want Everforest to switch with macOS, Windows, or Linux Light/Dark mode?
+
+1. Open the Command Palette.
+2. Choose **Preferences: Open User Settings (JSON)**.
+3. Add this to your global VS Code User Settings JSON:
+
+```json
+{
+  "window.autoDetectColorScheme": true,
+  "workbench.preferredDarkColorTheme": "Everforest Complete Dark Medium",
+  "workbench.preferredLightColorTheme": "Everforest Complete Light Medium"
+}
+```
+
+Do **not** add these settings to a project's `.vscode/settings.json`. They apply across projects in
+the current VS Code profile. Repeat them for each profile you use.
+
+Settings Sync may sync the settings, but the GitHub-hosted VSIX must be installed separately on each
+machine.
+
+## Other installation paths
+
+### Build locally
 
 Prerequisites: Node.js 24 and npm.
 
@@ -50,56 +63,61 @@ This creates `dist/everforest-complete.vsix`. In VS Code Desktop, open **Extensi
 **Views and More Actions…** (`…`) → **Install from VSIX…**, then choose that file. Do not commit
 VSIX binaries to Git.
 
-For SSH, Dev Containers, WSL, or Codespaces through VS Code Desktop, install the theme into the
-**Local** VS Code client when prompted. A theme has no remote runtime. Browser-hosted VS Code,
-including `vscode.dev` and browser Codespaces, cannot install the GitHub-hosted VSIX directly.
+### Terminal
 
-If the optional VS Code command is already available, the equivalent terminal command is:
+If the VS Code command is already available, install the downloaded release directly:
 
 ```sh
 code --install-extension everforest-complete-X.Y.Z.vsix
 ```
 
-Use `code-insiders` for VS Code Insiders. If neither command exists, use the VS Code interface
-above.
+Use `code-insiders` for VS Code Insiders. If neither command exists, use
+[Quick start](#quick-start).
 
-### Verify the download
+### Remote development and browsers
 
-Run the command from the folder containing both downloaded files. On macOS:
+For SSH, Dev Containers, WSL, or Codespaces through VS Code Desktop, install the theme into the
+**Local** VS Code client when prompted. A theme has no remote runtime.
+
+Browser-hosted VS Code, including `vscode.dev` and browser Codespaces, cannot install this
+GitHub-hosted VSIX directly.
+
+## Verify a release download
+
+Each release includes a `.sha256` checksum. Run the matching command from the folder containing both
+the VSIX and checksum file.
+
+**macOS**
 
 ```sh
 shasum -a 256 -c everforest-complete-X.Y.Z.vsix.sha256
 ```
 
-On Linux:
+**Linux**
 
 ```sh
 sha256sum -c everforest-complete-X.Y.Z.vsix.sha256
 ```
 
-On Windows, run `Get-FileHash everforest-complete-X.Y.Z.vsix -Algorithm SHA256` in PowerShell and
-compare the result with the downloaded checksum file.
+**Windows PowerShell**
 
-Because this extension is distributed through GitHub Releases, VS Code has no automatic update
-source. Download each newer VSIX and repeat **Install from VSIX…**.
-
-## Follow the system appearance
-
-Open the Command Palette and choose **Preferences: Open User Settings (JSON)**. Add these settings
-to the global VS Code User Settings JSON. Do not add them to a project's `.vscode/settings.json`:
-
-```json
-{
-  "window.autoDetectColorScheme": true,
-  "workbench.preferredDarkColorTheme": "Everforest Complete Dark Medium",
-  "workbench.preferredLightColorTheme": "Everforest Complete Light Medium"
-}
+```powershell
+Get-FileHash everforest-complete-X.Y.Z.vsix -Algorithm SHA256
 ```
 
-These settings apply across projects in the current VS Code profile. Repeat them for each profile
-you use. VS Code then follows the operating system's Light/Dark setting using its native theme
-switcher. Settings Sync may sync these settings, but this GitHub-only VSIX must still be installed
-separately on each machine where the theme is used.
+Compare the result with the downloaded checksum file.
+
+Because this extension is distributed through GitHub Releases, VS Code has no automatic update
+source. Download each newer VSIX and repeat [Quick start](#quick-start).
+
+## Choose a variant
+
+Medium is the balanced default. Choose Soft for lower contrast or Hard for higher contrast.
+
+| Appearance | Soft      | Medium    | Hard      |
+| ---------- | --------- | --------- | --------- |
+| Dark       | `#333C43` | `#2D353B` | `#272E33` |
+| Light      | `#F3EAD3` | `#FDF6E3` | `#FFFBEF` |
 
 ## Coverage
 
