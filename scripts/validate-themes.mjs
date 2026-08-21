@@ -10,6 +10,25 @@ const canonicalThemeVariants = [
   { appearance: "light", contrast: "hard", expectedBackground: "#fffbef" },
 ];
 
+const terminalAnsiColorIdentifiers = [
+  "terminal.ansiBlack",
+  "terminal.ansiBlue",
+  "terminal.ansiBrightBlack",
+  "terminal.ansiBrightBlue",
+  "terminal.ansiBrightCyan",
+  "terminal.ansiBrightGreen",
+  "terminal.ansiBrightMagenta",
+  "terminal.ansiBrightRed",
+  "terminal.ansiBrightWhite",
+  "terminal.ansiBrightYellow",
+  "terminal.ansiCyan",
+  "terminal.ansiGreen",
+  "terminal.ansiMagenta",
+  "terminal.ansiRed",
+  "terminal.ansiWhite",
+  "terminal.ansiYellow",
+];
+
 const requiredWorkbenchColors = [
   "activityBar.background",
   "activityBar.activeFocusBorder",
@@ -41,6 +60,12 @@ const requiredWorkbenchColors = [
   "inlineChatInput.focusBorder",
   "interactive.activeCodeBorder",
   "inputOption.activeBorder",
+  "inputValidation.errorBackground",
+  "inputValidation.errorForeground",
+  "inputValidation.infoBackground",
+  "inputValidation.infoForeground",
+  "inputValidation.warningBackground",
+  "inputValidation.warningForeground",
   "keybindingLabel.background",
   "list.activeSelectionBackground",
   "menu.background",
@@ -55,6 +80,10 @@ const requiredWorkbenchColors = [
   "notebook.inactiveFocusedCellBorder",
   "notificationCenterHeader.background",
   "panel.background",
+  "panel.border",
+  "panelSectionHeader.background",
+  "panelSectionHeader.border",
+  "panelSectionHeader.foreground",
   "peekViewEditor.background",
   "ports.iconRunningProcessForeground",
   "panelTitle.activeBorder",
@@ -70,8 +99,23 @@ const requiredWorkbenchColors = [
   "statusBarItem.remoteForeground",
   "tab.activeBackground",
   "tab.activeBorder",
-  "terminal.ansiGreen",
+  ...terminalAnsiColorIdentifiers,
   "terminal.background",
+  "terminal.border",
+  "terminal.foreground",
+  "terminal.selectionBackground",
+  "terminal.inactiveSelectionBackground",
+  "terminal.findMatchBackground",
+  "terminal.findMatchHighlightBackground",
+  "terminal.hoverHighlightBackground",
+  "terminal.tab.activeBorder",
+  "terminalCommandDecoration.defaultBackground",
+  "terminalCommandDecoration.errorBackground",
+  "terminalCommandDecoration.successBackground",
+  "terminalStickyScroll.background",
+  "terminalStickyScroll.border",
+  "terminalStickyScrollHover.background",
+  "terminalOverviewRuler.border",
   "testing.iconFailed",
   "testing.iconPassed",
   "titleBar.activeBackground",
@@ -133,6 +177,12 @@ function rgbChannelsFromHexColor(hexColor) {
   return [0, 2, 4].map((channelOffset) =>
     Number.parseInt(rgbHexadecimalDigits.slice(channelOffset, channelOffset + 2), 16)
   );
+}
+
+function alphaChannelFromHexColor(hexColor) {
+  const alphaHexadecimalDigits = /^#[0-9a-f]{6}([0-9a-f]{2})$/i.exec(hexColor)?.[1];
+  if (!alphaHexadecimalDigits) return undefined;
+  return Number.parseInt(alphaHexadecimalDigits, 16);
 }
 
 function relativeLuminance(hexColor) {
@@ -199,6 +249,18 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
   if (generatedTheme.colors["editor.background"] !== expectedBackground) {
     throw new Error(`${themePath}: canonical background mismatch`);
   }
+  const editorBackgroundColor = generatedTheme.colors["editor.background"];
+  const panelBackgroundColor = generatedTheme.colors["panel.background"];
+  const terminalBackgroundColor = generatedTheme.colors["terminal.background"];
+  if (panelBackgroundColor === editorBackgroundColor) {
+    throw new Error(`${themePath}: panel must be distinct from editor`);
+  }
+  if (terminalBackgroundColor !== panelBackgroundColor) {
+    throw new Error(`${themePath}: terminal must use the panel surface`);
+  }
+  if (generatedTheme.colors["panel.border"] !== generatedTheme.colors["terminal.border"]) {
+    throw new Error(`${themePath}: terminal and panel borders must match`);
+  }
   for (const colorIdentifier of requiredWorkbenchColors) {
     if (!(colorIdentifier in generatedTheme.colors)) {
       throw new Error(`${themePath}: missing ${colorIdentifier}`);
@@ -228,6 +290,17 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
   }
   for (const generatedThemeColor of collectThemeColors(generatedTheme)) {
     rgbChannelsFromHexColor(generatedThemeColor);
+  }
+  for (const terminalFindMatchColorIdentifier of [
+    "terminal.findMatchBackground",
+    "terminal.findMatchHighlightBackground",
+  ]) {
+    const terminalFindMatchAlphaChannel = alphaChannelFromHexColor(
+      generatedTheme.colors[terminalFindMatchColorIdentifier]
+    );
+    if (!terminalFindMatchAlphaChannel || terminalFindMatchAlphaChannel === 255) {
+      throw new Error(`${themePath}: ${terminalFindMatchColorIdentifier} must be translucent`);
+    }
   }
 
   const editorContrast = contrastRatio(
@@ -261,6 +334,11 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
     ["notificationLink.foreground", "notifications.background", 4.5],
     ["terminal.ansiGreen", "terminal.background", 4.5],
     ["terminal.ansiBrightGreen", "terminal.background", 4.5],
+    ["terminal.foreground", "terminal.background", 4.5],
+    ["panelSectionHeader.foreground", "panelSectionHeader.background", 4.5],
+    ["inputValidation.errorForeground", "inputValidation.errorBackground", 4.5],
+    ["inputValidation.infoForeground", "inputValidation.infoBackground", 4.5],
+    ["inputValidation.warningForeground", "inputValidation.warningBackground", 4.5],
     ["chat.slashCommandForeground", "chat.slashCommandBackground", 4.5],
     ["focusBorder", "editor.background", 3],
     ["activityBar.activeFocusBorder", "activityBar.background", 3],
@@ -280,6 +358,17 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
     ["terminal.ansiWhite", "terminal.background", 4.5],
     ["terminal.ansiBrightWhite", "terminal.background", 4.5],
   ];
+  for (const terminalAnsiColorIdentifier of terminalAnsiColorIdentifiers) {
+    const terminalAnsiContrast = contrastRatio(
+      generatedTheme.colors[terminalAnsiColorIdentifier],
+      generatedTheme.colors["terminal.background"]
+    );
+    if (terminalAnsiContrast < 4.5) {
+      throw new Error(
+        `${themePath}: ${terminalAnsiColorIdentifier} contrast ${terminalAnsiContrast.toFixed(2)}`
+      );
+    }
+  }
   for (const [
     foregroundIdentifier,
     backgroundIdentifier,
