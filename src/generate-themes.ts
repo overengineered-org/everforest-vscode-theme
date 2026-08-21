@@ -91,7 +91,6 @@ function createCurrentWorkbenchColors(
     "interactive.activeCodeBorder": palette.fg,
     "interactive.inactiveCodeBorder": palette.bg4,
     "notebook.cellEditorBackground": palette.bg1,
-    "terminal.background": palette.bg,
     "multiDiffEditor.headerBackground": palette.bg1,
     "multiDiffEditor.background": palette.bg,
     "multiDiffEditor.border": palette.bg4,
