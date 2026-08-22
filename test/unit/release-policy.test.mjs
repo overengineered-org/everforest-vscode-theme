@@ -117,7 +117,7 @@ test("prepares Marketplace distribution without adding a stored publishing crede
   assert.equal(existsSync(resolve(repositoryDirectory, "docs/MARKETPLACE_PUBLISHING.md")), false);
 });
 
-test("fails the test aggregate unless integration and web integration both pass", () => {
+test("fails the test aggregate unless integration passes", () => {
   const continuousIntegrationWorkflow = readFileSync(
     resolve(repositoryDirectory, ".github/workflows/ci.yml"),
     "utf8"
@@ -126,16 +126,8 @@ test("fails the test aggregate unless integration and web integration both pass"
 
   assert.ok(testsSummaryJob.includes("if: always()"));
   assert.ok(testsSummaryJob.includes("- integration"));
-  assert.ok(testsSummaryJob.includes("- web-integration"));
   assert.ok(testsSummaryJob.includes("INTEGRATION_RESULT: ${{ needs.integration.result }}"));
-  assert.ok(
-    testsSummaryJob.includes("WEB_INTEGRATION_RESULT: ${{ needs.web-integration.result }}")
-  );
-  assert.ok(
-    testsSummaryJob.includes(
-      'if [[ "$INTEGRATION_RESULT" != success || "$WEB_INTEGRATION_RESULT" != success ]]'
-    )
-  );
+  assert.ok(testsSummaryJob.includes('if [[ "$INTEGRATION_RESULT" != success ]]'));
 });
 
 test("runs the required Linux 1.95.3 compatibility gate before release", () => {

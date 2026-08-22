@@ -80,7 +80,7 @@ code --install-extension overengineered-org.everforest-complete
 Use `code-insiders` for VS Code Insiders. To install a downloaded release instead, replace the
 extension identifier with the VSIX path. If neither command exists, use [Quick start](#quick-start).
 
-### Remote development and browsers
+### Remote development
 
 For SSH, Dev Containers, WSL, or Codespaces through VS Code Desktop, install the theme into the
 **Local** VS Code client when prompted. A theme has no remote runtime.
@@ -159,9 +159,9 @@ Conventional Commit squash titles drive semantic releases:
 Pull requests must use squash merge, with the final squash commit title kept in Conventional Commit
 format.
 
-After the required static, integration, and web checks pass, an eligible merge to `main` creates the
-Git tag and GitHub Release and attaches the versioned VSIX with its SHA-256 checksum. Publishing to
-the Marketplace promotes that exact validated VSIX as a separately approved release step. No
+After the required static and desktop integration checks pass, an eligible merge to `main` creates
+the Git tag and GitHub Release and attaches the versioned VSIX with its SHA-256 checksum. Publishing
+to the Marketplace promotes that exact validated VSIX as a separately approved release step. No
 Marketplace PAT is stored in this repository.
 
 ## Credits
