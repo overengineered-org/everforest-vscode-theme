@@ -134,14 +134,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Evaluate merged pull request without publishing
-        # @semantic-release/github requires a token during verifyConditions,
-        # even in dry-run mode. This is the read-only workflow token only.
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+        # Mirror the hypothetical merge to an isolated local main branch.
+        # Decision-only plugins prevent package or release publication.
         run: |
           git switch --force-create main
+          release_dry_run_repository="$RUNNER_TEMP/release-dry-run.git"
+          git init --bare --initial-branch=main "$release_dry_run_repository"
+          git push "$release_dry_run_repository" HEAD:main --tags
           GITHUB_EVENT_NAME=push GITHUB_REF=refs/heads/main \
-            npm run release -- --dry-run --no-ci
+            npm run release -- --dry-run --no-ci \
+              --repository-url "file://$release_dry_run_repository" \
+              --plugins @semantic-release/commit-analyzer \
+              --plugins @semantic-release/release-notes-generator
 
   release:
     name: GitHub Release

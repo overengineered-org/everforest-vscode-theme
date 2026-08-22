@@ -130,7 +130,7 @@ test("fails the test aggregate unless integration passes", () => {
   assert.ok(testsSummaryJob.includes('if [[ "$INTEGRATION_RESULT" != success ]]'));
 });
 
-test("evaluates the pull request as a main-branch release", () => {
+test("evaluates the pull request against an isolated main remote", () => {
   const continuousIntegrationWorkflow = readFileSync(
     resolve(repositoryDirectory, ".github/workflows/ci.yml"),
     "utf8"
@@ -138,9 +138,19 @@ test("evaluates the pull request as a main-branch release", () => {
   const releaseDryRunJob = workflowJobBlock(continuousIntegrationWorkflow, "release-dry-run");
 
   assert.ok(releaseDryRunJob.includes("git switch --force-create main"));
+  assert.ok(
+    releaseDryRunJob.includes('release_dry_run_repository="$RUNNER_TEMP/release-dry-run.git"')
+  );
+  assert.ok(releaseDryRunJob.includes("git init --bare --initial-branch=main"));
+  assert.ok(releaseDryRunJob.includes('git push "$release_dry_run_repository" HEAD:main --tags'));
   assert.ok(releaseDryRunJob.includes("GITHUB_EVENT_NAME=push"));
   assert.ok(releaseDryRunJob.includes("GITHUB_REF=refs/heads/main"));
   assert.ok(releaseDryRunJob.includes("npm run release -- --dry-run --no-ci"));
+  assert.ok(releaseDryRunJob.includes('--repository-url "file://$release_dry_run_repository"'));
+  assert.ok(releaseDryRunJob.includes("--plugins @semantic-release/commit-analyzer"));
+  assert.ok(releaseDryRunJob.includes("--plugins @semantic-release/release-notes-generator"));
+  assert.equal(releaseDryRunJob.includes("@semantic-release/github"), false);
+  assert.equal(releaseDryRunJob.includes("GITHUB_TOKEN"), false);
 });
 
 test("runs the required Linux 1.95.3 compatibility gate before release", () => {
