@@ -13,19 +13,21 @@ telemetry, or network access.
    selects the Medium Light/Dark themes. No background watcher is needed. In a connected SSH, Dev
    Container, WSL, or Codespaces window, the theme is installed in the local VS Code Desktop client
    because it has no remote runtime.
-3. `@vscode/vsce` creates the exact VSIX. `@vscode/test-electron` installs it into a clean profile
-   without relying on a user-configured `code` command, then validates native auto mode and every
-   contributed theme.
-4. Conventional Commits drive semantic-release after the required static, integration, and web
+3. `@vscode/vsce` creates the exact VSIX and identifies the declarative package as web-compatible.
+   `@vscode/test-electron` installs it into a clean desktop profile without relying on a
+   user-configured `code` command, then validates native auto mode and every contributed theme.
+4. Conventional Commits drive semantic-release after the required static and desktop integration
    checks pass. GitHub Releases receive the versioned VSIX and its SHA-256 checksum using only
-   GitHub's temporary workflow token. No Marketplace, Azure, Entra, PAT credential, or publishing
-   step is configured.
+   GitHub's temporary workflow token. The release workflow then verifies and promotes that exact
+   artifact through Microsoft Entra ID; no Marketplace PAT is stored in the repository.
 
 ## Primary references
 
 - [Color theme extension guide](https://code.visualstudio.com/api/extension-guides/color-theme)
 - [Theme contribution point](https://code.visualstudio.com/api/references/contribution-points#contributes.themes)
 - [Extension testing](https://code.visualstudio.com/api/working-with-extensions/testing-extension)
+- [Web extensions](https://code.visualstudio.com/api/extension-guides/web-extensions)
+- [Virtual workspaces](https://code.visualstudio.com/api/extension-guides/virtual-workspaces)
 - [VSIX installation](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_install-from-a-vsix)
 - [Remote extension installation](https://code.visualstudio.com/api/advanced-topics/remote-extensions)
 - [semantic-release usage](https://semantic-release.gitbook.io/semantic-release/usage/getting-started)

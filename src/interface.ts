@@ -6,22 +6,6 @@
 
 export type ThemeAppearance = "dark" | "light";
 export type ThemeContrast = "soft" | "medium" | "hard";
-export type ThemeAccent =
-  "grey" | "red" | "orange" | "yellow" | "green" | "aqua" | "blue" | "purple";
-export type ThemeCursor = "white" | "black" | Exclude<ThemeAccent, "grey">;
-export type DiagnosticBackgroundOpacity = "0%" | "12.5%" | "25%" | "37.5%" | "50%";
-
-export interface Configuration {
-  darkContrast: ThemeContrast;
-  lightContrast: ThemeContrast;
-  darkSelection: ThemeAccent;
-  lightSelection: ThemeAccent;
-  darkCursor: ThemeCursor;
-  lightCursor: ThemeCursor;
-  italicComments: boolean;
-  diagnosticTextBackgroundOpacity: DiagnosticBackgroundOpacity;
-  highContrast: boolean;
-}
 
 export interface Palette {
   bg0: string;

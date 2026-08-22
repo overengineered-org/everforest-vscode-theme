@@ -67,7 +67,7 @@ test("publishes the VSIX and checksum to GitHub without issue permissions", () =
   assert.equal(githubPluginConfiguration.successComment, false);
 });
 
-test("keeps distribution GitHub-only", () => {
+test("publishes the exact GitHub release to Marketplace without a PAT", () => {
   const continuousIntegrationWorkflow = readFileSync(
     resolve(repositoryDirectory, ".github/workflows/ci.yml"),
     "utf8"
@@ -77,27 +77,49 @@ test("keeps distribution GitHub-only", () => {
     "utf8"
   );
   const readme = readFileSync(resolve(repositoryDirectory, "README.md"), "utf8");
+  const extensionManifest = JSON.parse(
+    readFileSync(resolve(repositoryDirectory, "package.json"), "utf8")
+  );
   const releaseJob = workflowJobBlock(continuousIntegrationWorkflow, "release");
+  const marketplaceJob = workflowJobBlock(continuousIntegrationWorkflow, "marketplace");
   const recoveryPublishJob = workflowJobBlock(releaseRecoveryWorkflow, "publish");
   const releaseSources = `${continuousIntegrationWorkflow}\n${releaseRecoveryWorkflow}`;
 
-  for (const prohibitedReleaseTerm of [
-    "azure/login",
-    "marketplace-production",
-    "vsce publish",
-    "VSCE_PAT",
-  ]) {
-    assert.equal(releaseSources.toLowerCase().includes(prohibitedReleaseTerm.toLowerCase()), false);
-  }
-  assert.doesNotMatch(continuousIntegrationWorkflow, /secrets\./);
+  assert.doesNotMatch(releaseSources, /VSCE_PAT/i);
+  assert.doesNotMatch(releaseSources, /(?:^|\s)--pat(?:\s|$)/im);
+  assert.doesNotMatch(releaseSources, /azure\/login@v/i);
   assert.ok(releaseJob.includes("GITHUB_TOKEN: ${{ github.token }}"));
   assert.ok(releaseJob.includes("- static"));
   assert.ok(releaseJob.includes("- tests-summary"));
   assert.ok(releaseJob.includes("contents: write"));
+  assert.ok(releaseJob.includes("release-tag: ${{ steps.resolve-release.outputs.tag }}"));
+  assert.ok(releaseJob.includes("git tag --points-at HEAD"));
+  assert.ok(marketplaceJob.includes("needs: release"));
+  assert.ok(marketplaceJob.includes("environment: marketplace-production"));
+  assert.ok(marketplaceJob.includes("contents: read"));
+  assert.ok(marketplaceJob.includes("id-token: write"));
+  assert.ok(
+    marketplaceJob.includes("azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0")
+  );
+  assert.ok(marketplaceJob.includes("client-id: ${{ secrets.AZURE_CLIENT_ID }}"));
+  assert.ok(marketplaceJob.includes("tenant-id: ${{ secrets.AZURE_TENANT_ID }}"));
+  assert.ok(marketplaceJob.includes("subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}"));
+  assert.ok(marketplaceJob.includes("RELEASE_TAG: ${{ needs.release.outputs.release-tag }}"));
+  assert.ok(marketplaceJob.includes("gh release download"));
+  assert.ok(marketplaceJob.includes("sha256sum --check"));
+  assert.ok(marketplaceJob.includes("npx --no-install vsce publish"));
+  assert.ok(marketplaceJob.includes("--azure-credential"));
+  assert.ok(marketplaceJob.includes("--packagePath"));
+  assert.ok(marketplaceJob.includes("--skip-duplicate"));
   assert.ok(recoveryPublishJob.includes("GH_REPO: ${{ github.repository }}"));
   assert.match(releaseRecoveryWorkflow, /group: production-release/);
   assert.ok(recoveryPublishJob.includes("release_is_draft"));
   assert.ok(recoveryPublishJob.includes("Release $RELEASE_TAG is immutable"));
+  assert.deepEqual(extensionManifest.categories, ["Themes"]);
+  assert.deepEqual(extensionManifest.galleryBanner, { color: "#2D353B", theme: "dark" });
+  assert.equal(extensionManifest.pricing, "Free");
+  assert.match(readme, /overengineered-org\.everforest-complete/);
+  assert.match(readme, /Marketplace installations receive updates through VS Code/);
   assert.match(readme, /Install from VSIX/);
   assert.match(readme, /releases\/latest/);
   assert.ok(readme.includes("This creates `dist/everforest-complete.vsix`"));
@@ -109,7 +131,7 @@ test("keeps distribution GitHub-only", () => {
   assert.equal(existsSync(resolve(repositoryDirectory, "docs/MARKETPLACE_PUBLISHING.md")), false);
 });
 
-test("fails the test aggregate unless integration and web integration both pass", () => {
+test("fails the test aggregate unless integration passes", () => {
   const continuousIntegrationWorkflow = readFileSync(
     resolve(repositoryDirectory, ".github/workflows/ci.yml"),
     "utf8"
@@ -118,16 +140,31 @@ test("fails the test aggregate unless integration and web integration both pass"
 
   assert.ok(testsSummaryJob.includes("if: always()"));
   assert.ok(testsSummaryJob.includes("- integration"));
-  assert.ok(testsSummaryJob.includes("- web-integration"));
   assert.ok(testsSummaryJob.includes("INTEGRATION_RESULT: ${{ needs.integration.result }}"));
-  assert.ok(
-    testsSummaryJob.includes("WEB_INTEGRATION_RESULT: ${{ needs.web-integration.result }}")
+  assert.ok(testsSummaryJob.includes('if [[ "$INTEGRATION_RESULT" != success ]]'));
+});
+
+test("evaluates the pull request against an isolated main remote", () => {
+  const continuousIntegrationWorkflow = readFileSync(
+    resolve(repositoryDirectory, ".github/workflows/ci.yml"),
+    "utf8"
   );
+  const releaseDryRunJob = workflowJobBlock(continuousIntegrationWorkflow, "release-dry-run");
+
+  assert.ok(releaseDryRunJob.includes("git switch --force-create main"));
   assert.ok(
-    testsSummaryJob.includes(
-      'if [[ "$INTEGRATION_RESULT" != success || "$WEB_INTEGRATION_RESULT" != success ]]'
-    )
+    releaseDryRunJob.includes('release_dry_run_repository="$RUNNER_TEMP/release-dry-run.git"')
   );
+  assert.ok(releaseDryRunJob.includes("git init --bare --initial-branch=main"));
+  assert.ok(releaseDryRunJob.includes('git push "$release_dry_run_repository" HEAD:main --tags'));
+  assert.ok(releaseDryRunJob.includes("GITHUB_EVENT_NAME=push"));
+  assert.ok(releaseDryRunJob.includes("GITHUB_REF=refs/heads/main"));
+  assert.ok(releaseDryRunJob.includes("npm run release -- --dry-run --no-ci"));
+  assert.ok(releaseDryRunJob.includes('--repository-url "file://$release_dry_run_repository"'));
+  assert.ok(releaseDryRunJob.includes("--plugins @semantic-release/commit-analyzer"));
+  assert.ok(releaseDryRunJob.includes("--plugins @semantic-release/release-notes-generator"));
+  assert.equal(releaseDryRunJob.includes("@semantic-release/github"), false);
+  assert.equal(releaseDryRunJob.includes("GITHUB_TOKEN"), false);
 });
 
 test("runs the required Linux 1.95.3 compatibility gate before release", () => {

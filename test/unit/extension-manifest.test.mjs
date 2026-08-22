@@ -20,7 +20,7 @@ test("requires VS Code 1.95 and declares the exact six shipped themes", () => {
   assert.deepEqual(extensionManifest.contributes.themes, expectedThemeContributions);
 });
 
-test("remains a zero-runtime extension with a minimal package allowlist", () => {
+test("remains a zero-runtime web extension with a minimal package allowlist", () => {
   assert.equal(extensionManifest.main, undefined);
   assert.equal(extensionManifest.browser, undefined);
   assert.equal(extensionManifest.activationEvents, undefined);

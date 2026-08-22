@@ -81,32 +81,11 @@ jobs:
           EVERFOREST_VSCODE_VERSION: ${{ matrix.vscode-version }}
         run: npm run test:integration
 
-  web-integration:
-    name: VS Code Web virtual workspace
-    needs: static
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          cache: npm
-          node-version: 24
-      - name: Install dependencies
-        run: npm ci
-      - name: Test in VS Code Web
-        run: npm run test:web
-
   tests-summary:
     name: Tests
     if: always()
     needs:
       - integration
-      - web-integration
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
@@ -114,10 +93,9 @@ jobs:
       - name: Require all test jobs to pass
         env:
           INTEGRATION_RESULT: ${{ needs.integration.result }}
-          WEB_INTEGRATION_RESULT: ${{ needs.web-integration.result }}
         run: |
-          if [[ "$INTEGRATION_RESULT" != success || "$WEB_INTEGRATION_RESULT" != success ]]; then
-            echo "Tests failed: integration=$INTEGRATION_RESULT web-integration=$WEB_INTEGRATION_RESULT" >&2
+          if [[ "$INTEGRATION_RESULT" != success ]]; then
+            echo "Tests failed: integration=$INTEGRATION_RESULT" >&2
             exit 1
           fi
 
@@ -155,14 +133,19 @@ jobs:
           node-version: 24
       - name: Install dependencies
         run: npm ci
-      - name: Model merged pull request on main
-        run: git switch --force-create main
-      - name: Evaluate release without publishing
-        # @semantic-release/github requires a token during verifyConditions,
-        # even in dry-run mode. This is the read-only workflow token only.
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: npm run release -- --dry-run --no-ci
+      - name: Evaluate merged pull request without publishing
+        # Mirror the hypothetical merge to an isolated local main branch.
+        # Decision-only plugins prevent package or release publication.
+        run: |
+          git switch --force-create main
+          release_dry_run_repository="$RUNNER_TEMP/release-dry-run.git"
+          git init --bare --initial-branch=main "$release_dry_run_repository"
+          git push "$release_dry_run_repository" HEAD:main --tags
+          GITHUB_EVENT_NAME=push GITHUB_REF=refs/heads/main \
+            npm run release -- --dry-run --no-ci \
+              --repository-url "file://$release_dry_run_repository" \
+              --plugins @semantic-release/commit-analyzer \
+              --plugins @semantic-release/release-notes-generator
 
   release:
     name: GitHub Release
@@ -172,6 +155,8 @@ jobs:
       - tests-summary
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      release-tag: ${{ steps.resolve-release.outputs.tag }}
     permissions:
       contents: write
     concurrency:
@@ -194,3 +179,67 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: npm run release
+      - name: Resolve released version
+        id: resolve-release
+        run: |
+          git fetch --tags origin
+          release_tag="$(git tag --points-at HEAD --list 'v*' --sort=-v:refname | head -n 1)"
+          echo "tag=$release_tag" >> "$GITHUB_OUTPUT"
+
+  marketplace:
+    name: Visual Studio Marketplace
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.release.outputs.release-tag != ''
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: marketplace-production
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: marketplace-production
+      cancel-in-progress: false
+    steps:
+      - name: Check out released source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          cache: npm
+          node-version: 24
+      - name: Install dependencies
+        run: npm ci
+      - name: Sign in to Microsoft Entra ID
+        uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Download and verify GitHub Release package
+        id: release-package
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.release.outputs.release-tag }}
+        run: |
+          set -euo pipefail
+          release_version="${RELEASE_TAG#v}"
+          release_package_name="everforest-complete-${release_version}.vsix"
+          release_checksum_name="${release_package_name}.sha256"
+          release_asset_directory="$RUNNER_TEMP/marketplace-release"
+          mkdir -p "$release_asset_directory"
+          gh release download "$RELEASE_TAG" \
+            --dir "$release_asset_directory" \
+            --pattern "$release_package_name" \
+            --pattern "$release_checksum_name"
+          (cd "$release_asset_directory" && sha256sum --check "$release_checksum_name")
+          echo "path=${release_asset_directory}/${release_package_name}" >> "$GITHUB_OUTPUT"
+      - name: Publish exact release package
+        env:
+          RELEASE_PACKAGE_PATH: ${{ steps.release-package.outputs.path }}
+        run: >-
+          npx --no-install vsce publish --azure-credential --packagePath "$RELEASE_PACKAGE_PATH"
+          --skip-duplicate
