@@ -4,7 +4,7 @@
  *  License:    MIT
  *--------------------------------------------------------------------------------------------*/
 
-import { Palette, Configuration, ThemeAppearance } from "../interface";
+import { Palette, ThemeAppearance } from "../interface";
 
 export function getReadableAccentGreen(appearance: ThemeAppearance, palette: Palette): string {
   return appearance === "light" ? "#596600" : palette.green;
@@ -37,246 +37,20 @@ function getReadableTerminalAnsiColors(appearance: ThemeAppearance, palette: Pal
   };
 }
 
-export function materialWorkbench(
-  palette: Palette,
-  configuration: Configuration,
-  variant: ThemeAppearance
-) {
-  const readableAccentGreen = getReadableAccentGreen(variant, palette);
-  const panelAndTerminalForeground = variant === "light" ? "#59646c" : palette.fg;
-  const readableTerminalAnsiColors = getReadableTerminalAnsiColors(variant, palette);
-  let selectionBg: string;
-  let editorSelectionBg: string;
-  let editorSelectionBgHl: string;
-  let cursorFg: string;
-  let diagnosticTextBackgroundOpacity: string;
-  if (variant === "dark") {
-    switch (
-      configuration.darkSelection // {{{
-    ) {
-      case "grey": {
-        selectionBg = `${palette.bg4}e0`;
-        editorSelectionBg = `${palette.bg4}c0`;
-        editorSelectionBgHl = `${palette.bg4}60`;
-        break;
-      }
-      case "red": {
-        selectionBg = `${palette.dimRed}60`;
-        editorSelectionBg = `${palette.dimRed}40`;
-        editorSelectionBgHl = `${palette.dimRed}20`;
-        break;
-      }
-      case "orange": {
-        selectionBg = `${palette.dimOrange}60`;
-        editorSelectionBg = `${palette.dimOrange}40`;
-        editorSelectionBgHl = `${palette.dimOrange}20`;
-        break;
-      }
-      case "yellow": {
-        selectionBg = `${palette.dimYellow}60`;
-        editorSelectionBg = `${palette.dimYellow}40`;
-        editorSelectionBgHl = `${palette.dimYellow}20`;
-        break;
-      }
-      case "green": {
-        selectionBg = `${palette.dimGreen}60`;
-        editorSelectionBg = `${palette.dimGreen}40`;
-        editorSelectionBgHl = `${palette.dimGreen}20`;
-        break;
-      }
-      case "aqua": {
-        selectionBg = `${palette.dimAqua}60`;
-        editorSelectionBg = `${palette.dimAqua}40`;
-        editorSelectionBgHl = `${palette.dimAqua}20`;
-        break;
-      }
-      case "blue": {
-        selectionBg = `${palette.dimBlue}60`;
-        editorSelectionBg = `${palette.dimBlue}40`;
-        editorSelectionBgHl = `${palette.dimBlue}20`;
-        break;
-      }
-      case "purple": {
-        selectionBg = `${palette.dimPurple}60`;
-        editorSelectionBg = `${palette.dimPurple}40`;
-        editorSelectionBgHl = `${palette.dimPurple}20`;
-        break;
-      }
-      default: {
-        selectionBg = `${palette.bg4}e0`;
-        editorSelectionBg = `${palette.bg4}c0`;
-        editorSelectionBgHl = `${palette.bg4}60`;
-      }
-    } // }}}
-    switch (
-      configuration.darkCursor // {{{
-    ) {
-      case "white": {
-        cursorFg = `${palette.fg}`;
-        break;
-      }
-      case "red": {
-        cursorFg = `${palette.red}`;
-        break;
-      }
-      case "orange": {
-        cursorFg = `${palette.orange}`;
-        break;
-      }
-      case "yellow": {
-        cursorFg = `${palette.yellow}`;
-        break;
-      }
-      case "green": {
-        cursorFg = `${palette.green}`;
-        break;
-      }
-      case "aqua": {
-        cursorFg = `${palette.aqua}`;
-        break;
-      }
-      case "blue": {
-        cursorFg = `${palette.blue}`;
-        break;
-      }
-      case "purple": {
-        cursorFg = `${palette.purple}`;
-        break;
-      }
-      default: {
-        cursorFg = `${palette.fg}`;
-      }
-    } // }}}
-  } else {
-    switch (
-      configuration.lightSelection // {{{
-    ) {
-      case "grey": {
-        selectionBg = `${palette.bg4}c0`;
-        editorSelectionBg = `${palette.bg4}a0`;
-        editorSelectionBgHl = `${palette.bg4}50`;
-        break;
-      }
-      case "red": {
-        selectionBg = `${palette.dimRed}60`;
-        editorSelectionBg = `${palette.dimRed}40`;
-        editorSelectionBgHl = `${palette.dimRed}20`;
-        break;
-      }
-      case "orange": {
-        selectionBg = `${palette.dimOrange}60`;
-        editorSelectionBg = `${palette.dimOrange}40`;
-        editorSelectionBgHl = `${palette.dimOrange}20`;
-        break;
-      }
-      case "yellow": {
-        selectionBg = `${palette.dimYellow}60`;
-        editorSelectionBg = `${palette.dimYellow}40`;
-        editorSelectionBgHl = `${palette.dimYellow}20`;
-        break;
-      }
-      case "green": {
-        selectionBg = `${palette.dimGreen}60`;
-        editorSelectionBg = `${palette.dimGreen}40`;
-        editorSelectionBgHl = `${palette.dimGreen}20`;
-        break;
-      }
-      case "aqua": {
-        selectionBg = `${palette.dimAqua}60`;
-        editorSelectionBg = `${palette.dimAqua}40`;
-        editorSelectionBgHl = `${palette.dimAqua}20`;
-        break;
-      }
-      case "blue": {
-        selectionBg = `${palette.dimBlue}60`;
-        editorSelectionBg = `${palette.dimBlue}40`;
-        editorSelectionBgHl = `${palette.dimBlue}20`;
-        break;
-      }
-      case "purple": {
-        selectionBg = `${palette.dimPurple}60`;
-        editorSelectionBg = `${palette.dimPurple}40`;
-        editorSelectionBgHl = `${palette.dimPurple}20`;
-        break;
-      }
-      default: {
-        selectionBg = `${palette.bg4}c0`;
-        editorSelectionBg = `${palette.bg4}a0`;
-        editorSelectionBgHl = `${palette.bg4}50`;
-      }
-    } // }}}
-    switch (
-      configuration.lightCursor // {{{
-    ) {
-      case "black": {
-        cursorFg = `${palette.fg}`;
-        break;
-      }
-      case "red": {
-        cursorFg = `${palette.red}`;
-        break;
-      }
-      case "orange": {
-        cursorFg = `${palette.orange}`;
-        break;
-      }
-      case "yellow": {
-        cursorFg = `${palette.yellow}`;
-        break;
-      }
-      case "green": {
-        cursorFg = `${palette.green}`;
-        break;
-      }
-      case "aqua": {
-        cursorFg = `${palette.aqua}`;
-        break;
-      }
-      case "blue": {
-        cursorFg = `${palette.blue}`;
-        break;
-      }
-      case "purple": {
-        cursorFg = `${palette.purple}`;
-        break;
-      }
-      default: {
-        cursorFg = `${palette.fg}`;
-      }
-    } // }}}
-  }
-  switch (
-    configuration.diagnosticTextBackgroundOpacity // {{{
-  ) {
-    case "0%": {
-      diagnosticTextBackgroundOpacity = "00";
-      break;
-    }
-    case "12.5%": {
-      diagnosticTextBackgroundOpacity = "20";
-      break;
-    }
-    case "25%": {
-      diagnosticTextBackgroundOpacity = "40";
-      break;
-    }
-    case "37.5%": {
-      diagnosticTextBackgroundOpacity = "60";
-      break;
-    }
-    case "50%": {
-      diagnosticTextBackgroundOpacity = "80";
-      break;
-    }
-    default: {
-      diagnosticTextBackgroundOpacity = "00";
-    }
-  } // }}}
+export function materialWorkbench(palette: Palette, appearance: ThemeAppearance) {
+  const readableAccentGreen = getReadableAccentGreen(appearance, palette);
+  const panelAndTerminalForeground = appearance === "light" ? "#59646c" : palette.fg;
+  const readableTerminalAnsiColors = getReadableTerminalAnsiColors(appearance, palette);
+  const selectionBackgroundColor = `${palette.bg4}${appearance === "dark" ? "e0" : "c0"}`;
+  const editorSelectionBackgroundColor = `${palette.bg4}${appearance === "dark" ? "c0" : "a0"}`;
+  const editorSelectionHighlightColor = `${palette.bg4}${appearance === "dark" ? "60" : "50"}`;
+  const cursorForeground = palette.fg;
+  const diagnosticBackgroundOpacity = "00";
   const workbenchColors = {
     foreground: `${palette.grey2}`,
     focusBorder: `${palette.fg}`,
     "widget.shadow": `${palette.shadow}`,
-    "selection.background": `${selectionBg}`,
+    "selection.background": selectionBackgroundColor,
     descriptionForeground: `${palette.grey1}`,
     errorForeground: `${palette.red}`,
     "icon.foreground": `${palette.aqua}`,
@@ -377,19 +151,22 @@ export function materialWorkbench(
     "editor.foreground": `${palette.fg}`,
     "editorLineNumber.foreground": `${palette.grey0}a0`,
     "editorLineNumber.activeForeground": `${palette.grey2}e0`,
-    "editorCursor.foreground": `${cursorFg}`,
-    "editor.selectionBackground": `${editorSelectionBg}`,
-    "editor.selectionHighlightBackground": `${editorSelectionBgHl}`,
-    "editor.inactiveSelectionBackground": `${editorSelectionBgHl}`,
-    "editor.wordHighlightBackground": variant === "dark" ? `${palette.bg4}58` : `${palette.bg4}48`,
+    "editorCursor.foreground": cursorForeground,
+    "editor.selectionBackground": editorSelectionBackgroundColor,
+    "editor.selectionHighlightBackground": editorSelectionHighlightColor,
+    "editor.inactiveSelectionBackground": editorSelectionHighlightColor,
+    "editor.wordHighlightBackground":
+      appearance === "dark" ? `${palette.bg4}58` : `${palette.bg4}48`,
     "editor.wordHighlightStrongBackground":
-      variant === "dark" ? `${palette.bg4}b0` : `${palette.bg4}90`,
-    "editor.hoverHighlightBackground": variant === "dark" ? `${palette.bg4}b0` : `${palette.bg4}90`,
+      appearance === "dark" ? `${palette.bg4}b0` : `${palette.bg4}90`,
+    "editor.hoverHighlightBackground":
+      appearance === "dark" ? `${palette.bg4}b0` : `${palette.bg4}90`,
     "editor.findMatchBackground": `${palette.dimOrange}40`,
     "editor.findMatchHighlightBackground": `${palette.dimGreen}40`,
-    "editor.findRangeHighlightBackground": `${editorSelectionBgHl}`,
+    "editor.findRangeHighlightBackground": editorSelectionHighlightColor,
     "editor.lineHighlightBorder": `${palette.bg5}00`,
-    "editor.lineHighlightBackground": variant === "dark" ? `${palette.bg3}90` : `${palette.bg3}70`,
+    "editor.lineHighlightBackground":
+      appearance === "dark" ? `${palette.bg3}90` : `${palette.bg3}70`,
     "editor.rangeHighlightBackground": `${palette.bg3}80`,
     "editor.symbolHighlightBackground": `${palette.dimBlue}40`,
     "editorLink.activeForeground": `${readableAccentGreen}`,
@@ -438,9 +215,9 @@ export function materialWorkbench(
     "editorWarning.foreground": `${palette.yellow}`,
     "editorInfo.foreground": `${palette.blue}`,
     "editorHint.foreground": `${palette.dimPurple}`,
-    "editorError.background": `${palette.dimRed}${diagnosticTextBackgroundOpacity}`,
-    "editorWarning.background": `${palette.dimYellow}${diagnosticTextBackgroundOpacity}`,
-    "editorInfo.background": `${palette.dimBlue}${diagnosticTextBackgroundOpacity}`,
+    "editorError.background": `${palette.dimRed}${diagnosticBackgroundOpacity}`,
+    "editorWarning.background": `${palette.dimYellow}${diagnosticBackgroundOpacity}`,
+    "editorInfo.background": `${palette.dimBlue}${diagnosticBackgroundOpacity}`,
     "editorGutter.background": `${palette.bg}00`,
     "editorGutter.modifiedBackground": `${palette.dimBlue}a0`,
     "editorGutter.addedBackground": `${palette.dimGreen}a0`,
@@ -452,7 +229,7 @@ export function materialWorkbench(
     "editorSuggestWidget.background": `${palette.bg3}`,
     "editorSuggestWidget.foreground": `${palette.fg}`,
     "editorSuggestWidget.highlightForeground":
-      variant === "light" ? `${readableAccentGreen}` : `${palette.fg}`,
+      appearance === "light" ? `${readableAccentGreen}` : `${palette.fg}`,
     "editorSuggestWidget.selectedBackground": `${palette.bg4}`,
     "editorSuggestWidget.border": `${palette.bg3}`,
     "editorWidget.background": `${palette.bg}`,
@@ -483,8 +260,8 @@ export function materialWorkbench(
     "terminal.background": `${palette.bg1}`,
     "terminal.foreground": `${panelAndTerminalForeground}`,
     "terminal.border": `${palette.bg4}`,
-    "terminal.selectionBackground": `${editorSelectionBg}`,
-    "terminal.inactiveSelectionBackground": `${editorSelectionBgHl}`,
+    "terminal.selectionBackground": editorSelectionBackgroundColor,
+    "terminal.inactiveSelectionBackground": editorSelectionHighlightColor,
     "terminal.findMatchBackground": `${palette.dimOrange}60`,
     "terminal.findMatchHighlightBackground": `${palette.dimGreen}40`,
     "terminal.hoverHighlightBackground": `${palette.dimAqua}50`,
@@ -496,7 +273,7 @@ export function materialWorkbench(
     "terminalStickyScroll.border": `${palette.bg4}`,
     "terminalStickyScrollHover.background": `${palette.bg3}`,
     "terminalOverviewRuler.border": `${palette.bg4}`,
-    "terminalCursor.foreground": `${cursorFg}`,
+    "terminalCursor.foreground": cursorForeground,
     "terminal.ansiBlack": `${readableTerminalAnsiColors.black}`,
     "terminal.ansiBlue": `${readableTerminalAnsiColors.blue}`,
     "terminal.ansiBrightBlack": `${readableTerminalAnsiColors.brightBlack}`,
@@ -742,12 +519,6 @@ export function materialWorkbench(
     "rust_analyzer.inlayHints.background": `${palette.bg}00`,
     "rust_analyzer.syntaxTreeBorder": `${palette.red}`,
   };
-  if (configuration.highContrast) {
-    Object.assign(workbenchColors, {
-      contrastBorder: `${palette.bg5}`,
-      contrastActiveBorder: `${palette.grey0}`,
-    });
-  }
   return workbenchColors;
 }
 

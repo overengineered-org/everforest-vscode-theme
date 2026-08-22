@@ -6,13 +6,13 @@
 
 import { Palette } from "../interface";
 
-export function getDefaultSyntax(palette: Palette, italicComments: boolean) {
+export function getDefaultSyntax(palette: Palette) {
   const syntax = [
     // Syntax{{{
     {
       name: "Keyword",
       scope:
-        "keyword, storage.type.function, storage.type.class, storage.type.enum, storage.type.interface, storage.type.property, keyword.operator.new, keyword.operator.expression, keyword.operator.new, keyword.operator.delete, storage.type.extends",
+        "keyword, storage.type.function, storage.type.class, storage.type.enum, storage.type.interface, storage.type.property, keyword.operator.new, keyword.operator.expression, keyword.operator.delete, storage.type.extends",
       settings: {
         foreground: palette.red,
       },
@@ -57,7 +57,7 @@ export function getDefaultSyntax(palette: Palette, italicComments: boolean) {
     {
       name: "String Escape",
       scope:
-        "constant.character.escape, punctuation.quasi.element, punctuation.definition.template-expression, punctuation.section.embedded, storage.type.format, constant.other.placeholder, constant.other.placeholder, variable.interpolation",
+        "constant.character.escape, punctuation.quasi.element, punctuation.definition.template-expression, punctuation.section.embedded, storage.type.format, constant.other.placeholder, variable.interpolation",
       settings: {
         foreground: palette.green,
       },
@@ -2136,26 +2136,14 @@ export function getDefaultSyntax(palette: Palette, italicComments: boolean) {
     },
     // }}}
   ];
-  if (italicComments) {
-    // {{{
-    syntax.push({
-      name: "Comment",
-      scope: "comment, string.comment, punctuation.definition.comment",
-      settings: {
-        foreground: palette.grey1,
-        fontStyle: "italic",
-      },
-    }); // }}}
-  } else {
-    // {{{
-    syntax.push({
-      name: "Comment",
-      scope: "comment, string.comment, punctuation.definition.comment",
-      settings: {
-        foreground: palette.grey1,
-      },
-    });
-  } // }}}
+  syntax.push({
+    name: "Comment",
+    scope: "comment, string.comment, punctuation.definition.comment",
+    settings: {
+      foreground: palette.grey1,
+      fontStyle: "italic",
+    },
+  });
   return syntax;
 }
 
