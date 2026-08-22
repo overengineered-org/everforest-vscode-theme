@@ -17,6 +17,14 @@
     "url": "https://github.com/overengineered-org/everforest-vscode-theme/issues"
   },
   "icon": "media/icon.png",
+  "categories": [
+    "Themes"
+  ],
+  "galleryBanner": {
+    "color": "#2D353B",
+    "theme": "dark"
+  },
+  "pricing": "Free",
   "engines": {
     "vscode": "^1.95.0"
   },

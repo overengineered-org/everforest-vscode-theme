@@ -67,7 +67,7 @@ test("publishes the VSIX and checksum to GitHub without issue permissions", () =
   assert.equal(githubPluginConfiguration.successComment, false);
 });
 
-test("keeps distribution GitHub-only", () => {
+test("prepares Marketplace distribution without adding a stored publishing credential", () => {
   const continuousIntegrationWorkflow = readFileSync(
     resolve(repositoryDirectory, ".github/workflows/ci.yml"),
     "utf8"
@@ -77,6 +77,9 @@ test("keeps distribution GitHub-only", () => {
     "utf8"
   );
   const readme = readFileSync(resolve(repositoryDirectory, "README.md"), "utf8");
+  const extensionManifest = JSON.parse(
+    readFileSync(resolve(repositoryDirectory, "package.json"), "utf8")
+  );
   const releaseJob = workflowJobBlock(continuousIntegrationWorkflow, "release");
   const recoveryPublishJob = workflowJobBlock(releaseRecoveryWorkflow, "publish");
   const releaseSources = `${continuousIntegrationWorkflow}\n${releaseRecoveryWorkflow}`;
@@ -98,6 +101,11 @@ test("keeps distribution GitHub-only", () => {
   assert.match(releaseRecoveryWorkflow, /group: production-release/);
   assert.ok(recoveryPublishJob.includes("release_is_draft"));
   assert.ok(recoveryPublishJob.includes("Release $RELEASE_TAG is immutable"));
+  assert.deepEqual(extensionManifest.categories, ["Themes"]);
+  assert.deepEqual(extensionManifest.galleryBanner, { color: "#2D353B", theme: "dark" });
+  assert.equal(extensionManifest.pricing, "Free");
+  assert.match(readme, /overengineered-org\.everforest-complete/);
+  assert.match(readme, /Marketplace installations receive updates through VS Code/);
   assert.match(readme, /Install from VSIX/);
   assert.match(readme, /releases\/latest/);
   assert.ok(readme.includes("This creates `dist/everforest-complete.vsix`"));
