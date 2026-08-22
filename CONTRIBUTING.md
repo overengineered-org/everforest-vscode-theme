@@ -24,7 +24,6 @@ npm ci
    ```sh
    npm run verify:static
    npm run test:integration
-   npm run test:web
    npm run package:vsix
    npm run package:verify
    ```
@@ -52,10 +51,10 @@ applicable, and ensure CI passes. PRs merge by squash only.
 
 ## CI and releases
 
-GitHub Actions validates the VSIX and production dependency audit, runs integration tests on Linux,
-macOS, and Windows, runs VS Code Web tests, validates the PR title, and performs a semantic release
-dry run. A successful eligible squash merge to `main` creates a GitHub Release with a versioned VSIX
-and SHA-256 checksum.
+GitHub Actions validates the VSIX and production dependency audit, runs desktop integration tests on
+Linux, macOS, and Windows, validates the PR title, and performs a semantic release dry run. A
+successful eligible squash merge to `main` creates a GitHub Release with a versioned VSIX and
+SHA-256 checksum.
 
 `fix:` releases a patch, `feat:` a minor, and `feat!:` or `BREAKING CHANGE` a major. Documentation
 and chore-only changes do not release. There is no Marketplace publish step; GitHub's temporary

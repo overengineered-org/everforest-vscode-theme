@@ -74,13 +74,13 @@ code --install-extension everforest-complete-X.Y.Z.vsix
 Use `code-insiders` for VS Code Insiders. If neither command exists, use
 [Quick start](#quick-start).
 
-### Remote development and browsers
+### Remote development
 
 For SSH, Dev Containers, WSL, or Codespaces through VS Code Desktop, install the theme into the
 **Local** VS Code client when prompted. A theme has no remote runtime.
 
-Browser-hosted VS Code, including `vscode.dev` and browser Codespaces, cannot install this
-GitHub-hosted VSIX directly.
+This is a desktop-only extension. Browser-hosted VS Code, including `vscode.dev` and browser
+Codespaces, is not supported.
 
 ## Verify a release download
 
@@ -153,8 +153,8 @@ Conventional Commit squash titles drive semantic releases:
 Pull requests must use squash merge, with the final squash commit title kept in Conventional Commit
 format.
 
-After the required static, integration, and web checks pass, an eligible merge to `main` creates the
-Git tag and GitHub Release and attaches the versioned VSIX with its SHA-256 checksum. GitHub's
+After the required static and desktop integration checks pass, an eligible merge to `main` creates
+the Git tag and GitHub Release and attaches the versioned VSIX with its SHA-256 checksum. GitHub's
 temporary workflow token is the only release credential. No Marketplace, Azure, Entra, PAT
 credential, or publishing step is configured.
 

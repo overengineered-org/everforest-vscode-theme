@@ -16,7 +16,7 @@ telemetry, or network access.
 3. `@vscode/vsce` creates the exact VSIX. `@vscode/test-electron` installs it into a clean profile
    without relying on a user-configured `code` command, then validates native auto mode and every
    contributed theme.
-4. Conventional Commits drive semantic-release after the required static, integration, and web
+4. Conventional Commits drive semantic-release after the required static and desktop integration
    checks pass. GitHub Releases receive the versioned VSIX and its SHA-256 checksum using only
    GitHub's temporary workflow token. No Marketplace, Azure, Entra, PAT credential, or publishing
    step is configured.

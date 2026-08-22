@@ -36,6 +36,5 @@ test("remains a zero-runtime extension with a minimal package allowlist", () => 
   ]);
   assert.deepEqual(extensionManifest.capabilities, {
     untrustedWorkspaces: { supported: true },
-    virtualWorkspaces: true,
   });
 });
