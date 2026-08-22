@@ -130,6 +130,19 @@ test("fails the test aggregate unless integration passes", () => {
   assert.ok(testsSummaryJob.includes('if [[ "$INTEGRATION_RESULT" != success ]]'));
 });
 
+test("evaluates the pull request as a main-branch release", () => {
+  const continuousIntegrationWorkflow = readFileSync(
+    resolve(repositoryDirectory, ".github/workflows/ci.yml"),
+    "utf8"
+  );
+  const releaseDryRunJob = workflowJobBlock(continuousIntegrationWorkflow, "release-dry-run");
+
+  assert.ok(releaseDryRunJob.includes("git switch --force-create main"));
+  assert.ok(releaseDryRunJob.includes("GITHUB_EVENT_NAME=push"));
+  assert.ok(releaseDryRunJob.includes("GITHUB_REF=refs/heads/main"));
+  assert.ok(releaseDryRunJob.includes("npm run release -- --dry-run --no-ci"));
+});
+
 test("runs the required Linux 1.95.3 compatibility gate before release", () => {
   const continuousIntegrationWorkflow = readFileSync(
     resolve(repositoryDirectory, ".github/workflows/ci.yml"),
