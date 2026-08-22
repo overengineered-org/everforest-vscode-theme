@@ -161,8 +161,8 @@ format.
 
 After the required static and desktop integration checks pass, an eligible merge to `main` creates
 the Git tag and GitHub Release and attaches the versioned VSIX with its SHA-256 checksum. Publishing
-to the Marketplace promotes that exact validated VSIX as a separately approved release step. No
-Marketplace PAT is stored in this repository.
+to the Marketplace then verifies and promotes that exact validated VSIX automatically through
+Microsoft Entra ID. No Marketplace PAT is stored in this repository.
 
 ## Credits
 

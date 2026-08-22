@@ -67,7 +67,7 @@ test("publishes the VSIX and checksum to GitHub without issue permissions", () =
   assert.equal(githubPluginConfiguration.successComment, false);
 });
 
-test("prepares Marketplace distribution without adding a stored publishing credential", () => {
+test("publishes the exact GitHub release to Marketplace without a PAT", () => {
   const continuousIntegrationWorkflow = readFileSync(
     resolve(repositoryDirectory, ".github/workflows/ci.yml"),
     "utf8"
@@ -81,22 +81,36 @@ test("prepares Marketplace distribution without adding a stored publishing crede
     readFileSync(resolve(repositoryDirectory, "package.json"), "utf8")
   );
   const releaseJob = workflowJobBlock(continuousIntegrationWorkflow, "release");
+  const marketplaceJob = workflowJobBlock(continuousIntegrationWorkflow, "marketplace");
   const recoveryPublishJob = workflowJobBlock(releaseRecoveryWorkflow, "publish");
   const releaseSources = `${continuousIntegrationWorkflow}\n${releaseRecoveryWorkflow}`;
 
-  for (const prohibitedReleaseTerm of [
-    "azure/login",
-    "marketplace-production",
-    "vsce publish",
-    "VSCE_PAT",
-  ]) {
-    assert.equal(releaseSources.toLowerCase().includes(prohibitedReleaseTerm.toLowerCase()), false);
-  }
-  assert.doesNotMatch(continuousIntegrationWorkflow, /secrets\./);
+  assert.doesNotMatch(releaseSources, /VSCE_PAT/i);
+  assert.doesNotMatch(releaseSources, /(?:^|\s)--pat(?:\s|$)/im);
+  assert.doesNotMatch(releaseSources, /azure\/login@v/i);
   assert.ok(releaseJob.includes("GITHUB_TOKEN: ${{ github.token }}"));
   assert.ok(releaseJob.includes("- static"));
   assert.ok(releaseJob.includes("- tests-summary"));
   assert.ok(releaseJob.includes("contents: write"));
+  assert.ok(releaseJob.includes("release-tag: ${{ steps.resolve-release.outputs.tag }}"));
+  assert.ok(releaseJob.includes("git tag --points-at HEAD"));
+  assert.ok(marketplaceJob.includes("needs: release"));
+  assert.ok(marketplaceJob.includes("environment: marketplace-production"));
+  assert.ok(marketplaceJob.includes("contents: read"));
+  assert.ok(marketplaceJob.includes("id-token: write"));
+  assert.ok(
+    marketplaceJob.includes("azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0")
+  );
+  assert.ok(marketplaceJob.includes("client-id: ${{ secrets.AZURE_CLIENT_ID }}"));
+  assert.ok(marketplaceJob.includes("tenant-id: ${{ secrets.AZURE_TENANT_ID }}"));
+  assert.ok(marketplaceJob.includes("subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}"));
+  assert.ok(marketplaceJob.includes("RELEASE_TAG: ${{ needs.release.outputs.release-tag }}"));
+  assert.ok(marketplaceJob.includes("gh release download"));
+  assert.ok(marketplaceJob.includes("sha256sum --check"));
+  assert.ok(marketplaceJob.includes("npx --no-install vsce publish"));
+  assert.ok(marketplaceJob.includes("--azure-credential"));
+  assert.ok(marketplaceJob.includes("--packagePath"));
+  assert.ok(marketplaceJob.includes("--skip-duplicate"));
   assert.ok(recoveryPublishJob.includes("GH_REPO: ${{ github.repository }}"));
   assert.match(releaseRecoveryWorkflow, /group: production-release/);
   assert.ok(recoveryPublishJob.includes("release_is_draft"));

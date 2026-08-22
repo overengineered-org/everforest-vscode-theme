@@ -54,7 +54,8 @@ applicable, and ensure CI passes. PRs merge by squash only.
 GitHub Actions validates the VSIX and production dependency audit, runs desktop integration tests on
 Linux, macOS, and Windows, validates the PR title, and performs a semantic release dry run. A
 successful eligible squash merge to `main` creates a GitHub Release with a versioned VSIX and
-SHA-256 checksum. Marketplace promotion remains a separate approved operation.
+SHA-256 checksum. The release workflow verifies those exact bytes and automatically promotes them to
+the Visual Studio Marketplace through Microsoft Entra ID.
 
 `fix:` releases a patch, `feat:` a minor, and `feat!:` or `BREAKING CHANGE` a major. Documentation
 and chore-only changes do not release. No Marketplace PAT is stored in the repository.

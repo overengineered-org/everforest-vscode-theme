@@ -18,8 +18,8 @@ telemetry, or network access.
    user-configured `code` command, then validates native auto mode and every contributed theme.
 4. Conventional Commits drive semantic-release after the required static and desktop integration
    checks pass. GitHub Releases receive the versioned VSIX and its SHA-256 checksum using only
-   GitHub's temporary workflow token. Marketplace promotion uses that exact artifact as a separately
-   approved operation; no Marketplace PAT is stored in the repository.
+   GitHub's temporary workflow token. The release workflow then verifies and promotes that exact
+   artifact through Microsoft Entra ID; no Marketplace PAT is stored in the repository.
 
 ## Primary references
 
