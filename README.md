@@ -13,45 +13,49 @@ and Hard contrast.
 This is a zero-runtime theme extension. It contributes static color-theme JSON and does not start
 extension code, background processes, telemetry, or network requests.
 
-## Install and choose a theme
+## Start here
 
-1. Open **Extensions** in VS Code (`Shift+Cmd+X` on macOS or `Ctrl+Shift+X` on Windows/Linux).
-2. Search for `Everforest Complete`.
-3. Open the result published by **Overengineered**, then select **Install**.
-4. Select **Set Color Theme** on the extension page.
-5. Start with **Everforest Complete Dark Medium** or **Everforest Complete Light Medium**.
+**Open VS Code Extensions and search for `Everforest Complete`.**
 
-The theme is active immediately. There is no separate command to start the extension. To change the
-theme later, run **Preferences: Color Theme** (`Cmd+K Cmd+T` on macOS or `Ctrl+K Ctrl+T` on
-Windows/Linux).
+Time: about 2 minutes.
 
-### Choose the right variant
+1. Open the result published by **Overengineered**.
+2. Select **Install**.
+3. Select **Set Color Theme** on the extension page.
+4. Choose **Everforest Complete Dark Medium**. Choose **Light Medium** if you use a light interface.
 
-| Name   | Meaning                              |
-| ------ | ------------------------------------ |
-| Light  | Light VS Code interface              |
-| Dark   | Dark VS Code interface               |
-| Soft   | Lower contrast                       |
-| Medium | Balanced contrast; recommended first |
-| Hard   | Higher contrast                      |
+Done: Everforest now colors the full VS Code interface. There is nothing else to start.
 
-## Follow system appearance
+Change the theme later with **Preferences: Color Theme** (`Cmd+K Cmd+T` on macOS or `Ctrl+K Ctrl+T`
+on Windows/Linux).
 
-Want Everforest to switch when your operating system changes between Light and Dark mode?
+### Pick a variant
 
-**Auto is not a theme in the Color Theme picker.** VS Code handles automatic switching through its
-User Settings, using one preferred light theme and one preferred dark theme.
+| Label  | Choose it when                         |
+| ------ | -------------------------------------- |
+| Dark   | You want a dark VS Code interface      |
+| Light  | You want a light VS Code interface     |
+| Soft   | You want lower contrast                |
+| Medium | You want balanced contrast; start here |
+| Hard   | You want higher contrast               |
 
-### Settings interface
+## Make Light/Dark automatic
 
-1. Open **Settings** (`Cmd+,` on macOS or `Ctrl+,` on Windows/Linux).
-2. Search for `Auto Detect Color Scheme`, then enable **Window: Auto Detect Color Scheme**.
-3. Search for `Preferred Dark Color Theme`, then choose **Everforest Complete Dark Medium**.
-4. Search for `Preferred Light Color Theme`, then choose **Everforest Complete Light Medium**.
-5. Change your operating system appearance once to confirm VS Code switches themes.
+**Open VS Code Settings** (`Cmd+,` on macOS or `Ctrl+,` on Windows/Linux).
 
-VS Code now chooses the matching Everforest theme automatically. You do not select an `Auto` entry
-from the Color Theme picker.
+Time: about 2 minutes.
+
+1. Search `Auto Detect Color Scheme`; enable **Window: Auto Detect Color Scheme**.
+2. Search `Preferred Dark Color Theme`; choose **Everforest Complete Dark Medium**.
+3. Search `Preferred Light Color Theme`; choose **Everforest Complete Light Medium**.
+4. Change your operating system appearance once to test the switch.
+
+Done: VS Code now follows your operating system's Light/Dark appearance.
+
+### Why there is no Auto theme
+
+The Color Theme picker shows individual themes. VS Code's User Settings pair one Light theme with
+one Dark theme and switch between them. You do not select an `Auto` entry from the picker.
 
 ### Settings JSON alternative
 
@@ -106,7 +110,7 @@ code --install-extension overengineered-org.everforest-complete
 ```
 
 Use `code-insiders` for VS Code Insiders. To install a downloaded release instead, replace the
-extension identifier with the VSIX path. If neither command exists, use [Quick start](#quick-start).
+extension identifier with the VSIX path. If neither command exists, use [Start here](#start-here).
 
 ### Remote development
 
