@@ -572,7 +572,7 @@
   "tokenColors": [
     {
       "name": "Keyword",
-      "scope": "keyword, storage.type.function, storage.type.class, storage.type.enum, storage.type.interface, storage.type.property, keyword.operator.new, keyword.operator.expression, keyword.operator.new, keyword.operator.delete, storage.type.extends",
+      "scope": "keyword, storage.type.function, storage.type.class, storage.type.enum, storage.type.interface, storage.type.property, keyword.operator.new, keyword.operator.expression, keyword.operator.delete, storage.type.extends",
       "settings": {
         "foreground": "#f85552"
       }
@@ -614,7 +614,7 @@
     },
     {
       "name": "String Escape",
-      "scope": "constant.character.escape, punctuation.quasi.element, punctuation.definition.template-expression, punctuation.section.embedded, storage.type.format, constant.other.placeholder, constant.other.placeholder, variable.interpolation",
+      "scope": "constant.character.escape, punctuation.quasi.element, punctuation.definition.template-expression, punctuation.section.embedded, storage.type.format, constant.other.placeholder, variable.interpolation",
       "settings": {
         "foreground": "#8da101"
       }

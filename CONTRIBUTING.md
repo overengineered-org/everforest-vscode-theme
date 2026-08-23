@@ -2,8 +2,8 @@
 
 ## Setup
 
-This is a GitHub-only, zero-runtime VS Code theme. Use Node.js 24, then install the locked
-development dependencies:
+This is a zero-runtime VS Code theme. Use Node.js 24, then install the locked development
+dependencies:
 
 ```sh
 npm ci
@@ -24,14 +24,13 @@ npm ci
    ```sh
    npm run verify:static
    npm run test:integration
-   npm run test:web
    npm run package:vsix
    npm run package:verify
    ```
 
 `npm run verify:static` checks generated themes, types, unit tests, theme validation, and
-formatting. The packaged VSIX is build-time output only: the extension has no runtime service,
-backend, Marketplace publishing, or credential configuration.
+formatting. The packaged VSIX is build-time output only: the extension has no runtime service or
+backend.
 
 ## Commits and pull requests
 
@@ -52,14 +51,14 @@ applicable, and ensure CI passes. PRs merge by squash only.
 
 ## CI and releases
 
-GitHub Actions validates the VSIX and production dependency audit, runs integration tests on Linux,
-macOS, and Windows, runs VS Code Web tests, validates the PR title, and performs a semantic release
-dry run. A successful eligible squash merge to `main` creates a GitHub Release with a versioned VSIX
-and SHA-256 checksum.
+GitHub Actions validates the VSIX and production dependency audit, runs desktop integration tests on
+Linux, macOS, and Windows, validates the PR title, and performs a semantic release dry run. A
+successful eligible squash merge to `main` creates a GitHub Release with a versioned VSIX and
+SHA-256 checksum. The release workflow verifies those exact bytes and automatically promotes them to
+the Visual Studio Marketplace through Microsoft Entra ID.
 
 `fix:` releases a patch, `feat:` a minor, and `feat!:` or `BREAKING CHANGE` a major. Documentation
-and chore-only changes do not release. There is no Marketplace publish step; GitHub's temporary
-workflow token is the only release credential.
+and chore-only changes do not release. No Marketplace PAT is stored in the repository.
 
 ## Security
 
