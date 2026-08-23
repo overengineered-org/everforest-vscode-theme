@@ -4,11 +4,9 @@
  *  License:    MIT
  *--------------------------------------------------------------*/
 
-import { Configuration, ThemeAppearance } from "./interface";
-import { getPalette } from "./palette";
+import { Palette } from "./interface";
 
-export function getSemantic(configuration: Configuration, variant: ThemeAppearance) {
-  const palette = getPalette(configuration, variant);
+export function getSemantic(palette: Palette) {
   return {
     // General {{{
     operatorOverload: `${palette.orange}`,

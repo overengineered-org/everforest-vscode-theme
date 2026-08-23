@@ -4,7 +4,7 @@
  *  License:    MIT
  *--------------------------------------------------------------------------------------------*/
 
-import { Configuration, Palette, ThemeAppearance } from "../interface";
+import { Palette, ThemeAppearance, ThemeContrast } from "../interface";
 import { default as darkForeground } from "./dark/foreground";
 import { default as darkBackgroundHard } from "./dark/background/hard";
 import { default as darkBackgroundMedium } from "./dark/background/medium";
@@ -14,52 +14,21 @@ import { default as lightBackgroundHard } from "./light/background/hard";
 import { default as lightBackgroundMedium } from "./light/background/medium";
 import { default as lightBackgroundSoft } from "./light/background/soft";
 
-export function getPalette(configuration: Configuration, variant: ThemeAppearance): Palette {
-  let paletteBackground = darkBackgroundMedium;
-  let paletteForeground = darkForeground;
-  if (variant === "dark") {
-    paletteForeground = darkForeground;
-    switch (
-      configuration.darkContrast // {{{
-    ) {
-      case "hard": {
-        paletteBackground = darkBackgroundHard;
-        break;
-      }
-      case "medium": {
-        paletteBackground = darkBackgroundMedium;
-        break;
-      }
-      case "soft": {
-        paletteBackground = darkBackgroundSoft;
-        break;
-      }
-      default: {
-        paletteBackground = darkBackgroundMedium;
-      }
-    } // }}}
-  } else {
-    paletteForeground = lightForeground;
-    switch (
-      configuration.lightContrast // {{{
-    ) {
-      case "hard": {
-        paletteBackground = lightBackgroundHard;
-        break;
-      }
-      case "medium": {
-        paletteBackground = lightBackgroundMedium;
-        break;
-      }
-      case "soft": {
-        paletteBackground = lightBackgroundSoft;
-        break;
-      }
-      default: {
-        paletteBackground = lightBackgroundMedium;
-      }
-    } // }}}
-  }
+export function getPalette(appearance: ThemeAppearance, contrast: ThemeContrast): Palette {
+  const paletteBackgrounds =
+    appearance === "dark"
+      ? {
+          hard: darkBackgroundHard,
+          medium: darkBackgroundMedium,
+          soft: darkBackgroundSoft,
+        }
+      : {
+          hard: lightBackgroundHard,
+          medium: lightBackgroundMedium,
+          soft: lightBackgroundSoft,
+        };
+  const paletteBackground = paletteBackgrounds[contrast];
+  const paletteForeground = appearance === "dark" ? darkForeground : lightForeground;
   return {
     // {{{
     bg0: paletteBackground.bg0,

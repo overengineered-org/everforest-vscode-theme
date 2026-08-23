@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { Configuration, Palette, ThemeAppearance, ThemeContrast } from "./interface";
+import { Palette, ThemeAppearance, ThemeContrast } from "./interface";
 import { getPalette } from "./palette";
 import { getSemantic } from "./semantic";
 import { getDefaultSyntax } from "./syntax/default";
@@ -19,20 +19,6 @@ interface GeneratedTheme {
 const appearances: readonly ThemeAppearance[] = ["dark", "light"];
 const contrasts: readonly ThemeContrast[] = ["soft", "medium", "hard"];
 const generatedThemesDirectory = resolve(__dirname, "..", "themes");
-
-function createConfiguration(contrast: ThemeContrast): Configuration {
-  return {
-    darkContrast: contrast,
-    lightContrast: contrast,
-    darkSelection: "grey",
-    lightSelection: "grey",
-    darkCursor: "white",
-    lightCursor: "black",
-    italicComments: true,
-    diagnosticTextBackgroundOpacity: "0%",
-    highContrast: false,
-  };
-}
 
 function readableAccentForeground(appearance: ThemeAppearance, palette: Palette): string {
   return appearance === "dark" ? palette.bg : "#2d353b";
@@ -97,11 +83,7 @@ function createCurrentWorkbenchColors(
   };
 }
 
-function createSemanticTokenColors(
-  configuration: Configuration,
-  appearance: ThemeAppearance,
-  palette: Palette
-): GeneratedTheme["semanticTokenColors"] {
+function createSemanticTokenColors(palette: Palette): GeneratedTheme["semanticTokenColors"] {
   return {
     namespace: palette.aqua,
     type: palette.blue,
@@ -125,13 +107,12 @@ function createSemanticTokenColors(
     regexp: palette.orange,
     operator: palette.orange,
     decorator: palette.aqua,
-    ...getSemantic(configuration, appearance),
+    ...getSemantic(palette),
   };
 }
 
 function createTheme(appearance: ThemeAppearance, contrast: ThemeContrast): GeneratedTheme {
-  const configuration = createConfiguration(contrast);
-  const palette = getPalette(configuration, appearance);
+  const palette = getPalette(appearance, contrast);
   const displayAppearance = appearance === "dark" ? "Dark" : "Light";
   const displayContrast = `${contrast.charAt(0).toUpperCase()}${contrast.slice(1)}`;
 
@@ -140,12 +121,12 @@ function createTheme(appearance: ThemeAppearance, contrast: ThemeContrast): Gene
     name: `Everforest Complete ${displayAppearance} ${displayContrast}`,
     type: appearance,
     semanticHighlighting: true,
-    semanticTokenColors: createSemanticTokenColors(configuration, appearance, palette),
+    semanticTokenColors: createSemanticTokenColors(palette),
     colors: {
-      ...materialWorkbench(palette, configuration, appearance),
+      ...materialWorkbench(palette, appearance),
       ...createCurrentWorkbenchColors(appearance, palette),
     },
-    tokenColors: getDefaultSyntax(palette, configuration.italicComments),
+    tokenColors: getDefaultSyntax(palette),
   };
 }
 

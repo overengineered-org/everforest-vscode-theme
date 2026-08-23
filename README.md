@@ -15,13 +15,10 @@ extension code, background processes, telemetry, or network requests.
 
 ## Quick start
 
-This extension is distributed through GitHub Releases, not the VS Code Marketplace.
-
-1. Download `everforest-complete-X.Y.Z.vsix` from the
-   [latest GitHub Release](https://github.com/overengineered-org/everforest-vscode-theme/releases/latest).
-2. In VS Code Desktop, open **Extensions**.
-3. Select **Views and More Actions…** (`…`) → **Install from VSIX…**.
-4. Select the downloaded `.vsix` file.
+1. In VS Code, open **Extensions**.
+2. Search for `Everforest Complete`.
+3. Select the extension published by **Overengineered**.
+4. Choose **Install**.
 5. Run **Preferences: Color Theme**, then choose an Everforest Complete variant.
 
 ## Follow system appearance
@@ -43,10 +40,19 @@ Want Everforest to switch with macOS, Windows, or Linux Light/Dark mode?
 Do **not** add these settings to a project's `.vscode/settings.json`. They apply across projects in
 the current VS Code profile. Repeat them for each profile you use.
 
-Settings Sync may sync the settings, but the GitHub-hosted VSIX must be installed separately on each
-machine.
+Settings Sync can restore the Marketplace extension and these settings on your other VS Code
+installations.
 
 ## Other installation paths
+
+### GitHub Releases
+
+1. Download `everforest-complete-X.Y.Z.vsix` from the
+   [latest GitHub Release](https://github.com/overengineered-org/everforest-vscode-theme/releases/latest).
+2. In VS Code Desktop, open **Extensions**.
+3. Select **Views and More Actions…** (`…`) → **Install from VSIX…**.
+4. Select the downloaded `.vsix` file.
+5. Run **Preferences: Color Theme**, then choose an Everforest Complete variant.
 
 ### Build locally
 
@@ -68,19 +74,19 @@ VSIX binaries to Git.
 If the VS Code command is already available, install the downloaded release directly:
 
 ```sh
-code --install-extension everforest-complete-X.Y.Z.vsix
+code --install-extension overengineered-org.everforest-complete
 ```
 
-Use `code-insiders` for VS Code Insiders. If neither command exists, use
-[Quick start](#quick-start).
+Use `code-insiders` for VS Code Insiders. To install a downloaded release instead, replace the
+extension identifier with the VSIX path. If neither command exists, use [Quick start](#quick-start).
 
-### Remote development and browsers
+### Remote development
 
 For SSH, Dev Containers, WSL, or Codespaces through VS Code Desktop, install the theme into the
 **Local** VS Code client when prompted. A theme has no remote runtime.
 
-Browser-hosted VS Code, including `vscode.dev` and browser Codespaces, cannot install this
-GitHub-hosted VSIX directly.
+Browser-hosted VS Code, including `vscode.dev` and browser Codespaces, can install this zero-runtime
+theme from the Marketplace. Browser hosts cannot install the GitHub-hosted VSIX directly.
 
 ## Verify a release download
 
@@ -107,8 +113,8 @@ Get-FileHash everforest-complete-X.Y.Z.vsix -Algorithm SHA256
 
 Compare the result with the downloaded checksum file.
 
-Because this extension is distributed through GitHub Releases, VS Code has no automatic update
-source. Download each newer VSIX and repeat [Quick start](#quick-start).
+Marketplace installations receive updates through VS Code. Manually installed VSIX files do not;
+download each newer GitHub Release and repeat [GitHub Releases](#github-releases).
 
 ## Choose a variant
 
@@ -153,10 +159,10 @@ Conventional Commit squash titles drive semantic releases:
 Pull requests must use squash merge, with the final squash commit title kept in Conventional Commit
 format.
 
-After the required static, integration, and web checks pass, an eligible merge to `main` creates the
-Git tag and GitHub Release and attaches the versioned VSIX with its SHA-256 checksum. GitHub's
-temporary workflow token is the only release credential. No Marketplace, Azure, Entra, PAT
-credential, or publishing step is configured.
+After the required static and desktop integration checks pass, an eligible merge to `main` creates
+the Git tag and GitHub Release and attaches the versioned VSIX with its SHA-256 checksum. Publishing
+to the Marketplace then verifies and promotes that exact validated VSIX automatically through
+Microsoft Entra ID. No Marketplace PAT is stored in this repository.
 
 ## Credits
 
