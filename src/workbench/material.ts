@@ -6,7 +6,7 @@
 
 import { Palette, ThemeAppearance } from "../interface";
 
-export function getReadableAccentGreen(appearance: ThemeAppearance, palette: Palette): string {
+function getAccessibleAccentGreen(appearance: ThemeAppearance, palette: Palette): string {
   return appearance === "light" ? "#596600" : palette.green;
 }
 
@@ -37,8 +37,9 @@ function getReadableTerminalAnsiColors(appearance: ThemeAppearance, palette: Pal
   };
 }
 
-export function materialWorkbench(palette: Palette, appearance: ThemeAppearance) {
-  const readableAccentGreen = getReadableAccentGreen(appearance, palette);
+export function createWorkbenchColors(palette: Palette, appearance: ThemeAppearance) {
+  const accessibleAccentGreen = getAccessibleAccentGreen(appearance, palette);
+  const accentForeground = appearance === "dark" ? palette.bg : "#2d353b";
   const panelAndTerminalForeground = appearance === "light" ? "#59646c" : palette.fg;
   const readableTerminalAnsiColors = getReadableTerminalAnsiColors(appearance, palette);
   const selectionBackgroundColor = `${palette.bg4}${appearance === "dark" ? "e0" : "c0"}`;
@@ -54,8 +55,8 @@ export function materialWorkbench(palette: Palette, appearance: ThemeAppearance)
     descriptionForeground: `${palette.grey1}`,
     errorForeground: `${palette.red}`,
     "icon.foreground": `${palette.aqua}`,
-    "textLink.foreground": `${readableAccentGreen}`,
-    "textLink.activeForeground": `${readableAccentGreen}c0`,
+    "textLink.foreground": `${accessibleAccentGreen}`,
+    "textLink.activeForeground": `${accessibleAccentGreen}c0`,
     "textCodeBlock.background": `${palette.bg1}`,
     "textBlockQuote.background": `${palette.bg1}`,
     "textBlockQuote.border": `${palette.bg4}`,
@@ -63,7 +64,7 @@ export function materialWorkbench(palette: Palette, appearance: ThemeAppearance)
     "toolbar.hoverBackground": `${palette.bg2}`,
     "button.background": `${palette.badge}`,
     "button.hoverBackground": `${palette.badge}d0`,
-    "button.foreground": `${palette.bg}`,
+    "button.foreground": accentForeground,
     "button.secondaryBackground": `${palette.bg3}`,
     "button.secondaryForeground": `${palette.fg}`,
     "button.secondaryHoverBackground": `${palette.bg4}`,
@@ -92,7 +93,7 @@ export function materialWorkbench(palette: Palette, appearance: ThemeAppearance)
     "scrollbarSlider.hoverBackground": `${palette.bg5}`,
     "scrollbarSlider.background": `${palette.bg5}80`,
     "badge.background": `${palette.badge}`,
-    "badge.foreground": `${palette.bg}`,
+    "badge.foreground": accentForeground,
     "progressBar.background": `${palette.badge}`,
     "list.activeSelectionForeground": `${palette.fg}`,
     "list.activeSelectionBackground": `${palette.bg4}80`,
@@ -102,7 +103,7 @@ export function materialWorkbench(palette: Palette, appearance: ThemeAppearance)
     "list.focusForeground": `${palette.fg}`,
     "list.focusBackground": `${palette.bg4}80`,
     "list.inactiveFocusBackground": `${palette.bg4}60`,
-    "list.highlightForeground": `${readableAccentGreen}`,
+    "list.highlightForeground": `${accessibleAccentGreen}`,
     "list.hoverForeground": `${palette.fg}`,
     "list.hoverBackground": `${palette.bg}00`,
     "list.invalidItemForeground": `${palette.dimRed}`,
@@ -114,10 +115,10 @@ export function materialWorkbench(palette: Palette, appearance: ThemeAppearance)
     "activityBar.foreground": `${palette.fg}`,
     "activityBar.inactiveForeground": `${palette.grey1}`,
     "activityBar.dropBackground": `${palette.bg}`,
-    "activityBar.activeBorder": `${readableAccentGreen}d0`,
+    "activityBar.activeBorder": `${accessibleAccentGreen}d0`,
     "activityBar.activeFocusBorder": `${palette.fg}`,
     "activityBarBadge.background": `${palette.badge}`,
-    "activityBarBadge.foreground": `${palette.bg}`,
+    "activityBarBadge.foreground": accentForeground,
     "sideBar.foreground": `${palette.fg}`,
     "sideBar.background": `${palette.bg}`,
     "sideBarSectionHeader.background": `${palette.bg}00`,
@@ -162,14 +163,16 @@ export function materialWorkbench(palette: Palette, appearance: ThemeAppearance)
     "editor.hoverHighlightBackground":
       appearance === "dark" ? `${palette.bg4}b0` : `${palette.bg4}90`,
     "editor.findMatchBackground": `${palette.dimOrange}40`,
+    "editor.findMatchBorder": `${palette.fg}`,
     "editor.findMatchHighlightBackground": `${palette.dimGreen}40`,
+    "editor.findMatchHighlightBorder": `${accessibleAccentGreen}`,
     "editor.findRangeHighlightBackground": editorSelectionHighlightColor,
     "editor.lineHighlightBorder": `${palette.bg5}00`,
     "editor.lineHighlightBackground":
       appearance === "dark" ? `${palette.bg3}90` : `${palette.bg3}70`,
     "editor.rangeHighlightBackground": `${palette.bg3}80`,
     "editor.symbolHighlightBackground": `${palette.dimBlue}40`,
-    "editorLink.activeForeground": `${readableAccentGreen}`,
+    "editorLink.activeForeground": `${accessibleAccentGreen}`,
     "editorWhitespace.foreground": `${palette.bg4}`,
     "editorIndentGuide.background": `${palette.grey2}20`,
     "editorIndentGuide.activeBackground": `${palette.grey2}50`,
@@ -229,7 +232,7 @@ export function materialWorkbench(palette: Palette, appearance: ThemeAppearance)
     "editorSuggestWidget.background": `${palette.bg3}`,
     "editorSuggestWidget.foreground": `${palette.fg}`,
     "editorSuggestWidget.highlightForeground":
-      appearance === "light" ? `${readableAccentGreen}` : `${palette.fg}`,
+      appearance === "light" ? `${accessibleAccentGreen}` : `${palette.fg}`,
     "editorSuggestWidget.selectedBackground": `${palette.bg4}`,
     "editorSuggestWidget.border": `${palette.bg3}`,
     "editorWidget.background": `${palette.bg}`,
@@ -263,9 +266,11 @@ export function materialWorkbench(palette: Palette, appearance: ThemeAppearance)
     "terminal.selectionBackground": editorSelectionBackgroundColor,
     "terminal.inactiveSelectionBackground": editorSelectionHighlightColor,
     "terminal.findMatchBackground": `${palette.dimOrange}60`,
+    "terminal.findMatchBorder": `${palette.fg}`,
     "terminal.findMatchHighlightBackground": `${palette.dimGreen}40`,
+    "terminal.findMatchHighlightBorder": `${accessibleAccentGreen}`,
     "terminal.hoverHighlightBackground": `${palette.dimAqua}50`,
-    "terminal.tab.activeBorder": `${readableAccentGreen}`,
+    "terminal.tab.activeBorder": `${accessibleAccentGreen}`,
     "terminalCommandDecoration.defaultBackground": `${palette.dimBlue}80`,
     "terminalCommandDecoration.successBackground": `${palette.dimGreen}80`,
     "terminalCommandDecoration.errorBackground": `${palette.dimRed}80`,
@@ -312,7 +317,7 @@ export function materialWorkbench(palette: Palette, appearance: ThemeAppearance)
     "debugIcon.stepOutForeground": `${palette.blue}`,
     "debugIcon.continueForeground": `${palette.blue}`,
     "debugIcon.stepBackForeground": `${palette.blue}`,
-    "debugConsole.infoForeground": `${readableAccentGreen}`,
+    "debugConsole.infoForeground": `${accessibleAccentGreen}`,
     "debugConsole.warningForeground": `${palette.yellow}`,
     "debugConsole.errorForeground": `${palette.red}`,
     "debugConsole.sourceForeground": `${palette.purple}`,
@@ -343,7 +348,7 @@ export function materialWorkbench(palette: Palette, appearance: ThemeAppearance)
     "statusBar.noFolderBorder": `${palette.bg}`,
     "statusBarItem.hoverBackground": `${palette.bg4}a0`,
     "statusBarItem.activeBackground": `${palette.bg4}70`,
-    "statusBarItem.prominentForeground": `${palette.fg}`,
+    "statusBarItem.prominentForeground": accentForeground,
     "statusBarItem.prominentBackground": `${palette.bg}`,
     "statusBarItem.prominentHoverBackground": `${palette.bg4}a0`,
     "statusBarItem.remoteBackground": `${palette.bg}`,
@@ -376,7 +381,7 @@ export function materialWorkbench(palette: Palette, appearance: ThemeAppearance)
     "notificationCenterHeader.background": `${palette.bg3}`,
     "notifications.foreground": `${palette.fg}`,
     "notifications.background": `${palette.bg}`,
-    "notificationLink.foreground": `${readableAccentGreen}`,
+    "notificationLink.foreground": `${accessibleAccentGreen}`,
     "notificationsErrorIcon.foreground": `${palette.red}`,
     "notificationsWarningIcon.foreground": `${palette.yellow}`,
     "notificationsInfoIcon.foreground": `${palette.blue}`,
@@ -493,7 +498,7 @@ export function materialWorkbench(palette: Palette, appearance: ThemeAppearance)
     "gitlens.gutterUncommittedForegroundColor": `${palette.blue}`,
     "gitlens.trailingLineForegroundColor": `${palette.grey1}`,
     "gitlens.lineHighlightBackgroundColor": `${palette.bg2}`,
-    "gitlens.lineHighlightOverviewRulerColor": `${readableAccentGreen}`,
+    "gitlens.lineHighlightOverviewRulerColor": `${accessibleAccentGreen}`,
     "gitlens.closedPullRequestIconColor": `${palette.red}`,
     "gitlens.openPullRequestIconColor": `${palette.aqua}`,
     "gitlens.mergedPullRequestIconColor": `${palette.purple}`,
@@ -518,6 +523,51 @@ export function materialWorkbench(palette: Palette, appearance: ThemeAppearance)
     "rust_analyzer.inlayHints.foreground": `${palette.grey0}a0`,
     "rust_analyzer.inlayHints.background": `${palette.bg}00`,
     "rust_analyzer.syntaxTreeBorder": `${palette.red}`,
+    "commandCenter.foreground": palette.grey2,
+    "commandCenter.activeForeground": palette.fg,
+    "commandCenter.background": palette.bg1,
+    "commandCenter.activeBackground": palette.bg2,
+    "commandCenter.border": palette.bg4,
+    "commandCenter.inactiveForeground": palette.grey1,
+    "commandCenter.inactiveBorder": palette.bg3,
+    "commandCenter.activeBorder": palette.fg,
+    "commandCenter.debuggingBackground": palette.dimOrange,
+    "chat.requestBorder": palette.bg4,
+    "chat.requestBackground": palette.bg1,
+    "chat.slashCommandBackground": palette.bg2,
+    "chat.slashCommandForeground": accessibleAccentGreen,
+    "chat.avatarBackground": palette.green,
+    "chat.avatarForeground": accentForeground,
+    "chat.editedFileForeground": palette.aqua,
+    "chat.linesAddedForeground": accessibleAccentGreen,
+    "chat.linesRemovedForeground": palette.red,
+    "chat.requestCodeBorder": palette.bg4,
+    "chat.requestBubbleBackground": palette.bg1,
+    "chat.requestBubbleHoverBackground": palette.bg2,
+    "chat.checkpointSeparator": palette.bg4,
+    "chat.thinkingShimmer": palette.aqua,
+    "chatManagement.sashBorder": palette.bg4,
+    "agentSessionReadIndicator.foreground": accessibleAccentGreen,
+    "agentSessionSelectedBadge.border": accessibleAccentGreen,
+    "agentSessionSelectedUnfocusedBadge.border": palette.bg5,
+    "agentStatusIndicator.background": palette.bg1,
+    "aiCustomizationManagement.sashBorder": palette.bg4,
+    "inlineChat.background": palette.bg1,
+    "inlineChat.foreground": palette.fg,
+    "inlineChat.border": palette.bg4,
+    "inlineChat.shadow": palette.shadow,
+    "inlineChatInput.border": palette.bg4,
+    "inlineChatInput.focusBorder": palette.fg,
+    "inlineChatInput.placeholderForeground": palette.grey1,
+    "inlineChatInput.background": palette.bg,
+    "inlineChatDiff.inserted": `${palette.dimGreen}40`,
+    "inlineChatDiff.removed": `${palette.dimRed}40`,
+    "interactive.activeCodeBorder": palette.fg,
+    "interactive.inactiveCodeBorder": palette.bg4,
+    "notebook.cellEditorBackground": palette.bg1,
+    "multiDiffEditor.headerBackground": palette.bg1,
+    "multiDiffEditor.background": palette.bg,
+    "multiDiffEditor.border": palette.bg4,
   };
   return workbenchColors;
 }

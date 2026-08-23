@@ -1,24 +1,31 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { downloadAndUnzipVSCode, runTests, runVSCodeCommand } from "@vscode/test-electron";
 
 const repositoryDirectory = resolve(import.meta.dirname, "..");
+const packagedExtensionPath = resolve(repositoryDirectory, "dist", "everforest-complete.vsix");
+const vscodeVersion = process.env.EVERFOREST_VSCODE_VERSION ?? "stable";
+
+if (!existsSync(packagedExtensionPath)) {
+  throw new Error(`Packaged VSIX not found: ${packagedExtensionPath}`);
+}
+
 const temporaryFilesDirectory = process.platform === "darwin" ? "/tmp" : tmpdir();
 const vscodeTestStateDirectory = mkdtempSync(resolve(temporaryFilesDirectory, "evf-"));
 const isolatedExtensionsDirectory = resolve(vscodeTestStateDirectory, "extensions");
 const isolatedUserDataDirectory = resolve(vscodeTestStateDirectory, "user-data");
-const packagedExtensionPath = resolve(repositoryDirectory, "dist", "everforest-complete.vsix");
-const vscodeVersion = process.env.EVERFOREST_VSCODE_VERSION ?? "stable";
 
 function writeSystemThemeSettings(autoDetectColorScheme) {
   const userSettingsDirectory = resolve(isolatedUserDataDirectory, "User");
   mkdirSync(userSettingsDirectory, { recursive: true });
+  // The Start here flow selects Dark Medium before users enable automatic switching.
   writeFileSync(
     resolve(userSettingsDirectory, "settings.json"),
     `${JSON.stringify(
       {
         "window.autoDetectColorScheme": autoDetectColorScheme,
+        "workbench.colorTheme": "Everforest Complete Dark Medium",
         "workbench.preferredDarkColorTheme": "Everforest Complete Dark Medium",
         "workbench.preferredLightColorTheme": "Everforest Complete Light Medium",
       },

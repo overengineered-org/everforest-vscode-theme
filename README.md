@@ -3,6 +3,7 @@
 [![CI](https://github.com/overengineered-org/everforest-vscode-theme/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/overengineered-org/everforest-vscode-theme/actions/workflows/ci.yml)
 [![Build](https://img.shields.io/github/check-runs/overengineered-org/everforest-vscode-theme/main?nameFilter=Static%20validation%20and%20VSIX&label=Build)](https://github.com/overengineered-org/everforest-vscode-theme/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/github/check-runs/overengineered-org/everforest-vscode-theme/main?nameFilter=Tests&label=Tests)](https://github.com/overengineered-org/everforest-vscode-theme/actions/workflows/ci.yml)
+[![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/overengineered-org.everforest-complete?label=Marketplace)](https://marketplace.visualstudio.com/items?itemName=overengineered-org.everforest-complete)
 [![VS Code 1.95.0+](https://img.shields.io/badge/VS_Code-1.95.0%2B-007ACC?logo=visualstudiocode&logoColor=white)](./package.json)
 
 **Requires VS Code 1.95.0 or later.**
@@ -15,7 +16,9 @@ extension code, background processes, telemetry, or network requests.
 
 ## Start here
 
-**Open VS Code Extensions and search for `Everforest Complete`.**
+**[Install Everforest Complete from the Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=overengineered-org.everforest-complete).**
+
+Or open VS Code Extensions and search for `Everforest Complete`.
 
 Time: about 2 minutes.
 
@@ -184,8 +187,9 @@ format.
 
 After the required static and desktop integration checks pass, an eligible merge to `main` creates
 the Git tag and GitHub Release and attaches the versioned VSIX with its SHA-256 checksum. Publishing
-to the Marketplace then verifies and promotes that exact validated VSIX automatically through
-Microsoft Entra ID. No Marketplace PAT is stored in this repository.
+to the Marketplace then downloads and verifies that exact release asset before publishing it with
+the protected `VSCE_PAT` secret. The PAT is stored only in the repository's protected environment,
+not in this repository.
 
 ## Credits
 
