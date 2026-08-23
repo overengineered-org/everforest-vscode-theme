@@ -13,21 +13,53 @@ and Hard contrast.
 This is a zero-runtime theme extension. It contributes static color-theme JSON and does not start
 extension code, background processes, telemetry, or network requests.
 
-## Quick start
+## Start here
 
-1. In VS Code, open **Extensions**.
-2. Search for `Everforest Complete`.
-3. Select the extension published by **Overengineered**.
-4. Choose **Install**.
-5. Run **Preferences: Color Theme**, then choose an Everforest Complete variant.
+**Open VS Code Extensions and search for `Everforest Complete`.**
 
-## Follow system appearance
+Time: about 2 minutes.
 
-Want Everforest to switch with macOS, Windows, or Linux Light/Dark mode?
+1. Open the result published by **Overengineered**.
+2. Select **Install**.
+3. Select **Set Color Theme** on the extension page.
+4. Choose **Everforest Complete Dark Medium**. Choose **Light Medium** if you use a light interface.
 
-1. Open the Command Palette.
-2. Choose **Preferences: Open User Settings (JSON)**.
-3. Add this to your global VS Code User Settings JSON:
+Done: Everforest now colors the full VS Code interface. There is nothing else to start.
+
+Change the theme later with **Preferences: Color Theme** (`Cmd+K Cmd+T` on macOS or `Ctrl+K Ctrl+T`
+on Windows/Linux).
+
+### Pick a variant
+
+| Label  | Choose it when                         |
+| ------ | -------------------------------------- |
+| Dark   | You want a dark VS Code interface      |
+| Light  | You want a light VS Code interface     |
+| Soft   | You want lower contrast                |
+| Medium | You want balanced contrast; start here |
+| Hard   | You want higher contrast               |
+
+## Make Light/Dark automatic
+
+**Open VS Code Settings** (`Cmd+,` on macOS or `Ctrl+,` on Windows/Linux).
+
+Time: about 2 minutes.
+
+1. Search `Auto Detect Color Scheme`; enable **Window: Auto Detect Color Scheme**.
+2. Search `Preferred Dark Color Theme`; choose **Everforest Complete Dark Medium**.
+3. Search `Preferred Light Color Theme`; choose **Everforest Complete Light Medium**.
+4. Change your operating system appearance once to test the switch.
+
+Done: VS Code now follows your operating system's Light/Dark appearance.
+
+### Why there is no Auto theme
+
+The Color Theme picker shows individual themes. VS Code's User Settings pair one Light theme with
+one Dark theme and switch between them. You do not select an `Auto` entry from the picker.
+
+### Settings JSON alternative
+
+Open the Command Palette, choose **Preferences: Open User Settings (JSON)**, then add:
 
 ```json
 {
@@ -37,8 +69,8 @@ Want Everforest to switch with macOS, Windows, or Linux Light/Dark mode?
 }
 ```
 
-Do **not** add these settings to a project's `.vscode/settings.json`. They apply across projects in
-the current VS Code profile. Repeat them for each profile you use.
+These are global User Settings for the current VS Code profile. Do **not** add them to a project's
+`.vscode/settings.json`. Repeat the setup for each profile you use.
 
 Settings Sync can restore the Marketplace extension and these settings on your other VS Code
 installations.
@@ -78,7 +110,7 @@ code --install-extension overengineered-org.everforest-complete
 ```
 
 Use `code-insiders` for VS Code Insiders. To install a downloaded release instead, replace the
-extension identifier with the VSIX path. If neither command exists, use [Quick start](#quick-start).
+extension identifier with the VSIX path. If neither command exists, use [Start here](#start-here).
 
 ### Remote development
 
@@ -116,15 +148,6 @@ Compare the result with the downloaded checksum file.
 Marketplace installations receive updates through VS Code. Manually installed VSIX files do not;
 download each newer GitHub Release and repeat [GitHub Releases](#github-releases).
 
-## Choose a variant
-
-Medium is the balanced default. Choose Soft for lower contrast or Hard for higher contrast.
-
-| Appearance | Soft      | Medium    | Hard      |
-| ---------- | --------- | --------- | --------- |
-| Dark       | `#333C43` | `#2D353B` | `#272E33` |
-| Light      | `#F3EAD3` | `#FDF6E3` | `#FFFBEF` |
-
 ## Coverage
 
 - Workbench, editor, tabs, sidebars, panels, menus, notifications, command center, and status bar.
@@ -132,7 +155,7 @@ Medium is the balanced default. Choose Soft for lower contrast or Hard for highe
 - Terminal ANSI colors, Git decorations, diffs, diagnostics, testing, notebooks, and minimap.
 - Chat, inline chat, interactive editors, and multi-file diffs.
 
-## Development
+## Contributing
 
 ```sh
 npm ci
