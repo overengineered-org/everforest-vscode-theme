@@ -200,6 +200,10 @@ test("evaluates the pull request as main without publishing", () => {
   assert.ok(releaseJob.includes("git switch --force-create main"));
   assert.ok(releaseJob.includes("git branch --set-upstream-to=origin/main main"));
   assert.ok(releaseJob.includes("persist-credentials: true"));
+  assert.ok(releaseJob.includes('git config user.name "Repository Maintainer"'));
+  assert.ok(
+    releaseJob.includes('git config user.email "repository-maintainer@overengineered.invalid"')
+  );
 });
 
 test("runs the required Linux 1.95.3 compatibility gate before release", () => {
