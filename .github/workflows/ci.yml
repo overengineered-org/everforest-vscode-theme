@@ -190,6 +190,8 @@ jobs:
         run: |
           git switch --force-create main
           git branch --set-upstream-to=origin/main main
+          git config user.name "Repository Maintainer"
+          git config user.email "repository-maintainer@overengineered.invalid"
           npm run release
       - name: Resolve released version
         id: resolve-release
