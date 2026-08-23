@@ -25,6 +25,9 @@ extension code, background processes, telemetry, or network requests.
 
 Want Everforest to switch with macOS, Windows, or Linux Light/Dark mode?
 
+**Auto is not a theme in the Color Theme picker.** VS Code handles automatic switching through its
+User Settings, using one preferred light theme and one preferred dark theme.
+
 1. Open the Command Palette.
 2. Choose **Preferences: Open User Settings (JSON)**.
 3. Add this to your global VS Code User Settings JSON:
