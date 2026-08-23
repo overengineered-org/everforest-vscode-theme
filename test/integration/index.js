@@ -2,7 +2,11 @@ const assert = require("node:assert/strict");
 const { readFile } = require("node:fs/promises");
 const { join } = require("node:path");
 const vscode = require("vscode");
-const { expectedThemeContributions } = require("../support/theme-manifest.cjs");
+const {
+  expectedThemeContributions,
+  requiredSemanticTokenIdentifiers,
+  requiredSyntaxScopes,
+} = require("../support/theme-manifest.cjs");
 
 const extensionIdentifier = "overengineered-org.everforest-complete";
 const fixtureLanguageIdentifiers = new Map([
@@ -19,20 +23,27 @@ const fixtureLanguageIdentifiers = new Map([
   ["showcase.ts", "typescript"],
   ["showcase.yaml", "yaml"],
 ]);
-
 function registeredThemeExtension() {
   const extension = vscode.extensions.getExtension(extensionIdentifier);
   assert.ok(extension, "Extension is registered");
   return extension;
 }
 
-async function waitForActiveThemeKind(expectedThemeKind) {
-  const maximumAttempts = 40;
-  for (let attemptNumber = 0; attemptNumber < maximumAttempts; attemptNumber += 1) {
-    if (vscode.window.activeColorTheme.kind === expectedThemeKind) return;
-    await new Promise((resolveDelay) => setTimeout(resolveDelay, 50));
-  }
-  assert.equal(vscode.window.activeColorTheme.kind, expectedThemeKind);
+function waitForThemeActivation(expectedThemeKind, expectedThemeLabel) {
+  return new Promise((resolveActivation, rejectActivation) => {
+    const activationTimeout = setTimeout(() => {
+      themeChangeSubscription.dispose();
+      rejectActivation(new Error(`Theme activation timed out: ${expectedThemeLabel}`));
+    }, 2_000);
+    const themeChangeSubscription = vscode.window.onDidChangeActiveColorTheme((activatedTheme) => {
+      const configuredTheme = vscode.workspace.getConfiguration("workbench").get("colorTheme");
+      if (activatedTheme.kind !== expectedThemeKind || configuredTheme !== expectedThemeLabel)
+        return;
+      clearTimeout(activationTimeout);
+      themeChangeSubscription.dispose();
+      resolveActivation();
+    });
+  });
 }
 
 async function waitForConfiguredTheme(expectedThemeLabel) {
@@ -65,6 +76,14 @@ function validateNativeSystemThemePreferences() {
       vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Light,
     "System auto mode resolves to a supported Light or Dark appearance"
   );
+  // ColorTheme exposes only kind in the minimum supported public API.
+}
+
+async function openThemeDocumentAfterLanguageService(themePath) {
+  const themeDocument = await vscode.workspace.openTextDocument(themePath);
+  await vscode.commands.executeCommand("vscode.executeDocumentSymbolProvider", themeDocument.uri);
+  await new Promise((resolveDelay) => setTimeout(resolveDelay, 250));
+  return themeDocument;
 }
 
 async function validateLanguageFixtures() {
@@ -86,6 +105,10 @@ async function validateLanguageFixtures() {
 }
 
 async function run() {
+  const { contrastRatio } = await import("../../scripts/color-contrast.mjs");
+  const jsonLanguageFeatures = vscode.extensions.getExtension("vscode.json-language-features");
+  assert.ok(jsonLanguageFeatures, "VS Code JSON language features are registered");
+  await jsonLanguageFeatures.activate();
   const integrationTestMode = process.env.EVERFOREST_INTEGRATION_TEST_MODE;
   assert.ok(
     integrationTestMode === "auto-mode" || integrationTestMode === "manual-themes",
@@ -102,13 +125,81 @@ async function run() {
     const themePath = join(extension.extensionPath, themeContribution.path);
     const theme = JSON.parse(await readFile(themePath, "utf8"));
     assert.equal(theme.name, themeContribution.label);
+    assert.equal(theme.$schema, "vscode://schemas/color-theme");
+    assert.equal(theme.type, themeContribution.uiTheme === "vs-dark" ? "dark" : "light");
+    assert.equal(theme.semanticHighlighting, true);
     assert.ok(theme.colors["editor.background"]);
-    assert.ok(theme.semanticTokenColors);
-    assert.ok(theme.tokenColors.length >= 150);
+    for (const semanticTokenIdentifier of requiredSemanticTokenIdentifiers) {
+      assert.ok(
+        semanticTokenIdentifier in theme.semanticTokenColors,
+        `${themeContribution.label} must install semantic token ${semanticTokenIdentifier}`
+      );
+    }
+    const installedSyntaxScopes = new Set(
+      theme.tokenColors.flatMap(({ scope }) =>
+        Array.isArray(scope)
+          ? scope
+          : String(scope ?? "")
+              .split(",")
+              .map((syntaxScope) => syntaxScope.trim())
+      )
+    );
+    for (const requiredSyntaxScope of requiredSyntaxScopes) {
+      assert.ok(
+        installedSyntaxScopes.has(requiredSyntaxScope),
+        `${themeContribution.label} must install syntax scope ${requiredSyntaxScope}`
+      );
+    }
+    for (const searchMatchColorIdentifier of [
+      "editor.findMatchBorder",
+      "editor.findMatchHighlightBorder",
+      "terminal.findMatchBorder",
+      "terminal.findMatchHighlightBorder",
+    ]) {
+      assert.match(
+        theme.colors[searchMatchColorIdentifier],
+        /^#[0-9a-f]{6}$/i,
+        `${themeContribution.label} must install ${searchMatchColorIdentifier}`
+      );
+    }
+    assert.notEqual(
+      theme.colors["editor.findMatchBorder"],
+      theme.colors["editor.findMatchHighlightBorder"],
+      `${themeContribution.label} must distinguish active editor search matches`
+    );
+    assert.notEqual(
+      theme.colors["terminal.findMatchBorder"],
+      theme.colors["terminal.findMatchHighlightBorder"],
+      `${themeContribution.label} must distinguish active terminal search matches`
+    );
+    for (const searchMatchSurface of [
+      {
+        activeBorder: "editor.findMatchBorder",
+        background: "editor.background",
+        otherBorder: "editor.findMatchHighlightBorder",
+      },
+      {
+        activeBorder: "terminal.findMatchBorder",
+        background: "terminal.background",
+        otherBorder: "terminal.findMatchHighlightBorder",
+      },
+    ]) {
+      for (const searchMatchBorder of [
+        searchMatchSurface.activeBorder,
+        searchMatchSurface.otherBorder,
+      ]) {
+        assert.ok(
+          contrastRatio(
+            theme.colors[searchMatchBorder],
+            theme.colors[searchMatchSurface.background]
+          ) >= 3,
+          `${themeContribution.label} installed ${searchMatchBorder} must meet 3:1 contrast`
+        );
+      }
+    }
 
-    const themeDocument = await vscode.workspace.openTextDocument(themePath);
+    const themeDocument = await openThemeDocumentAfterLanguageService(themePath);
     assert.equal(themeDocument.languageId, "jsonc");
-    await new Promise((resolveDelay) => setTimeout(resolveDelay, 250));
     const schemaErrors = vscode.languages
       .getDiagnostics(themeDocument.uri)
       .filter((diagnostic) => diagnostic.severity === vscode.DiagnosticSeverity.Error);
@@ -130,16 +221,17 @@ async function run() {
   try {
     await validateLanguageFixtures();
     for (const themeContribution of extension.packageJSON.contributes.themes) {
+      const expectedThemeKind =
+        themeContribution.uiTheme === "vs-dark"
+          ? vscode.ColorThemeKind.Dark
+          : vscode.ColorThemeKind.Light;
+      const themeActivation = waitForThemeActivation(expectedThemeKind, themeContribution.label);
       await workbenchConfiguration.update(
         "colorTheme",
         themeContribution.label,
         vscode.ConfigurationTarget.Global
       );
-      const expectedThemeKind =
-        themeContribution.uiTheme === "vs-dark"
-          ? vscode.ColorThemeKind.Dark
-          : vscode.ColorThemeKind.Light;
-      await waitForActiveThemeKind(expectedThemeKind);
+      await themeActivation;
       await waitForConfiguredTheme(themeContribution.label);
     }
   } finally {

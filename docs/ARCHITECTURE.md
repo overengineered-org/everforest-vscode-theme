@@ -16,10 +16,12 @@ telemetry, or network access.
 3. `@vscode/vsce` creates the exact VSIX and identifies the declarative package as web-compatible.
    `@vscode/test-electron` installs it into a clean desktop profile without relying on a
    user-configured `code` command, then validates native auto mode and every contributed theme.
-4. Conventional Commits drive semantic-release after the required static and desktop integration
-   checks pass. GitHub Releases receive the versioned VSIX and its SHA-256 checksum using only
-   GitHub's temporary workflow token. The release workflow then verifies and promotes that exact
-   artifact through Microsoft Entra ID; no Marketplace PAT is stored in the repository.
+4. CI packages one validated VSIX in the static job, uploads it as a short-lived workflow artifact,
+   and every desktop integration matrix job downloads those exact bytes. Conventional Commits drive
+   release-it after the required static and desktop integration checks pass. GitHub Releases receive
+   the versioned VSIX and its SHA-256 checksum using only GitHub's temporary workflow token. The
+   Marketplace job then verifies and publishes that exact release asset with the protected
+   `VSCE_PAT` secret; no Marketplace PAT is stored in the repository.
 
 ## Primary references
 
@@ -30,4 +32,4 @@ telemetry, or network access.
 - [Virtual workspaces](https://code.visualstudio.com/api/extension-guides/virtual-workspaces)
 - [VSIX installation](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_install-from-a-vsix)
 - [Remote extension installation](https://code.visualstudio.com/api/advanced-topics/remote-extensions)
-- [semantic-release usage](https://semantic-release.gitbook.io/semantic-release/usage/getting-started)
+- [release-it CI usage](https://github.com/release-it/release-it/blob/main/docs/ci.md)

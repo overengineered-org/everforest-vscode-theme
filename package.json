@@ -16,6 +16,13 @@
   "bugs": {
     "url": "https://github.com/overengineered-org/everforest-vscode-theme/issues"
   },
+  "keywords": [
+    "everforest",
+    "color theme",
+    "dark theme",
+    "light theme",
+    "contrast"
+  ],
   "icon": "media/icon.png",
   "categories": [
     "Themes"
@@ -88,26 +95,26 @@
     "test:unit": "node --test test/unit/*.test.mjs",
     "test:release-package": "node --test test/release-package.test.mjs",
     "verify:static": "npm run clean && npm run compile && npm run generate:check && npm run typecheck && npm run test:unit && npm run validate && npm run check:format",
-    "test:integration": "npm run package:vsix && node scripts/run-integration-tests.mjs",
+    "test:integration": "npm run package:vsix && npm run test:integration:vsix",
+    "test:integration:vsix": "node scripts/run-integration-tests.mjs",
     "test": "npm run test:integration && npm run package:verify && npm run test:release-package",
     "audit:production": "npm audit --omit=dev",
     "vscode:prepublish": "npm run verify:static",
     "package:vsix": "vsce package --no-dependencies --out dist/everforest-complete.vsix",
     "package:verify": "node scripts/validate-package-contents.mjs",
-    "release": "semantic-release"
+    "release": "release-it --ci"
   },
   "devDependencies": {
-    "@semantic-release/commit-analyzer": "^13.0.1",
-    "@semantic-release/exec": "^7.1.0",
-    "@semantic-release/github": "^12.0.9",
-    "@semantic-release/release-notes-generator": "^14.1.1",
+    "@release-it/conventional-changelog": "12.0.0",
     "@types/node": "^26.2.0",
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^3.9.2",
     "conventional-changelog-conventionalcommits": "10.3.0",
+    "conventional-recommended-bump": "12.1.0",
+    "jszip": "^3.10.1",
     "pngjs": "^7.0.0",
     "prettier": "^3.9.6",
-    "semantic-release": "25.0.9",
+    "release-it": "21.0.2",
     "typescript": "^7.0.2"
   }
 }

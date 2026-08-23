@@ -1,5 +1,9 @@
 import { readFileSync } from "node:fs";
 import { relative, resolve, sep } from "node:path";
+import themeManifest from "../test/support/theme-manifest.cjs";
+import { contrastRatio, validateHexColor } from "./color-contrast.mjs";
+
+const { requiredSemanticTokenIdentifiers, requiredSyntaxScopes } = themeManifest;
 
 const canonicalThemeVariants = [
   { appearance: "dark", contrast: "soft", expectedBackground: "#333c43" },
@@ -48,6 +52,10 @@ const requiredWorkbenchColors = [
   "diffEditor.removedTextBackground",
   "editor.background",
   "editor.foreground",
+  "editor.findMatchBackground",
+  "editor.findMatchBorder",
+  "editor.findMatchHighlightBackground",
+  "editor.findMatchHighlightBorder",
   "editorError.foreground",
   "editorGutter.background",
   "editorHint.foreground",
@@ -106,7 +114,9 @@ const requiredWorkbenchColors = [
   "terminal.selectionBackground",
   "terminal.inactiveSelectionBackground",
   "terminal.findMatchBackground",
+  "terminal.findMatchBorder",
   "terminal.findMatchHighlightBackground",
+  "terminal.findMatchHighlightBorder",
   "terminal.hoverHighlightBackground",
   "terminal.tab.activeBorder",
   "terminalCommandDecoration.defaultBackground",
@@ -122,45 +132,6 @@ const requiredWorkbenchColors = [
   "menu.foreground",
 ];
 
-const requiredSemanticTokens = [
-  "class",
-  "comment",
-  "decorator",
-  "enum",
-  "enumMember",
-  "event",
-  "function",
-  "interface",
-  "label",
-  "macro",
-  "method",
-  "namespace",
-  "number",
-  "operator",
-  "parameter",
-  "property",
-  "regexp",
-  "string",
-  "struct",
-  "type",
-  "typeParameter",
-  "variable",
-];
-
-const requiredSyntaxScopes = [
-  "comment",
-  "constant.numeric",
-  "entity.name.function",
-  "entity.name.tag.html",
-  "keyword",
-  "markup.bold",
-  "markup.fenced_code.block.markdown",
-  "storage.type.rust",
-  "string",
-  "support.type.property-name.css",
-  "variable",
-];
-
 const extensionManifest = JSON.parse(readFileSync(resolve("package.json"), "utf8"));
 const repositoryDirectory = resolve(".");
 const contributedThemesByPath = new Map(
@@ -170,42 +141,10 @@ const contributedThemesByPath = new Map(
   ])
 );
 
-function rgbChannelsFromHexColor(hexColor) {
-  const hexColorMatch = /^#([0-9a-f]{6})(?:[0-9a-f]{2})?$/i.exec(hexColor);
-  if (!hexColorMatch) throw new Error(`Invalid color: ${hexColor}`);
-  const rgbHexadecimalDigits = hexColorMatch[1];
-  return [0, 2, 4].map((channelOffset) =>
-    Number.parseInt(rgbHexadecimalDigits.slice(channelOffset, channelOffset + 2), 16)
-  );
-}
-
 function alphaChannelFromHexColor(hexColor) {
   const alphaHexadecimalDigits = /^#[0-9a-f]{6}([0-9a-f]{2})$/i.exec(hexColor)?.[1];
   if (!alphaHexadecimalDigits) return undefined;
   return Number.parseInt(alphaHexadecimalDigits, 16);
-}
-
-function relativeLuminance(hexColor) {
-  const channelWeights = [0.2126, 0.7152, 0.0722];
-  return rgbChannelsFromHexColor(hexColor)
-    .map((channel) => channel / 255)
-    .map((channel) => (channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4))
-    .reduce(
-      (luminance, channel, channelIndex) => luminance + channel * channelWeights[channelIndex],
-      0
-    );
-}
-
-function contrastRatio(foregroundColor, backgroundColor) {
-  const lighterLuminance = Math.max(
-    relativeLuminance(foregroundColor),
-    relativeLuminance(backgroundColor)
-  );
-  const darkerLuminance = Math.min(
-    relativeLuminance(foregroundColor),
-    relativeLuminance(backgroundColor)
-  );
-  return (lighterLuminance + 0.05) / (darkerLuminance + 0.05);
 }
 
 function collectThemeColors(themeNode, collectedColors = []) {
@@ -266,7 +205,7 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
       throw new Error(`${themePath}: missing ${colorIdentifier}`);
     }
   }
-  for (const semanticTokenIdentifier of requiredSemanticTokens) {
+  for (const semanticTokenIdentifier of requiredSemanticTokenIdentifiers) {
     if (!(semanticTokenIdentifier in generatedTheme.semanticTokenColors)) {
       throw new Error(`${themePath}: missing semantic token ${semanticTokenIdentifier}`);
     }
@@ -289,7 +228,7 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
     }
   }
   for (const generatedThemeColor of collectThemeColors(generatedTheme)) {
-    rgbChannelsFromHexColor(generatedThemeColor);
+    validateHexColor(generatedThemeColor);
   }
   for (const terminalFindMatchColorIdentifier of [
     "terminal.findMatchBackground",
@@ -345,6 +284,8 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
     ["activityBar.activeBorder", "activityBar.background", 3],
     ["commandCenter.activeBorder", "commandCenter.background", 3],
     ["editorBracketMatch.border", "editor.background", 3],
+    ["editor.findMatchBorder", "editor.background", 3],
+    ["editor.findMatchHighlightBorder", "editor.background", 3],
     ["inlineChatInput.focusBorder", "inlineChatInput.background", 3],
     ["interactive.activeCodeBorder", "editor.background", 3],
     ["inputOption.activeBorder", "input.background", 3],
@@ -357,6 +298,8 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
     ["notebook.inactiveFocusedCellBorder", "notebook.cellEditorBackground", 3],
     ["terminal.ansiWhite", "terminal.background", 4.5],
     ["terminal.ansiBrightWhite", "terminal.background", 4.5],
+    ["terminal.findMatchBorder", "terminal.background", 3],
+    ["terminal.findMatchHighlightBorder", "terminal.background", 3],
   ];
   for (const terminalAnsiColorIdentifier of terminalAnsiColorIdentifiers) {
     const terminalAnsiContrast = contrastRatio(

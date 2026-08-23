@@ -31,4 +31,47 @@ const expectedThemeContributions = [
   },
 ];
 
-module.exports = { expectedThemeContributions };
+const requiredSemanticTokenIdentifiers = [
+  "class",
+  "comment",
+  "decorator",
+  "enum",
+  "enumMember",
+  "event",
+  "function",
+  "interface",
+  "label",
+  "macro",
+  "method",
+  "namespace",
+  "number",
+  "operator",
+  "parameter",
+  "property",
+  "regexp",
+  "string",
+  "struct",
+  "type",
+  "typeParameter",
+  "variable",
+];
+
+const requiredSyntaxScopes = [
+  "comment",
+  "constant.numeric",
+  "entity.name.function",
+  "entity.name.tag.html",
+  "keyword",
+  "markup.bold",
+  "markup.fenced_code.block.markdown",
+  "storage.type.rust",
+  "string",
+  "support.type.property-name.css",
+  "variable",
+];
+
+module.exports = {
+  expectedThemeContributions,
+  requiredSemanticTokenIdentifiers,
+  requiredSyntaxScopes,
+};

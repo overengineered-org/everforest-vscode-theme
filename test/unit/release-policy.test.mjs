@@ -2,10 +2,9 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
-import { analyzeCommits } from "@semantic-release/commit-analyzer";
-import releaseConfiguration from "../../release.config.cjs";
+import { Bumper } from "conventional-recommended-bump";
+import releaseConfiguration from "../../.release-it.cjs";
 
-const silentLogger = { log() {} };
 const repositoryDirectory = resolve(import.meta.dirname, "../..");
 
 function workflowJobBlock(workflowSource, jobName) {
@@ -26,45 +25,48 @@ function workflowJobBlock(workflowSource, jobName) {
 }
 
 async function releaseTypeFor(commitMessage) {
-  return analyzeCommits(
-    { preset: "conventionalcommits" },
-    {
-      commits: [{ message: commitMessage }],
-      logger: silentLogger,
-    }
-  );
+  const commitType = /^([a-z]+)(?:\([^)]*\))?!?:/.exec(commitMessage)?.[1];
+  const recommendation = await new Bumper()
+    .loadPreset("conventionalcommits")
+    .commits([{ header: commitMessage, notes: [], type: commitType }])
+    .bump();
+  return recommendation.releaseType;
 }
 
 test("releases only eligible conventional commits", async () => {
   assert.equal(await releaseTypeFor("fix: correct terminal contrast"), "patch");
   assert.equal(await releaseTypeFor("feat: add another variant"), "minor");
   assert.equal(await releaseTypeFor("feat!: rename every theme"), "major");
-  assert.equal(await releaseTypeFor("docs: clarify installation"), null);
-  assert.equal(await releaseTypeFor("chore: refresh fixtures"), null);
+  assert.equal(await releaseTypeFor("docs: clarify installation"), undefined);
+  assert.equal(await releaseTypeFor("chore: refresh fixtures"), undefined);
 });
 
-test("publishes only from main with a versioned tag", () => {
-  assert.deepEqual(releaseConfiguration.branches, ["main"]);
-  assert.equal(releaseConfiguration.tagFormat, "v${version}");
+test("publishes only from main with a versioned tag and no release commit", () => {
+  assert.equal(releaseConfiguration.git.requireBranch, "main");
+  assert.equal(releaseConfiguration.git.tagName, "v${version}");
+  assert.equal(releaseConfiguration.git.commit, false);
+  assert.equal(releaseConfiguration.npm, false);
+  const extensionManifest = JSON.parse(
+    readFileSync(resolve(repositoryDirectory, "package.json"), "utf8")
+  );
+  assert.equal(extensionManifest.scripts.release, "release-it --ci");
 });
 
-test("publishes the VSIX and checksum to GitHub without issue permissions", () => {
-  const [, releaseNotesConfiguration] = releaseConfiguration.plugins.find(
-    ([pluginName]) => pluginName === "@semantic-release/release-notes-generator"
+test("publishes the versioned VSIX and checksum with conventional release notes", () => {
+  assert.deepEqual(releaseConfiguration.github.assets, [
+    "dist/everforest-complete-*.vsix",
+    "dist/everforest-complete-*.vsix.sha256",
+  ]);
+  assert.equal(releaseConfiguration.github.release, true);
+  assert.equal(releaseConfiguration.github.releaseName, "v${version}");
+  assert.equal(
+    releaseConfiguration.hooks["before:git:release"],
+    "node scripts/package-release.mjs ${version}"
   );
-  const [, githubPluginConfiguration] = releaseConfiguration.plugins.find(
-    ([pluginName]) => pluginName === "@semantic-release/github"
-  );
-
-  assert.deepEqual(releaseNotesConfiguration, { preset: "conventionalcommits" });
-  assert.deepEqual(
-    githubPluginConfiguration.assets.map(({ path }) => path),
-    ["dist/everforest-complete-*.vsix", "dist/everforest-complete-*.vsix.sha256"]
-  );
-  assert.equal(githubPluginConfiguration.failComment, false);
-  assert.equal(githubPluginConfiguration.failTitle, false);
-  assert.equal(githubPluginConfiguration.releasedLabels, false);
-  assert.equal(githubPluginConfiguration.successComment, false);
+  assert.deepEqual(releaseConfiguration.plugins["@release-it/conventional-changelog"], {
+    infile: false,
+    preset: { name: "conventionalcommits" },
+  });
 });
 
 test("publishes the exact GitHub release with the protected Marketplace PAT", () => {
@@ -76,6 +78,7 @@ test("publishes the exact GitHub release with the protected Marketplace PAT", ()
     resolve(repositoryDirectory, ".github/workflows/github-release-recovery.yml"),
     "utf8"
   );
+  const architecture = readFileSync(resolve(repositoryDirectory, "docs/ARCHITECTURE.md"), "utf8");
   const readme = readFileSync(resolve(repositoryDirectory, "README.md"), "utf8");
   const extensionManifest = JSON.parse(
     readFileSync(resolve(repositoryDirectory, "package.json"), "utf8")
@@ -111,6 +114,10 @@ test("publishes the exact GitHub release with the protected Marketplace PAT", ()
   );
   assert.ok(marketplaceJob.includes("--packagePath"));
   assert.ok(marketplaceJob.includes("--skip-duplicate"));
+  assert.match(architecture, /protected\s+`VSCE_PAT`\s+secret/);
+  assert.doesNotMatch(architecture, /Microsoft Entra ID|Entra ID/);
+  assert.match(readme, /protected\s+`VSCE_PAT`\s+secret/);
+  assert.doesNotMatch(readme, /Microsoft Entra ID|Entra ID/);
   assert.ok(recoveryPublishJob.includes("GH_REPO: ${{ github.repository }}"));
   assert.match(releaseRecoveryWorkflow, /group: production-release/);
   assert.ok(recoveryPublishJob.includes("release_is_draft"));
@@ -131,6 +138,38 @@ test("publishes the exact GitHub release with the protected Marketplace PAT", ()
   assert.equal(existsSync(resolve(repositoryDirectory, "docs/MARKETPLACE_PUBLISHING.md")), false);
 });
 
+test("reuses one validated VSIX across every integration matrix job", () => {
+  const continuousIntegrationWorkflow = readFileSync(
+    resolve(repositoryDirectory, ".github/workflows/ci.yml"),
+    "utf8"
+  );
+  const extensionManifest = JSON.parse(
+    readFileSync(resolve(repositoryDirectory, "package.json"), "utf8")
+  );
+  const staticJob = workflowJobBlock(continuousIntegrationWorkflow, "static");
+  const integrationJob = workflowJobBlock(continuousIntegrationWorkflow, "integration");
+
+  assert.ok(staticJob.includes("actions/upload-artifact@"));
+  assert.ok(staticJob.includes("name: validated-vsix"));
+  assert.ok(staticJob.includes("path: dist/everforest-complete.vsix"));
+  assert.ok(
+    staticJob.indexOf("Upload validated VSIX") <
+      staticJob.indexOf("Verify release package and checksum"),
+    "validated VSIX must be uploaded before release-package testing cleans dist"
+  );
+  assert.ok(integrationJob.includes("needs: static"));
+  assert.ok(integrationJob.includes("actions/download-artifact@"));
+  assert.ok(integrationJob.includes("name: validated-vsix"));
+  assert.ok(integrationJob.includes("path: dist"));
+  assert.ok(integrationJob.includes("npm run test:integration:vsix"));
+  assert.equal(integrationJob.includes("npm run package:vsix"), false);
+  assert.equal(integrationJob.includes("npm run test:integration\n"), false);
+  assert.equal(
+    extensionManifest.scripts["test:integration:vsix"],
+    "node scripts/run-integration-tests.mjs"
+  );
+});
+
 test("fails the test aggregate unless integration passes", () => {
   const continuousIntegrationWorkflow = readFileSync(
     resolve(repositoryDirectory, ".github/workflows/ci.yml"),
@@ -144,27 +183,23 @@ test("fails the test aggregate unless integration passes", () => {
   assert.ok(testsSummaryJob.includes('if [[ "$INTEGRATION_RESULT" != success ]]'));
 });
 
-test("evaluates the pull request against an isolated main remote", () => {
+test("evaluates the pull request as main without publishing", () => {
   const continuousIntegrationWorkflow = readFileSync(
     resolve(repositoryDirectory, ".github/workflows/ci.yml"),
     "utf8"
   );
   const releaseDryRunJob = workflowJobBlock(continuousIntegrationWorkflow, "release-dry-run");
+  const releaseJob = workflowJobBlock(continuousIntegrationWorkflow, "release");
 
   assert.ok(releaseDryRunJob.includes("git switch --force-create main"));
-  assert.ok(
-    releaseDryRunJob.includes('release_dry_run_repository="$RUNNER_TEMP/release-dry-run.git"')
-  );
-  assert.ok(releaseDryRunJob.includes("git init --bare --initial-branch=main"));
-  assert.ok(releaseDryRunJob.includes('git push "$release_dry_run_repository" HEAD:main --tags'));
-  assert.ok(releaseDryRunJob.includes("GITHUB_EVENT_NAME=push"));
-  assert.ok(releaseDryRunJob.includes("GITHUB_REF=refs/heads/main"));
-  assert.ok(releaseDryRunJob.includes("npm run release -- --dry-run --no-ci"));
-  assert.ok(releaseDryRunJob.includes('--repository-url "file://$release_dry_run_repository"'));
-  assert.ok(releaseDryRunJob.includes("--plugins @semantic-release/commit-analyzer"));
-  assert.ok(releaseDryRunJob.includes("--plugins @semantic-release/release-notes-generator"));
-  assert.equal(releaseDryRunJob.includes("@semantic-release/github"), false);
+  assert.ok(releaseDryRunJob.includes("git branch --set-upstream-to=origin/main main"));
+  assert.ok(releaseDryRunJob.includes("npm run release -- --dry-run"));
+  assert.ok(releaseDryRunJob.includes("--no-git.push"));
+  assert.ok(releaseDryRunJob.includes("--no-github.release"));
   assert.equal(releaseDryRunJob.includes("GITHUB_TOKEN"), false);
+  assert.ok(releaseJob.includes("git switch --force-create main"));
+  assert.ok(releaseJob.includes("git branch --set-upstream-to=origin/main main"));
+  assert.ok(releaseJob.includes("persist-credentials: true"));
 });
 
 test("runs the required Linux 1.95.3 compatibility gate before release", () => {
