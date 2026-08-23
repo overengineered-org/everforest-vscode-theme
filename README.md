@@ -13,24 +13,49 @@ and Hard contrast.
 This is a zero-runtime theme extension. It contributes static color-theme JSON and does not start
 extension code, background processes, telemetry, or network requests.
 
-## Quick start
+## Install and choose a theme
 
-1. In VS Code, open **Extensions**.
+1. Open **Extensions** in VS Code (`Shift+Cmd+X` on macOS or `Ctrl+Shift+X` on Windows/Linux).
 2. Search for `Everforest Complete`.
-3. Select the extension published by **Overengineered**.
-4. Choose **Install**.
-5. Run **Preferences: Color Theme**, then choose an Everforest Complete variant.
+3. Open the result published by **Overengineered**, then select **Install**.
+4. Select **Set Color Theme** on the extension page.
+5. Start with **Everforest Complete Dark Medium** or **Everforest Complete Light Medium**.
+
+The theme is active immediately. There is no separate command to start the extension. To change the
+theme later, run **Preferences: Color Theme** (`Cmd+K Cmd+T` on macOS or `Ctrl+K Ctrl+T` on
+Windows/Linux).
+
+### Choose the right variant
+
+| Name   | Meaning                              |
+| ------ | ------------------------------------ |
+| Light  | Light VS Code interface              |
+| Dark   | Dark VS Code interface               |
+| Soft   | Lower contrast                       |
+| Medium | Balanced contrast; recommended first |
+| Hard   | Higher contrast                      |
 
 ## Follow system appearance
 
-Want Everforest to switch with macOS, Windows, or Linux Light/Dark mode?
+Want Everforest to switch when your operating system changes between Light and Dark mode?
 
 **Auto is not a theme in the Color Theme picker.** VS Code handles automatic switching through its
 User Settings, using one preferred light theme and one preferred dark theme.
 
-1. Open the Command Palette.
-2. Choose **Preferences: Open User Settings (JSON)**.
-3. Add this to your global VS Code User Settings JSON:
+### Settings interface
+
+1. Open **Settings** (`Cmd+,` on macOS or `Ctrl+,` on Windows/Linux).
+2. Search for `Auto Detect Color Scheme`, then enable **Window: Auto Detect Color Scheme**.
+3. Search for `Preferred Dark Color Theme`, then choose **Everforest Complete Dark Medium**.
+4. Search for `Preferred Light Color Theme`, then choose **Everforest Complete Light Medium**.
+5. Change your operating system appearance once to confirm VS Code switches themes.
+
+VS Code now chooses the matching Everforest theme automatically. You do not select an `Auto` entry
+from the Color Theme picker.
+
+### Settings JSON alternative
+
+Open the Command Palette, choose **Preferences: Open User Settings (JSON)**, then add:
 
 ```json
 {
@@ -40,8 +65,8 @@ User Settings, using one preferred light theme and one preferred dark theme.
 }
 ```
 
-Do **not** add these settings to a project's `.vscode/settings.json`. They apply across projects in
-the current VS Code profile. Repeat them for each profile you use.
+These are global User Settings for the current VS Code profile. Do **not** add them to a project's
+`.vscode/settings.json`. Repeat the setup for each profile you use.
 
 Settings Sync can restore the Marketplace extension and these settings on your other VS Code
 installations.
@@ -118,15 +143,6 @@ Compare the result with the downloaded checksum file.
 
 Marketplace installations receive updates through VS Code. Manually installed VSIX files do not;
 download each newer GitHub Release and repeat [GitHub Releases](#github-releases).
-
-## Choose a variant
-
-Medium is the balanced default. Choose Soft for lower contrast or Hard for higher contrast.
-
-| Appearance | Soft      | Medium    | Hard      |
-| ---------- | --------- | --------- | --------- |
-| Dark       | `#333C43` | `#2D353B` | `#272E33` |
-| Light      | `#F3EAD3` | `#FDF6E3` | `#FFFBEF` |
 
 ## Coverage
 
