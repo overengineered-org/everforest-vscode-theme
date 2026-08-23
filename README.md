@@ -155,7 +155,7 @@ download each newer GitHub Release and repeat [GitHub Releases](#github-releases
 - Terminal ANSI colors, Git decorations, diffs, diagnostics, testing, notebooks, and minimap.
 - Chat, inline chat, interactive editors, and multi-file diffs.
 
-## Development
+## Contributing
 
 ```sh
 npm ci
