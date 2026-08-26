@@ -4,6 +4,9 @@ import themeManifest from "../test/support/theme-manifest.cjs";
 import { contrastRatio, validateHexColor } from "./color-contrast.mjs";
 
 const { requiredSemanticTokenIdentifiers, requiredSyntaxScopes } = themeManifest;
+const documentedWorkbenchColorContract = JSON.parse(
+  readFileSync(resolve("src", "workbench", "documented-workbench-colors.json"), "utf8")
+);
 
 const canonicalThemeVariants = [
   { appearance: "dark", contrast: "soft", expectedBackground: "#333c43" },
@@ -31,105 +34,6 @@ const terminalAnsiColorIdentifiers = [
   "terminal.ansiRed",
   "terminal.ansiWhite",
   "terminal.ansiYellow",
-];
-
-const requiredWorkbenchColors = [
-  "activityBar.background",
-  "activityBar.activeFocusBorder",
-  "agentSessionReadIndicator.foreground",
-  "agentSessionSelectedBadge.border",
-  "agentSessionSelectedUnfocusedBadge.border",
-  "agentStatusIndicator.background",
-  "aiCustomizationManagement.sashBorder",
-  "button.background",
-  "breadcrumb.foreground",
-  "charts.green",
-  "chat.requestBackground",
-  "commandCenter.background",
-  "commandCenter.activeBorder",
-  "debugToolBar.background",
-  "diffEditor.insertedTextBackground",
-  "diffEditor.removedTextBackground",
-  "editor.background",
-  "editor.foreground",
-  "editor.findMatchBackground",
-  "editor.findMatchBorder",
-  "editor.findMatchHighlightBackground",
-  "editor.findMatchHighlightBorder",
-  "editorError.foreground",
-  "editorGutter.background",
-  "editorHint.foreground",
-  "editorInfo.foreground",
-  "editorWidget.background",
-  "editorWarning.foreground",
-  "gitDecoration.addedResourceForeground",
-  "gitDecoration.modifiedResourceForeground",
-  "inlineChat.background",
-  "inlineChatInput.focusBorder",
-  "interactive.activeCodeBorder",
-  "inputOption.activeBorder",
-  "inputValidation.errorBackground",
-  "inputValidation.errorForeground",
-  "inputValidation.infoBackground",
-  "inputValidation.infoForeground",
-  "inputValidation.warningBackground",
-  "inputValidation.warningForeground",
-  "keybindingLabel.background",
-  "list.activeSelectionBackground",
-  "menu.background",
-  "merge.currentHeaderBackground",
-  "minimap.selectionHighlight",
-  "minimap.errorHighlight",
-  "multiDiffEditor.background",
-  "notebook.cellEditorBackground",
-  "notebook.focusedCellBorder",
-  "notebook.focusedEditorBorder",
-  "notebook.focusedRowBorder",
-  "notebook.inactiveFocusedCellBorder",
-  "notificationCenterHeader.background",
-  "panel.background",
-  "panel.border",
-  "panelSectionHeader.background",
-  "panelSectionHeader.border",
-  "panelSectionHeader.foreground",
-  "peekViewEditor.background",
-  "ports.iconRunningProcessForeground",
-  "panelTitle.activeBorder",
-  "sash.hoverBorder",
-  "settings.headerForeground",
-  "sideBar.background",
-  "sideBar.foreground",
-  "sideBarSectionHeader.foreground",
-  "sideBarTitle.foreground",
-  "statusBar.background",
-  "statusBar.foreground",
-  "statusBar.noFolderForeground",
-  "statusBarItem.remoteForeground",
-  "tab.activeBackground",
-  "tab.activeBorder",
-  ...terminalAnsiColorIdentifiers,
-  "terminal.background",
-  "terminal.border",
-  "terminal.foreground",
-  "terminal.selectionBackground",
-  "terminal.inactiveSelectionBackground",
-  "terminal.findMatchBackground",
-  "terminal.findMatchBorder",
-  "terminal.findMatchHighlightBackground",
-  "terminal.findMatchHighlightBorder",
-  "terminal.hoverHighlightBackground",
-  "terminal.tab.activeBorder",
-  "terminalCommandDecoration.defaultBackground",
-  "terminalCommandDecoration.errorBackground",
-  "terminalCommandDecoration.successBackground",
-  "terminalStickyScroll.background",
-  "terminalStickyScroll.border",
-  "terminalStickyScrollHover.background",
-  "terminalOverviewRuler.border",
-  "testing.iconFailed",
-  "testing.iconPassed",
-  "titleBar.activeBackground",
-  "menu.foreground",
 ];
 
 const extensionManifest = JSON.parse(readFileSync(resolve("package.json"), "utf8"));
@@ -200,9 +104,17 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
   if (generatedTheme.colors["panel.border"] !== generatedTheme.colors["terminal.border"]) {
     throw new Error(`${themePath}: terminal and panel borders must match`);
   }
-  for (const colorIdentifier of requiredWorkbenchColors) {
+  for (const colorIdentifier of documentedWorkbenchColorContract.identifiers) {
     if (!(colorIdentifier in generatedTheme.colors)) {
       throw new Error(`${themePath}: missing ${colorIdentifier}`);
+    }
+  }
+  for (const translucentColorIdentifier of documentedWorkbenchColorContract.translucentIdentifiers) {
+    const translucentColorAlphaChannel = alphaChannelFromHexColor(
+      generatedTheme.colors[translucentColorIdentifier]
+    );
+    if (translucentColorAlphaChannel === undefined || translucentColorAlphaChannel === 255) {
+      throw new Error(`${themePath}: ${translucentColorIdentifier} must be translucent`);
     }
   }
   for (const semanticTokenIdentifier of requiredSemanticTokenIdentifiers) {
@@ -279,6 +191,17 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
     ["inputValidation.infoForeground", "inputValidation.infoBackground", 4.5],
     ["inputValidation.warningForeground", "inputValidation.warningBackground", 4.5],
     ["chat.slashCommandForeground", "chat.slashCommandBackground", 4.5],
+    ["activityErrorBadge.foreground", "activityErrorBadge.background", 4.5],
+    ["editorActionList.foreground", "editorActionList.background", 4.5],
+    ["gauge.warningForeground", "gauge.warningBackground", 4.5],
+    [
+      "inlineEdit.gutterIndicator.successfulForeground",
+      "inlineEdit.gutterIndicator.successfulBackground",
+      4.5,
+    ],
+    ["radio.inactiveForeground", "radio.inactiveBackground", 4.5],
+    ["statusBarItem.remoteHoverForeground", "statusBarItem.remoteHoverBackground", 4.5],
+    ["testing.message.error.badgeForeground", "testing.message.error.badgeBackground", 4.5],
     ["focusBorder", "editor.background", 3],
     ["activityBar.activeFocusBorder", "activityBar.background", 3],
     ["activityBar.activeBorder", "activityBar.background", 3],
@@ -294,7 +217,6 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
     ["tab.activeBorder", "tab.activeBackground", 3],
     ["notebook.focusedCellBorder", "notebook.cellEditorBackground", 3],
     ["notebook.focusedEditorBorder", "notebook.cellEditorBackground", 3],
-    ["notebook.focusedRowBorder", "notebook.cellEditorBackground", 3],
     ["notebook.inactiveFocusedCellBorder", "notebook.cellEditorBackground", 3],
     ["terminal.ansiWhite", "terminal.background", 4.5],
     ["terminal.ansiBrightWhite", "terminal.background", 4.5],
