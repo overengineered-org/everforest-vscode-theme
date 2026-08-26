@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const { readFile } = require("node:fs/promises");
-const { join } = require("node:path");
+const { join, resolve } = require("node:path");
 const vscode = require("vscode");
 const {
   expectedThemeContributions,
@@ -9,6 +9,9 @@ const {
 } = require("../support/theme-manifest.cjs");
 
 const extensionIdentifier = "overengineered-org.everforest-complete";
+const documentedWorkbenchColorContract = require(
+  resolve(__dirname, "../../src/workbench/documented-workbench-colors.json")
+);
 const fixtureLanguageIdentifiers = new Map([
   ["showcase.css", "css"],
   ["showcase.go", "go"],
@@ -129,6 +132,29 @@ async function run() {
     assert.equal(theme.type, themeContribution.uiTheme === "vs-dark" ? "dark" : "light");
     assert.equal(theme.semanticHighlighting, true);
     assert.ok(theme.colors["editor.background"]);
+    const missingDocumentedWorkbenchColorIdentifiers =
+      documentedWorkbenchColorContract.identifiers.filter(
+        (documentedWorkbenchColorIdentifier) =>
+          !(documentedWorkbenchColorIdentifier in theme.colors)
+      );
+    assert.deepEqual(
+      missingDocumentedWorkbenchColorIdentifiers,
+      [],
+      `${themeContribution.label} must install every documented workbench color`
+    );
+    for (const translucentWorkbenchColorIdentifier of documentedWorkbenchColorContract.translucentIdentifiers) {
+      const translucentWorkbenchColor = theme.colors[translucentWorkbenchColorIdentifier];
+      assert.match(
+        translucentWorkbenchColor,
+        /^#[0-9a-f]{8}$/i,
+        `${themeContribution.label} ${translucentWorkbenchColorIdentifier} must include alpha`
+      );
+      assert.notEqual(
+        translucentWorkbenchColor.slice(-2).toLowerCase(),
+        "ff",
+        `${themeContribution.label} ${translucentWorkbenchColorIdentifier} must not be opaque`
+      );
+    }
     for (const semanticTokenIdentifier of requiredSemanticTokenIdentifiers) {
       assert.ok(
         semanticTokenIdentifier in theme.semanticTokenColors,

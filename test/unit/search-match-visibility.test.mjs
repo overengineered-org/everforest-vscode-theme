@@ -2,13 +2,17 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
-import { contrastRatio } from "../../scripts/color-contrast.mjs";
+import { contrastRatio, validateHexColor } from "../../scripts/color-contrast.mjs";
 import themeManifest from "../support/theme-manifest.cjs";
 
 const repositoryDirectory = resolve(import.meta.dirname, "../..");
 
 test("uses the WCAG contrast ratio and rejects invalid theme colors", () => {
   assert.equal(contrastRatio("#000000", "#ffffff"), 21);
+  assert.equal(contrastRatio("#ffffff", "#000000"), contrastRatio("#000000", "#ffffff"));
+  assert.doesNotThrow(() => validateHexColor("#a7c080"));
+  assert.doesNotThrow(() => validateHexColor("#a7c08080"));
+  assert.throws(() => validateHexColor("#fff"), /Invalid color/);
   assert.throws(() => contrastRatio("transparent", "#ffffff"), /Invalid color/);
 });
 
