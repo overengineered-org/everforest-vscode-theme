@@ -36,6 +36,20 @@ const terminalAnsiColorIdentifiers = [
   "terminal.ansiYellow",
 ];
 
+const semanticWorkbenchTranslucentColorIdentifiers = [
+  "minimap.selectionOccurrenceHighlight",
+  "minimap.chatEditHighlight",
+  "chart.axis",
+  "chart.guide",
+];
+
+const semanticWorkbenchDistinctColorIdentifierGroups = [
+  ["minimap.selectionOccurrenceHighlight", "minimap.chatEditHighlight"],
+  ["chart.line", "chart.axis", "chart.guide"],
+  ["commentsView.resolvedIcon", "commentsView.unresolvedIcon"],
+  ["editorCommentsWidget.resolvedBorder", "editorCommentsWidget.unresolvedBorder"],
+];
+
 const extensionManifest = JSON.parse(readFileSync(resolve("package.json"), "utf8"));
 const repositoryDirectory = resolve(".");
 const contributedThemesByPath = new Map(
@@ -117,6 +131,26 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
       throw new Error(`${themePath}: ${translucentColorIdentifier} must be translucent`);
     }
   }
+  for (const semanticWorkbenchTranslucentColorIdentifier of semanticWorkbenchTranslucentColorIdentifiers) {
+    const semanticWorkbenchAlphaChannel = alphaChannelFromHexColor(
+      generatedTheme.colors[semanticWorkbenchTranslucentColorIdentifier]
+    );
+    if (semanticWorkbenchAlphaChannel === undefined || semanticWorkbenchAlphaChannel === 255) {
+      throw new Error(
+        `${themePath}: ${semanticWorkbenchTranslucentColorIdentifier} must be translucent`
+      );
+    }
+  }
+  for (const semanticWorkbenchDistinctColorIdentifierGroup of semanticWorkbenchDistinctColorIdentifierGroups) {
+    const semanticWorkbenchDistinctColors = semanticWorkbenchDistinctColorIdentifierGroup.map(
+      (semanticWorkbenchColorIdentifier) => generatedTheme.colors[semanticWorkbenchColorIdentifier]
+    );
+    if (new Set(semanticWorkbenchDistinctColors).size !== semanticWorkbenchDistinctColors.length) {
+      throw new Error(
+        `${themePath}: ${semanticWorkbenchDistinctColorIdentifierGroup.join(", ")} must be distinct`
+      );
+    }
+  }
   for (const semanticTokenIdentifier of requiredSemanticTokenIdentifiers) {
     if (!(semanticTokenIdentifier in generatedTheme.semanticTokenColors)) {
       throw new Error(`${themePath}: missing semantic token ${semanticTokenIdentifier}`);
@@ -183,6 +217,19 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
     ["editorLink.activeForeground", "editor.background", 4.5],
     ["editorSuggestWidget.highlightForeground", "editorSuggestWidget.background", 4.5],
     ["notificationLink.foreground", "notifications.background", 4.5],
+    ["gitDecoration.renamedResourceForeground", "sideBar.background", 4.5],
+    ["debugView.valueChangedHighlight", "sideBar.background", 4.5],
+    ["settings.modifiedItemIndicator", "editor.background", 3],
+    ["chart.line", "editor.background", 3],
+    ["commentsView.resolvedIcon", "sideBar.background", 3],
+    ["commentsView.unresolvedIcon", "sideBar.background", 3],
+    ["editorCommentsWidget.resolvedBorder", "editorWidget.background", 3],
+    ["editorCommentsWidget.unresolvedBorder", "editorWidget.background", 3],
+    ["scmGraph.historyItemHoverLabelForeground", "scmGraph.historyItemRefColor", 4.5],
+    ["scmGraph.historyItemHoverLabelForeground", "scmGraph.historyItemRemoteRefColor", 4.5],
+    ["scmGraph.historyItemHoverLabelForeground", "scmGraph.historyItemBaseRefColor", 4.5],
+    ["scmGraph.historyItemHoverAdditionsForeground", "editorHoverWidget.background", 4.5],
+    ["scmGraph.historyItemHoverDeletionsForeground", "editorHoverWidget.background", 4.5],
     ["terminal.ansiGreen", "terminal.background", 4.5],
     ["terminal.ansiBrightGreen", "terminal.background", 4.5],
     ["terminal.foreground", "terminal.background", 4.5],

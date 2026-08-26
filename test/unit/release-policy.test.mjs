@@ -170,6 +170,19 @@ test("reuses one validated VSIX across every integration matrix job", () => {
   );
 });
 
+test("enforces theme performance budgets before packaging", () => {
+  const extensionManifest = JSON.parse(
+    readFileSync(resolve(repositoryDirectory, "package.json"), "utf8")
+  );
+
+  assert.equal(
+    extensionManifest.scripts["test:performance"],
+    "npm run compile && node --test test/performance/*.test.mjs"
+  );
+  assert.ok(extensionManifest.scripts["verify:static"].includes("npm run test:performance"));
+  assert.equal(extensionManifest.scripts["vscode:prepublish"], "npm run verify:static");
+});
+
 test("fails the test aggregate unless integration passes", () => {
   const continuousIntegrationWorkflow = readFileSync(
     resolve(repositoryDirectory, ".github/workflows/ci.yml"),
