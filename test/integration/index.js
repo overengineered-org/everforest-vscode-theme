@@ -107,6 +107,170 @@ async function validateLanguageFixtures() {
   assert.equal(notebookFixture.cellAt(1).kind, vscode.NotebookCellKind.Code);
 }
 
+function validateInstalledSourceControlGraphColors(theme, themeLabel, contrastRatio) {
+  const expectedInstalledSourceControlGraphColors =
+    theme.type === "dark"
+      ? {
+          "scmGraph.foreground1": "#e67e80ff",
+          "scmGraph.foreground2": "#e69875ff",
+          "scmGraph.foreground3": "#dbbc7fff",
+          "scmGraph.foreground4": "#a7c080ff",
+          "scmGraph.foreground5": "#83c092ff",
+          "scmGraph.historyItemRefColor": "#7fbbb3",
+          "scmGraph.historyItemRemoteRefColor": "#d699b6",
+          "scmGraph.historyItemBaseRefColor": "#e69875",
+          "scmGraph.historyItemHoverLabelForeground": "#1b2024",
+          "scmGraph.historyItemHoverAdditionsForeground": "#a7c080",
+          "scmGraph.historyItemHoverDeletionsForeground": "#f8a0a0",
+        }
+      : {
+          "scmGraph.foreground1": "#f85552ff",
+          "scmGraph.foreground2": "#f57d26ff",
+          "scmGraph.foreground3": "#dfa000ff",
+          "scmGraph.foreground4": "#8da101ff",
+          "scmGraph.foreground5": "#35a77cff",
+          "scmGraph.historyItemRefColor": "#3a94c5",
+          "scmGraph.historyItemRemoteRefColor": "#df69ba",
+          "scmGraph.historyItemBaseRefColor": "#f57d26",
+          "scmGraph.historyItemHoverLabelForeground": "#1b2024",
+          "scmGraph.historyItemHoverAdditionsForeground": "#596600",
+          "scmGraph.historyItemHoverDeletionsForeground": "#ad3d3d",
+        };
+
+  for (const [
+    sourceControlGraphColorIdentifier,
+    expectedInstalledSourceControlGraphColor,
+  ] of Object.entries(expectedInstalledSourceControlGraphColors)) {
+    assert.equal(
+      theme.colors[sourceControlGraphColorIdentifier],
+      expectedInstalledSourceControlGraphColor,
+      `${themeLabel} must install ${sourceControlGraphColorIdentifier}`
+    );
+  }
+
+  const installedSourceControlGraphLaneColors = [1, 2, 3, 4, 5].map(
+    (sourceControlGraphLaneNumber) =>
+      theme.colors[`scmGraph.foreground${sourceControlGraphLaneNumber}`]
+  );
+  assert.equal(
+    new Set(installedSourceControlGraphLaneColors).size,
+    installedSourceControlGraphLaneColors.length,
+    `${themeLabel} source control graph lanes must remain visually distinct`
+  );
+
+  const sourceControlGraphLabelForeground =
+    theme.colors["scmGraph.historyItemHoverLabelForeground"];
+  for (const sourceControlGraphReferenceColorIdentifier of [
+    "scmGraph.historyItemRefColor",
+    "scmGraph.historyItemRemoteRefColor",
+    "scmGraph.historyItemBaseRefColor",
+  ]) {
+    assert.ok(
+      contrastRatio(
+        sourceControlGraphLabelForeground,
+        theme.colors[sourceControlGraphReferenceColorIdentifier]
+      ) >= 4.5,
+      `${themeLabel} installed ${sourceControlGraphReferenceColorIdentifier} label must meet 4.5:1 contrast`
+    );
+  }
+
+  for (const sourceControlGraphChangeColorIdentifier of [
+    "scmGraph.historyItemHoverAdditionsForeground",
+    "scmGraph.historyItemHoverDeletionsForeground",
+  ]) {
+    assert.ok(
+      contrastRatio(
+        theme.colors[sourceControlGraphChangeColorIdentifier],
+        theme.colors["editorHoverWidget.background"]
+      ) >= 4.5,
+      `${themeLabel} installed ${sourceControlGraphChangeColorIdentifier} must meet 4.5:1 contrast`
+    );
+  }
+}
+
+function validateInstalledSemanticWorkbenchStateColors(theme, themeLabel, contrastRatio) {
+  const expectedResolvedCommentIndicator = theme.type === "dark" ? "#9aa79d" : "#59646c";
+  const expectedInstalledSemanticWorkbenchStateColors = {
+    "minimap.selectionOccurrenceHighlight": theme.colors["editor.selectionHighlightBackground"],
+    "minimap.chatEditHighlight": theme.type === "dark" ? "#a7c08099" : "#59660080",
+    "chart.line": theme.colors["terminal.ansiBlue"],
+    "chart.axis": `${theme.colors["terminal.foreground"]}${theme.type === "dark" ? "66" : "99"}`,
+    "chart.guide": `${theme.colors["terminal.foreground"]}33`,
+    "gitDecoration.renamedResourceForeground": theme.colors["terminal.ansiCyan"],
+    "debugView.valueChangedHighlight": theme.colors["terminal.ansiBlue"],
+    "settings.modifiedItemIndicator": theme.colors["terminal.ansiBlue"],
+    "commentsView.resolvedIcon": expectedResolvedCommentIndicator,
+    "commentsView.unresolvedIcon": theme.colors["terminal.ansiBlue"],
+    "editorCommentsWidget.resolvedBorder": expectedResolvedCommentIndicator,
+    "editorCommentsWidget.unresolvedBorder": theme.colors["terminal.ansiBlue"],
+  };
+
+  for (const [
+    semanticWorkbenchColorIdentifier,
+    expectedInstalledSemanticWorkbenchColor,
+  ] of Object.entries(expectedInstalledSemanticWorkbenchStateColors)) {
+    assert.equal(
+      theme.colors[semanticWorkbenchColorIdentifier],
+      expectedInstalledSemanticWorkbenchColor,
+      `${themeLabel} must install ${semanticWorkbenchColorIdentifier}`
+    );
+  }
+
+  for (const translucentSemanticWorkbenchColorIdentifier of [
+    "minimap.selectionOccurrenceHighlight",
+    "minimap.chatEditHighlight",
+    "chart.axis",
+    "chart.guide",
+  ]) {
+    const translucentSemanticWorkbenchColor =
+      theme.colors[translucentSemanticWorkbenchColorIdentifier];
+    assert.match(
+      translucentSemanticWorkbenchColor,
+      /^#[0-9a-f]{8}$/i,
+      `${themeLabel} installed ${translucentSemanticWorkbenchColorIdentifier} must include alpha`
+    );
+    assert.notEqual(
+      translucentSemanticWorkbenchColor.slice(-2).toLowerCase(),
+      "ff",
+      `${themeLabel} installed ${translucentSemanticWorkbenchColorIdentifier} must be translucent`
+    );
+  }
+
+  for (const distinctSemanticWorkbenchColorIdentifiers of [
+    ["minimap.selectionOccurrenceHighlight", "minimap.chatEditHighlight"],
+    ["chart.line", "chart.axis", "chart.guide"],
+    ["commentsView.resolvedIcon", "commentsView.unresolvedIcon"],
+    ["editorCommentsWidget.resolvedBorder", "editorCommentsWidget.unresolvedBorder"],
+  ]) {
+    assert.equal(
+      new Set(
+        distinctSemanticWorkbenchColorIdentifiers.map(
+          (semanticWorkbenchColorIdentifier) => theme.colors[semanticWorkbenchColorIdentifier]
+        )
+      ).size,
+      distinctSemanticWorkbenchColorIdentifiers.length,
+      `${themeLabel} installed ${distinctSemanticWorkbenchColorIdentifiers.join(", ")} must remain distinct`
+    );
+  }
+
+  for (const [foregroundIdentifier, backgroundIdentifier, minimumContrast] of [
+    ["gitDecoration.renamedResourceForeground", "sideBar.background", 4.5],
+    ["debugView.valueChangedHighlight", "sideBar.background", 4.5],
+    ["settings.modifiedItemIndicator", "editor.background", 3],
+    ["chart.line", "editor.background", 3],
+    ["commentsView.resolvedIcon", "sideBar.background", 3],
+    ["commentsView.unresolvedIcon", "sideBar.background", 3],
+    ["editorCommentsWidget.resolvedBorder", "editorWidget.background", 3],
+    ["editorCommentsWidget.unresolvedBorder", "editorWidget.background", 3],
+  ]) {
+    assert.ok(
+      contrastRatio(theme.colors[foregroundIdentifier], theme.colors[backgroundIdentifier]) >=
+        minimumContrast,
+      `${themeLabel} installed ${foregroundIdentifier} must meet ${minimumContrast}:1 contrast against ${backgroundIdentifier}`
+    );
+  }
+}
+
 async function run() {
   const { contrastRatio } = await import("../../scripts/color-contrast.mjs");
   const jsonLanguageFeatures = vscode.extensions.getExtension("vscode.json-language-features");
@@ -198,6 +362,8 @@ async function run() {
       theme.colors["terminal.findMatchHighlightBorder"],
       `${themeContribution.label} must distinguish active terminal search matches`
     );
+    validateInstalledSourceControlGraphColors(theme, themeContribution.label, contrastRatio);
+    validateInstalledSemanticWorkbenchStateColors(theme, themeContribution.label, contrastRatio);
     for (const searchMatchSurface of [
       {
         activeBorder: "editor.findMatchBorder",

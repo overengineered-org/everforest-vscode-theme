@@ -172,10 +172,20 @@ export function createWorkbenchColors(palette: Palette, appearance: ThemeAppeara
   const accentForeground = appearance === "dark" ? palette.bg : "#2d353b";
   const panelAndTerminalForeground = appearance === "light" ? "#59646c" : palette.fg;
   const readableTerminalAnsiColors = getReadableTerminalAnsiColors(appearance, palette);
+  const accessibleBlueForeground = readableTerminalAnsiColors.blue;
+  const accessibleAquaForeground = readableTerminalAnsiColors.cyan;
   const selectionBackgroundColor = `${palette.bg4}${appearance === "dark" ? "e0" : "c0"}`;
   const editorSelectionBackgroundColor = `${palette.bg4}${appearance === "dark" ? "c0" : "a0"}`;
   const editorSelectionHighlightColor = `${palette.bg4}${appearance === "dark" ? "60" : "50"}`;
+  const minimapPendingChatEditHighlight = `${accessibleAccentGreen}${appearance === "dark" ? "99" : "80"}`;
+  const chartAxisColor = `${panelAndTerminalForeground}${appearance === "dark" ? "66" : "99"}`;
+  const chartGuideColor = `${panelAndTerminalForeground}33`;
+  const resolvedCommentIndicator = appearance === "dark" ? palette.grey2 : "#59646c";
+  const unresolvedCommentIndicator = accessibleBlueForeground;
   const cursorForeground = palette.fg;
+  const sourceControlGraphLabelForeground = "#1b2024";
+  const sourceControlGraphAdditionsForeground = accessibleAccentGreen;
+  const sourceControlGraphDeletionsForeground = appearance === "dark" ? "#f8a0a0" : "#ad3d3d";
   const diagnosticBackgroundOpacity = "00";
   const workbenchColors: Record<string, string> = {
     ...createDocumentedWorkbenchColorFallbacks(palette, appearance),
@@ -256,6 +266,8 @@ export function createWorkbenchColors(palette: Palette, appearance: ThemeAppeara
     "sideBarSectionHeader.foreground": palette.fg,
     "minimap.findMatchHighlight": `${palette.dimAqua}60`,
     "minimap.selectionHighlight": `${palette.bg5}f0`,
+    "minimap.selectionOccurrenceHighlight": editorSelectionHighlightColor,
+    "minimap.chatEditHighlight": minimapPendingChatEditHighlight,
     "minimap.errorHighlight": `${palette.dimRed}80`,
     "minimap.warningHighlight": `${palette.dimYellow}80`,
     "minimapGutter.addedBackground": `${palette.dimGreen}a0`,
@@ -359,6 +371,8 @@ export function createWorkbenchColors(palette: Palette, appearance: ThemeAppeara
     "editorGutter.addedBackground": `${palette.dimGreen}a0`,
     "editorGutter.deletedBackground": `${palette.dimRed}a0`,
     "editorGutter.commentRangeForeground": palette.grey0,
+    "editorCommentsWidget.resolvedBorder": resolvedCommentIndicator,
+    "editorCommentsWidget.unresolvedBorder": unresolvedCommentIndicator,
     "diffEditor.insertedTextBackground": `${palette.dimAqua}30`,
     "diffEditor.removedTextBackground": `${palette.dimRed}30`,
     "diffEditor.diagonalFill": palette.bg5,
@@ -455,6 +469,7 @@ export function createWorkbenchColors(palette: Palette, appearance: ThemeAppeara
     "debugConsole.errorForeground": palette.red,
     "debugConsole.sourceForeground": palette.purple,
     "debugConsoleInputIcon.foreground": palette.aqua,
+    "debugView.valueChangedHighlight": accessibleBlueForeground,
     "merge.incomingHeaderBackground": `${palette.dimAqua}80`,
     "merge.incomingContentBackground": `${palette.dimAqua}40`,
     "merge.currentHeaderBackground": `${palette.dimBlue}80`,
@@ -511,6 +526,13 @@ export function createWorkbenchColors(palette: Palette, appearance: ThemeAppeara
     "gitDecoration.submoduleResourceForeground": palette.orange,
     "gitDecoration.stageDeletedResourceForeground": palette.aqua,
     "gitDecoration.stageModifiedResourceForeground": palette.aqua,
+    "gitDecoration.renamedResourceForeground": accessibleAquaForeground,
+    "scmGraph.historyItemRefColor": palette.blue,
+    "scmGraph.historyItemRemoteRefColor": palette.purple,
+    "scmGraph.historyItemBaseRefColor": palette.orange,
+    "scmGraph.historyItemHoverLabelForeground": sourceControlGraphLabelForeground,
+    "scmGraph.historyItemHoverAdditionsForeground": sourceControlGraphAdditionsForeground,
+    "scmGraph.historyItemHoverDeletionsForeground": sourceControlGraphDeletionsForeground,
     "notificationCenterHeader.foreground": palette.fg,
     "notificationCenterHeader.background": palette.bg3,
     "notifications.foreground": palette.fg,
@@ -548,7 +570,7 @@ export function createWorkbenchColors(palette: Palette, appearance: ThemeAppeara
     "settings.dropdownBackground": palette.bg,
     "settings.dropdownForeground": palette.aqua,
     "settings.dropdownBorder": palette.bg5,
-    "settings.modifiedItemIndicator": palette.grey0,
+    "settings.modifiedItemIndicator": accessibleBlueForeground,
     "settings.focusedRowBackground": palette.bg2,
     "settings.rowHoverBackground": palette.bg2,
     "editorLightBulb.foreground": palette.yellow,
@@ -602,7 +624,12 @@ export function createWorkbenchColors(palette: Palette, appearance: ThemeAppeara
     "charts.blue": palette.blue,
     "charts.purple": palette.purple,
     "charts.foreground": palette.fg,
+    "chart.line": accessibleBlueForeground,
+    "chart.axis": chartAxisColor,
+    "chart.guide": chartGuideColor,
     "ports.iconRunningProcessForeground": palette.orange,
+    "commentsView.resolvedIcon": resolvedCommentIndicator,
+    "commentsView.unresolvedIcon": unresolvedCommentIndicator,
     "sash.hoverBorder": palette.fg,
     "notebook.cellBorderColor": palette.bg5,
     "notebook.cellStatusBarItemHoverBackground": palette.bg2,
