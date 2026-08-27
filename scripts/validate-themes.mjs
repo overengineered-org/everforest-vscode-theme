@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { relative, resolve, sep } from "node:path";
 import themeManifest from "../test/support/theme-manifest.cjs";
 import { contrastRatio, validateHexColor } from "./color-contrast.mjs";
+import { findIndistinguishableHoverBackgroundPairs } from "./workbench-interaction-contract.mjs";
 
 const { requiredSemanticTokenIdentifiers, requiredSyntaxScopes } = themeManifest;
 const documentedWorkbenchColorContract = JSON.parse(
@@ -118,6 +119,18 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
   if (generatedTheme.colors["panel.border"] !== generatedTheme.colors["terminal.border"]) {
     throw new Error(`${themePath}: terminal and panel borders must match`);
   }
+  const indistinguishableHoverBackgroundPairs = findIndistinguishableHoverBackgroundPairs(
+    generatedTheme.colors
+  );
+  if (indistinguishableHoverBackgroundPairs.length > 0) {
+    const indistinguishableHoverBackgroundIdentifiers = indistinguishableHoverBackgroundPairs.map(
+      ({ baseBackgroundIdentifier, hoverBackgroundIdentifier }) =>
+        `${baseBackgroundIdentifier} = ${hoverBackgroundIdentifier}`
+    );
+    throw new Error(
+      `${themePath}: indistinguishable interactive backgrounds: ${indistinguishableHoverBackgroundIdentifiers.join(", ")}`
+    );
+  }
   for (const colorIdentifier of documentedWorkbenchColorContract.identifiers) {
     if (!(colorIdentifier in generatedTheme.colors)) {
       throw new Error(`${themePath}: missing ${colorIdentifier}`);
@@ -203,13 +216,32 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
     throw new Error(`${themePath}: button contrast ${buttonContrast.toFixed(2)}`);
   }
   const criticalWorkbenchContrastChecks = [
+    ["foreground", "sideBar.background", 4.5],
+    ["descriptionForeground", "sideBar.background", 4.5],
+    ["icon.foreground", "activityBar.background", 4.5],
     ["sideBar.foreground", "sideBar.background", 4.5],
     ["sideBarTitle.foreground", "sideBar.background", 4.5],
     ["sideBarSectionHeader.foreground", "sideBar.background", 4.5],
     ["statusBar.foreground", "statusBar.background", 4.5],
     ["statusBar.noFolderForeground", "statusBar.noFolderBackground", 4.5],
     ["statusBarItem.remoteForeground", "statusBarItem.remoteBackground", 4.5],
+    ["statusBar.debuggingForeground", "statusBar.debuggingBackground", 4.5],
+    ["statusBarItem.errorForeground", "statusBarItem.errorBackground", 4.5],
+    ["statusBarItem.warningForeground", "statusBarItem.warningBackground", 4.5],
+    ["statusBarItem.prominentForeground", "statusBarItem.prominentBackground", 4.5],
+    ["extensionButton.foreground", "extensionButton.background", 4.5],
+    ["extensionButton.prominentForeground", "extensionButton.prominentBackground", 4.5],
     ["menu.foreground", "menu.background", 4.5],
+    ["tab.inactiveForeground", "tab.inactiveBackground", 4.5],
+    ["titleBar.inactiveForeground", "titleBar.inactiveBackground", 4.5],
+    ["commandCenter.foreground", "commandCenter.background", 4.5],
+    ["dropdown.foreground", "dropdown.background", 4.5],
+    ["settings.dropdownForeground", "settings.dropdownBackground", 4.5],
+    ["settings.numberInputForeground", "settings.numberInputBackground", 4.5],
+    ["settings.textInputForeground", "settings.textInputBackground", 4.5],
+    ["extensionBadge.remoteForeground", "extensionBadge.remoteBackground", 4.5],
+    ["checkbox.foreground", "checkbox.background", 3],
+    ["settings.checkboxForeground", "settings.checkboxBackground", 3],
     ["titleBar.activeForeground", "titleBar.activeBackground", 4.5],
     ["settings.headerForeground", "editor.background", 4.5],
     ["breadcrumb.foreground", "editor.background", 4.5],
@@ -218,6 +250,10 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
     ["editorSuggestWidget.highlightForeground", "editorSuggestWidget.background", 4.5],
     ["notificationLink.foreground", "notifications.background", 4.5],
     ["gitDecoration.renamedResourceForeground", "sideBar.background", 4.5],
+    ["gitDecoration.addedResourceForeground", "sideBar.background", 4.5],
+    ["gitDecoration.modifiedResourceForeground", "sideBar.background", 4.5],
+    ["gitDecoration.deletedResourceForeground", "sideBar.background", 4.5],
+    ["gitDecoration.untrackedResourceForeground", "sideBar.background", 4.5],
     ["debugView.valueChangedHighlight", "sideBar.background", 4.5],
     ["settings.modifiedItemIndicator", "editor.background", 3],
     ["chart.line", "editor.background", 3],
@@ -248,6 +284,8 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
     ],
     ["radio.inactiveForeground", "radio.inactiveBackground", 4.5],
     ["statusBarItem.remoteHoverForeground", "statusBarItem.remoteHoverBackground", 4.5],
+    ["statusBarItem.errorHoverForeground", "statusBarItem.errorHoverBackground", 4.5],
+    ["statusBarItem.warningHoverForeground", "statusBarItem.warningHoverBackground", 4.5],
     ["testing.message.error.badgeForeground", "testing.message.error.badgeBackground", 4.5],
     ["focusBorder", "editor.background", 3],
     ["activityBar.activeFocusBorder", "activityBar.background", 3],

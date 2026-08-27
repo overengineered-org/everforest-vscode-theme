@@ -271,8 +271,130 @@ function validateInstalledSemanticWorkbenchStateColors(theme, themeLabel, contra
   }
 }
 
+function validateInstalledDesktopWorkbenchColors(
+  theme,
+  themeLabel,
+  contrastRatio,
+  findIndistinguishableHoverBackgroundPairs
+) {
+  for (const secondaryWorkbenchSurfaceIdentifier of [
+    "activityBar.background",
+    "sideBar.background",
+    "editorGroupHeader.tabsBackground",
+    "tab.inactiveBackground",
+    "statusBar.background",
+    "titleBar.activeBackground",
+    "notifications.background",
+  ]) {
+    assert.equal(
+      theme.colors[secondaryWorkbenchSurfaceIdentifier],
+      theme.colors["panel.background"],
+      `${themeLabel} must install one coherent secondary workbench surface`
+    );
+  }
+  assert.equal(theme.colors["tab.activeBackground"], theme.colors["editor.background"]);
+
+  for (const activeWorkbenchIndicatorIdentifier of [
+    "panelTitle.activeBorder",
+    "tab.activeBorder",
+    "terminal.tab.activeBorder",
+  ]) {
+    assert.equal(
+      theme.colors[activeWorkbenchIndicatorIdentifier],
+      theme.colors["textLink.foreground"],
+      `${themeLabel} must install one active-state accent`
+    );
+  }
+  assert.equal(
+    theme.colors["activityBar.activeBorder"],
+    `${theme.colors["textLink.foreground"]}d0`,
+    `${themeLabel} must install the translucent active-state accent in the Activity Bar`
+  );
+
+  for (const [foregroundIdentifier, backgroundIdentifier, minimumContrast] of [
+    ["foreground", "sideBar.background", 4.5],
+    ["descriptionForeground", "sideBar.background", 4.5],
+    ["icon.foreground", "activityBar.background", 4.5],
+    ["tab.inactiveForeground", "tab.inactiveBackground", 4.5],
+    ["titleBar.inactiveForeground", "titleBar.inactiveBackground", 4.5],
+    ["commandCenter.foreground", "commandCenter.background", 4.5],
+    ["dropdown.foreground", "dropdown.background", 4.5],
+    ["settings.dropdownForeground", "settings.dropdownBackground", 4.5],
+    ["settings.numberInputForeground", "settings.numberInputBackground", 4.5],
+    ["settings.textInputForeground", "settings.textInputBackground", 4.5],
+    ["checkbox.foreground", "checkbox.background", 3],
+    ["settings.checkboxForeground", "settings.checkboxBackground", 3],
+    ["extensionBadge.remoteForeground", "extensionBadge.remoteBackground", 4.5],
+    ["gitDecoration.addedResourceForeground", "sideBar.background", 4.5],
+    ["gitDecoration.modifiedResourceForeground", "sideBar.background", 4.5],
+    ["gitDecoration.deletedResourceForeground", "sideBar.background", 4.5],
+    ["gitDecoration.untrackedResourceForeground", "sideBar.background", 4.5],
+  ]) {
+    assert.ok(
+      contrastRatio(theme.colors[foregroundIdentifier], theme.colors[backgroundIdentifier]) >=
+        minimumContrast,
+      `${themeLabel} installed ${foregroundIdentifier} must meet ${minimumContrast}:1 contrast against ${backgroundIdentifier}`
+    );
+  }
+
+  assert.notEqual(theme.colors.disabledForeground, theme.colors.foreground);
+  assert.equal(theme.colors["extensionButton.background"], theme.colors["button.background"]);
+  assert.equal(theme.colors["extensionButton.foreground"], theme.colors["button.foreground"]);
+  assert.equal(
+    theme.colors["extensionButton.prominentBackground"],
+    theme.colors["button.background"]
+  );
+  assert.equal(
+    theme.colors["extensionButton.prominentForeground"],
+    theme.colors["button.foreground"]
+  );
+
+  const semanticStatusBackgroundIdentifiers = [
+    "statusBar.debuggingBackground",
+    "statusBarItem.remoteBackground",
+    "statusBarItem.errorBackground",
+    "statusBarItem.warningBackground",
+  ];
+  assert.equal(
+    new Set(
+      semanticStatusBackgroundIdentifiers.map(
+        (semanticStatusBackgroundIdentifier) => theme.colors[semanticStatusBackgroundIdentifier]
+      )
+    ).size,
+    semanticStatusBackgroundIdentifiers.length,
+    `${themeLabel} must install distinct debugging, remote, error, and warning states`
+  );
+
+  for (const [statusForegroundIdentifier, statusBackgroundIdentifier] of [
+    ["statusBar.debuggingForeground", "statusBar.debuggingBackground"],
+    ["statusBarItem.remoteForeground", "statusBarItem.remoteBackground"],
+    ["statusBarItem.remoteHoverForeground", "statusBarItem.remoteHoverBackground"],
+    ["statusBarItem.errorForeground", "statusBarItem.errorBackground"],
+    ["statusBarItem.errorHoverForeground", "statusBarItem.errorHoverBackground"],
+    ["statusBarItem.warningForeground", "statusBarItem.warningBackground"],
+    ["statusBarItem.warningHoverForeground", "statusBarItem.warningHoverBackground"],
+    ["statusBarItem.prominentForeground", "statusBarItem.prominentBackground"],
+  ]) {
+    assert.ok(
+      contrastRatio(
+        theme.colors[statusForegroundIdentifier],
+        theme.colors[statusBackgroundIdentifier]
+      ) >= 4.5,
+      `${themeLabel} installed ${statusForegroundIdentifier} must meet 4.5:1 contrast against ${statusBackgroundIdentifier}`
+    );
+  }
+
+  assert.deepEqual(
+    findIndistinguishableHoverBackgroundPairs(theme.colors),
+    [],
+    `${themeLabel} must install visibly interactive hover backgrounds`
+  );
+}
+
 async function run() {
   const { contrastRatio } = await import("../../scripts/color-contrast.mjs");
+  const { findIndistinguishableHoverBackgroundPairs } =
+    await import("../../scripts/workbench-interaction-contract.mjs");
   const jsonLanguageFeatures = vscode.extensions.getExtension("vscode.json-language-features");
   assert.ok(jsonLanguageFeatures, "VS Code JSON language features are registered");
   await jsonLanguageFeatures.activate();
@@ -364,6 +486,12 @@ async function run() {
     );
     validateInstalledSourceControlGraphColors(theme, themeContribution.label, contrastRatio);
     validateInstalledSemanticWorkbenchStateColors(theme, themeContribution.label, contrastRatio);
+    validateInstalledDesktopWorkbenchColors(
+      theme,
+      themeContribution.label,
+      contrastRatio,
+      findIndistinguishableHoverBackgroundPairs
+    );
     for (const searchMatchSurface of [
       {
         activeBorder: "editor.findMatchBorder",

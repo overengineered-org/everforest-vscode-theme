@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
 import { contrastRatio } from "../../scripts/color-contrast.mjs";
+import { findIndistinguishableHoverBackgroundPairs } from "../../scripts/workbench-interaction-contract.mjs";
 import { getPalette } from "../../dist/palette/index.js";
 import { getSemantic } from "../../dist/semantic.js";
 import { getDefaultSyntax } from "../../dist/syntax/default.js";
@@ -108,6 +109,129 @@ for (const themeVariant of themeVariants) {
         `${sourceControlGraphReferenceColorIdentifier} label contrast`
       );
     }
+  });
+
+  test(`${themeVariant.appearance} ${themeVariant.contrast} keeps extension install actions prominent and readable`, () => {
+    const palette = getPalette(themeVariant.appearance, themeVariant.contrast);
+    const workbenchColors = createWorkbenchColors(palette, themeVariant.appearance);
+
+    for (const extensionButtonColorIdentifiers of [
+      {
+        background: "extensionButton.background",
+        foreground: "extensionButton.foreground",
+        hoverBackground: "extensionButton.hoverBackground",
+      },
+      {
+        background: "extensionButton.prominentBackground",
+        foreground: "extensionButton.prominentForeground",
+        hoverBackground: "extensionButton.prominentHoverBackground",
+      },
+    ]) {
+      assert.equal(
+        workbenchColors[extensionButtonColorIdentifiers.background],
+        workbenchColors["button.background"]
+      );
+      assert.equal(
+        workbenchColors[extensionButtonColorIdentifiers.foreground],
+        workbenchColors["button.foreground"]
+      );
+      assert.equal(
+        workbenchColors[extensionButtonColorIdentifiers.hoverBackground],
+        workbenchColors["button.hoverBackground"]
+      );
+      assert.ok(
+        contrastRatio(
+          workbenchColors[extensionButtonColorIdentifiers.foreground],
+          workbenchColors[extensionButtonColorIdentifiers.background]
+        ) >= 4.5,
+        `${extensionButtonColorIdentifiers.background} must meet 4.5:1 contrast`
+      );
+    }
+  });
+
+  test(`${themeVariant.appearance} ${themeVariant.contrast} keeps desktop workbench hierarchy and states readable`, () => {
+    const palette = getPalette(themeVariant.appearance, themeVariant.contrast);
+    const workbenchColors = createWorkbenchColors(palette, themeVariant.appearance);
+
+    for (const secondaryWorkbenchSurfaceIdentifier of [
+      "activityBar.background",
+      "sideBar.background",
+      "editorGroupHeader.tabsBackground",
+      "tab.inactiveBackground",
+      "panel.background",
+      "statusBar.background",
+      "titleBar.activeBackground",
+      "notifications.background",
+    ]) {
+      assert.equal(workbenchColors[secondaryWorkbenchSurfaceIdentifier], palette.bg1);
+    }
+    assert.equal(workbenchColors["tab.activeBackground"], palette.bg);
+
+    for (const activeWorkbenchIndicatorIdentifier of [
+      "panelTitle.activeBorder",
+      "tab.activeBorder",
+      "terminal.tab.activeBorder",
+    ]) {
+      assert.equal(
+        workbenchColors[activeWorkbenchIndicatorIdentifier],
+        workbenchColors["textLink.foreground"]
+      );
+    }
+    assert.equal(
+      workbenchColors["activityBar.activeBorder"],
+      `${workbenchColors["textLink.foreground"]}d0`
+    );
+
+    for (const [foregroundIdentifier, backgroundIdentifier, minimumContrast] of [
+      ["foreground", "sideBar.background", 4.5],
+      ["descriptionForeground", "sideBar.background", 4.5],
+      ["icon.foreground", "activityBar.background", 4.5],
+      ["tab.inactiveForeground", "tab.inactiveBackground", 4.5],
+      ["titleBar.inactiveForeground", "titleBar.inactiveBackground", 4.5],
+      ["commandCenter.foreground", "commandCenter.background", 4.5],
+      ["dropdown.foreground", "dropdown.background", 4.5],
+      ["settings.dropdownForeground", "settings.dropdownBackground", 4.5],
+      ["settings.numberInputForeground", "settings.numberInputBackground", 4.5],
+      ["settings.textInputForeground", "settings.textInputBackground", 4.5],
+      ["checkbox.foreground", "checkbox.background", 3],
+      ["settings.checkboxForeground", "settings.checkboxBackground", 3],
+      ["extensionBadge.remoteForeground", "extensionBadge.remoteBackground", 4.5],
+      ["gitDecoration.addedResourceForeground", "sideBar.background", 4.5],
+      ["gitDecoration.modifiedResourceForeground", "sideBar.background", 4.5],
+      ["gitDecoration.deletedResourceForeground", "sideBar.background", 4.5],
+      ["gitDecoration.untrackedResourceForeground", "sideBar.background", 4.5],
+    ]) {
+      assert.ok(
+        contrastRatio(
+          workbenchColors[foregroundIdentifier],
+          workbenchColors[backgroundIdentifier]
+        ) >= minimumContrast,
+        `${foregroundIdentifier} must meet ${minimumContrast}:1 contrast against ${backgroundIdentifier}`
+      );
+    }
+
+    assert.notEqual(workbenchColors.disabledForeground, workbenchColors.foreground);
+
+    for (const [statusForegroundIdentifier, statusBackgroundIdentifier] of [
+      ["statusBar.debuggingForeground", "statusBar.debuggingBackground"],
+      ["statusBarItem.remoteForeground", "statusBarItem.remoteBackground"],
+      ["statusBarItem.remoteHoverForeground", "statusBarItem.remoteHoverBackground"],
+      ["statusBarItem.errorForeground", "statusBarItem.errorBackground"],
+      ["statusBarItem.errorHoverForeground", "statusBarItem.errorHoverBackground"],
+      ["statusBarItem.warningForeground", "statusBarItem.warningBackground"],
+      ["statusBarItem.warningHoverForeground", "statusBarItem.warningHoverBackground"],
+      ["statusBarItem.prominentForeground", "statusBarItem.prominentBackground"],
+    ]) {
+      assert.ok(
+        contrastRatio(
+          workbenchColors[statusForegroundIdentifier],
+          workbenchColors[statusBackgroundIdentifier]
+        ) >= 4.5,
+        `${statusForegroundIdentifier} must meet 4.5:1 contrast against ${statusBackgroundIdentifier}`
+      );
+    }
+
+    assert.deepEqual(findIndistinguishableHoverBackgroundPairs(workbenchColors), []);
   });
 
   test(`${themeVariant.appearance} ${themeVariant.contrast} keeps semantic workbench states distinct and readable`, () => {
