@@ -91,7 +91,7 @@
     "generate:check": "node scripts/check-generated-themes.mjs",
     "validate": "node scripts/validate-themes.mjs",
     "check:format": "prettier --check .",
-    "test:unit": "npm run compile && node --test --experimental-test-coverage --test-coverage-include=dist/**/*.js --test-coverage-include=scripts/color-contrast.mjs --test-coverage-include=scripts/documented-workbench-color-contract.mjs --test-coverage-lines=95 --test-coverage-branches=95 --test-coverage-functions=95 test/unit/*.test.mjs",
+    "test:unit": "npm run compile && node --test --experimental-test-coverage --test-coverage-include=dist/**/*.js --test-coverage-include=scripts/color-contrast.mjs --test-coverage-include=scripts/documented-workbench-color-contract.mjs --test-coverage-include=scripts/workbench-interaction-contract.mjs --test-coverage-lines=95 --test-coverage-branches=95 --test-coverage-functions=95 test/unit/*.test.mjs",
     "test:performance": "npm run compile && node --test test/performance/*.test.mjs",
     "test:release-package": "node --test test/release-package.test.mjs",
     "verify:static": "npm run clean && npm run test:unit && npm run test:performance && npm run generate:check && npm run validate && npm run check:format",
