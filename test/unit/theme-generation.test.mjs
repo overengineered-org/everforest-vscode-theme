@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
-import { contrastRatio } from "../../scripts/color-contrast.mjs";
+import { compositeHexColor, contrastRatio } from "../../scripts/color-contrast.mjs";
 import { findIndistinguishableHoverBackgroundPairs } from "../../scripts/workbench-interaction-contract.mjs";
 import { getPalette } from "../../dist/palette/index.js";
 import { getSemantic } from "../../dist/semantic.js";
@@ -47,6 +47,67 @@ for (const themeVariant of themeVariants) {
       assert.match(translucentWorkbenchColor, /^#[0-9a-f]{8}$/i);
       assert.notEqual(translucentWorkbenchColor.slice(-2).toLowerCase(), "ff");
     }
+  });
+
+  test(`${themeVariant.appearance} ${themeVariant.contrast} keeps selected code unmistakable and readable`, () => {
+    const palette = getPalette(themeVariant.appearance, themeVariant.contrast);
+    const workbenchColors = createWorkbenchColors(palette, themeVariant.appearance);
+    const expectedSelectionForeground = themeVariant.appearance === "dark" ? "#fdf6e3" : "#2d353b";
+    const expectedSelectionBackground = `${palette.dimAqua}${themeVariant.appearance === "dark" ? "80" : "a0"}`;
+    const expectedInactiveSelectionBackground = `${palette.dimAqua}${themeVariant.appearance === "dark" ? "40" : "60"}`;
+    const expectedSelectionHighlightBackground = `${palette.dimAqua}${themeVariant.appearance === "dark" ? "20" : "30"}`;
+
+    assert.equal(workbenchColors["editor.selectionForeground"], expectedSelectionForeground);
+    assert.equal(workbenchColors["editor.selectionBackground"], expectedSelectionBackground);
+    assert.equal(
+      workbenchColors["editor.inactiveSelectionBackground"],
+      expectedInactiveSelectionBackground
+    );
+    assert.equal(
+      workbenchColors["editor.selectionHighlightBackground"],
+      expectedSelectionHighlightBackground
+    );
+    assert.equal(workbenchColors["editor.selectionHighlightBorder"], `${palette.dimAqua}80`);
+    assert.equal(workbenchColors["minimap.selectionHighlight"], expectedSelectionBackground);
+    assert.equal(workbenchColors["terminal.selectionBackground"], expectedSelectionBackground);
+    assert.equal(
+      workbenchColors["terminal.inactiveSelectionBackground"],
+      expectedInactiveSelectionBackground
+    );
+    assert.equal(workbenchColors["terminal.selectionForeground"], expectedSelectionForeground);
+
+    const compositedSelectionBackground = compositeHexColor(
+      expectedSelectionBackground,
+      palette.bg
+    );
+    const compositedInactiveSelectionBackground = compositeHexColor(
+      expectedInactiveSelectionBackground,
+      palette.bg
+    );
+    const compositedSelectionHighlightBackground = compositeHexColor(
+      expectedSelectionHighlightBackground,
+      palette.bg
+    );
+    const activeSelectionSurfaceContrast = contrastRatio(compositedSelectionBackground, palette.bg);
+    const inactiveSelectionSurfaceContrast = contrastRatio(
+      compositedInactiveSelectionBackground,
+      palette.bg
+    );
+    const selectionHighlightSurfaceContrast = contrastRatio(
+      compositedSelectionHighlightBackground,
+      palette.bg
+    );
+
+    assert.ok(
+      activeSelectionSurfaceContrast >= (themeVariant.appearance === "dark" ? 1.9 : 1.3),
+      "active selection must remain distinct from the editor surface"
+    );
+    assert.ok(
+      contrastRatio(expectedSelectionForeground, compositedSelectionBackground) >= 4.5,
+      "selected text must meet WCAG AA contrast"
+    );
+    assert.ok(activeSelectionSurfaceContrast > inactiveSelectionSurfaceContrast);
+    assert.ok(inactiveSelectionSurfaceContrast > selectionHighlightSurfaceContrast);
   });
 
   test(`${themeVariant.appearance} ${themeVariant.contrast} keeps source control graph labels semantic and readable`, () => {
@@ -244,7 +305,7 @@ for (const themeVariant of themeVariants) {
     const expectedResolvedCommentIndicator =
       themeVariant.appearance === "dark" ? palette.grey2 : "#59646c";
     const expectedSemanticWorkbenchStateColors = {
-      "minimap.selectionOccurrenceHighlight": `${palette.bg4}${themeVariant.appearance === "dark" ? "60" : "50"}`,
+      "minimap.selectionOccurrenceHighlight": `${palette.dimAqua}${themeVariant.appearance === "dark" ? "20" : "30"}`,
       "minimap.chatEditHighlight": `${themeVariant.appearance === "dark" ? palette.green : "#596600"}${themeVariant.appearance === "dark" ? "99" : "80"}`,
       "chart.line": expectedAccessibleBlueForeground,
       "chart.axis": `${themeVariant.appearance === "dark" ? palette.fg : "#59646c"}${themeVariant.appearance === "dark" ? "66" : "99"}`,

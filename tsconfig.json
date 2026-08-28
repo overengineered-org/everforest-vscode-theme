@@ -4,6 +4,8 @@
     "forceConsistentCasingInFileNames": true,
     "module": "Node16",
     "moduleResolution": "Node16",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noUncheckedIndexedAccess": true,
     "outDir": "dist",
     "rootDir": "src",
