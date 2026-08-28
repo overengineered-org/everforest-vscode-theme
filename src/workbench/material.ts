@@ -197,8 +197,10 @@ export function createWorkbenchColors(palette: Palette, appearance: ThemeAppeara
   const readableWorkbenchAccentColors = getReadableWorkbenchAccentColors(appearance, palette);
   const accessibleAccentGreen = readableWorkbenchAccentColors.green;
   const accessibleBlueForeground = readableWorkbenchAccentColors.blue;
-  const editorSelectionBackgroundColor = `${palette.bg4}${appearance === "dark" ? "c0" : "a0"}`;
-  const editorSelectionHighlightColor = `${palette.bg4}${appearance === "dark" ? "60" : "50"}`;
+  const activeSelectionBackgroundColor = `${palette.dimAqua}${appearance === "dark" ? "80" : "a0"}`;
+  const inactiveSelectionBackgroundColor = `${palette.dimAqua}${appearance === "dark" ? "40" : "60"}`;
+  const selectionOccurrenceBackgroundColor = `${palette.dimAqua}${appearance === "dark" ? "20" : "30"}`;
+  const selectedTextForegroundColor = appearance === "dark" ? "#fdf6e3" : "#2d353b";
   const resolvedCommentIndicator = appearance === "dark" ? palette.grey2 : "#59646c";
   const unresolvedCommentIndicator = accessibleBlueForeground;
   const cursorForeground = palette.fg;
@@ -282,8 +284,8 @@ export function createWorkbenchColors(palette: Palette, appearance: ThemeAppeara
     "sideBarTitle.foreground": activeWorkbenchForeground,
     "sideBarSectionHeader.foreground": primaryWorkbenchForeground,
     "minimap.findMatchHighlight": `${palette.dimAqua}60`,
-    "minimap.selectionHighlight": `${palette.bg5}f0`,
-    "minimap.selectionOccurrenceHighlight": editorSelectionHighlightColor,
+    "minimap.selectionHighlight": activeSelectionBackgroundColor,
+    "minimap.selectionOccurrenceHighlight": selectionOccurrenceBackgroundColor,
     "minimap.chatEditHighlight": `${accessibleAccentGreen}${appearance === "dark" ? "99" : "80"}`,
     "minimap.errorHighlight": `${palette.dimRed}80`,
     "minimap.warningHighlight": `${palette.dimYellow}80`,
@@ -312,9 +314,11 @@ export function createWorkbenchColors(palette: Palette, appearance: ThemeAppeara
     "editorLineNumber.foreground": `${palette.grey0}a0`,
     "editorLineNumber.activeForeground": `${palette.grey2}e0`,
     "editorCursor.foreground": cursorForeground,
-    "editor.selectionBackground": editorSelectionBackgroundColor,
-    "editor.selectionHighlightBackground": editorSelectionHighlightColor,
-    "editor.inactiveSelectionBackground": editorSelectionHighlightColor,
+    "editor.selectionBackground": activeSelectionBackgroundColor,
+    "editor.selectionForeground": selectedTextForegroundColor,
+    "editor.selectionHighlightBackground": selectionOccurrenceBackgroundColor,
+    "editor.selectionHighlightBorder": `${palette.dimAqua}80`,
+    "editor.inactiveSelectionBackground": inactiveSelectionBackgroundColor,
     "editor.wordHighlightBackground":
       appearance === "dark" ? `${palette.bg4}58` : `${palette.bg4}48`,
     "editor.wordHighlightStrongBackground":
@@ -327,7 +331,7 @@ export function createWorkbenchColors(palette: Palette, appearance: ThemeAppeara
     "editor.findMatchBorder": palette.fg,
     "editor.findMatchHighlightBackground": `${palette.dimGreen}40`,
     "editor.findMatchHighlightBorder": accessibleAccentGreen,
-    "editor.findRangeHighlightBackground": editorSelectionHighlightColor,
+    "editor.findRangeHighlightBackground": selectionOccurrenceBackgroundColor,
     "editor.lineHighlightBorder": `${palette.bg5}00`,
     "editor.lineHighlightBackground":
       appearance === "dark" ? `${palette.bg3}90` : `${palette.bg3}70`,
@@ -427,8 +431,9 @@ export function createWorkbenchColors(palette: Palette, appearance: ThemeAppeara
     "terminal.background": palette.bg1,
     "terminal.foreground": primaryWorkbenchForeground,
     "terminal.border": palette.bg4,
-    "terminal.selectionBackground": editorSelectionBackgroundColor,
-    "terminal.inactiveSelectionBackground": editorSelectionHighlightColor,
+    "terminal.selectionBackground": activeSelectionBackgroundColor,
+    "terminal.selectionForeground": selectedTextForegroundColor,
+    "terminal.inactiveSelectionBackground": inactiveSelectionBackgroundColor,
     "terminal.findMatchBackground": `${palette.dimOrange}60`,
     "terminal.findMatchBorder": palette.fg,
     "terminal.findMatchHighlightBackground": `${palette.dimGreen}40`,

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { relative, resolve, sep } from "node:path";
 import themeManifest from "../test/support/theme-manifest.cjs";
-import { contrastRatio, validateHexColor } from "./color-contrast.mjs";
+import { compositeHexColor, contrastRatio, validateHexColor } from "./color-contrast.mjs";
 import { findIndistinguishableHoverBackgroundPairs } from "./workbench-interaction-contract.mjs";
 
 const { requiredSemanticTokenIdentifiers, requiredSyntaxScopes } = themeManifest;
@@ -77,6 +77,61 @@ function collectThemeColors(themeNode, collectedColors = []) {
     }
   }
   return collectedColors;
+}
+
+function validateSelectionColorContract(themePath, themeColors, appearance) {
+  const editorBackground = themeColors["editor.background"];
+  const editorSelectionBackground = themeColors["editor.selectionBackground"];
+  const editorInactiveSelectionBackground = themeColors["editor.inactiveSelectionBackground"];
+  const editorSelectionHighlightBackground = themeColors["editor.selectionHighlightBackground"];
+  const compositedEditorSelectionBackground = compositeHexColor(
+    editorSelectionBackground,
+    editorBackground
+  );
+  const activeSelectionSurfaceContrast = contrastRatio(
+    compositedEditorSelectionBackground,
+    editorBackground
+  );
+  const minimumActiveSelectionSurfaceContrast = appearance === "dark" ? 1.9 : 1.3;
+
+  if (activeSelectionSurfaceContrast < minimumActiveSelectionSurfaceContrast) {
+    throw new Error(
+      `${themePath}: editor selection surface contrast ${activeSelectionSurfaceContrast.toFixed(2)}`
+    );
+  }
+  const selectedTextContrast = contrastRatio(
+    themeColors["editor.selectionForeground"],
+    compositedEditorSelectionBackground
+  );
+  if (selectedTextContrast < 4.5) {
+    throw new Error(`${themePath}: selected text contrast ${selectedTextContrast.toFixed(2)}`);
+  }
+
+  const selectionOpacitySequence = [
+    editorSelectionBackground,
+    editorInactiveSelectionBackground,
+    editorSelectionHighlightBackground,
+  ].map(alphaChannelFromHexColor);
+  if (
+    selectionOpacitySequence.some((selectionOpacity) => selectionOpacity === undefined) ||
+    selectionOpacitySequence[0] <= selectionOpacitySequence[1] ||
+    selectionOpacitySequence[1] <= selectionOpacitySequence[2]
+  ) {
+    throw new Error(`${themePath}: selection states must use descending translucent opacity`);
+  }
+
+  if (themeColors["terminal.selectionBackground"] !== editorSelectionBackground) {
+    throw new Error(`${themePath}: terminal and editor active selection colors must match`);
+  }
+  if (themeColors["minimap.selectionHighlight"] !== editorSelectionBackground) {
+    throw new Error(`${themePath}: minimap and editor active selection colors must match`);
+  }
+  if (themeColors["terminal.inactiveSelectionBackground"] !== editorInactiveSelectionBackground) {
+    throw new Error(`${themePath}: terminal and editor inactive selection colors must match`);
+  }
+  if (themeColors["terminal.selectionForeground"] !== themeColors["editor.selectionForeground"]) {
+    throw new Error(`${themePath}: terminal and editor selected text colors must match`);
+  }
 }
 
 for (const { appearance, contrast, expectedBackground } of canonicalThemeVariants) {
@@ -215,6 +270,7 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
   if (buttonContrast < 4.5) {
     throw new Error(`${themePath}: button contrast ${buttonContrast.toFixed(2)}`);
   }
+  validateSelectionColorContract(themePath, generatedTheme.colors, appearance);
   const criticalWorkbenchContrastChecks = [
     ["foreground", "sideBar.background", 4.5],
     ["descriptionForeground", "sideBar.background", 4.5],

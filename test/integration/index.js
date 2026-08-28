@@ -271,6 +271,62 @@ function validateInstalledSemanticWorkbenchStateColors(theme, themeLabel, contra
   }
 }
 
+function validateInstalledSelectionColors(theme, themeLabel, compositeHexColor, contrastRatio) {
+  const selectionAccent = theme.type === "dark" ? "#569d79" : "#6ec398";
+  const expectedSelectionColors = {
+    "editor.selectionBackground": `${selectionAccent}${theme.type === "dark" ? "80" : "a0"}`,
+    "editor.selectionForeground": theme.type === "dark" ? "#fdf6e3" : "#2d353b",
+    "editor.inactiveSelectionBackground": `${selectionAccent}${theme.type === "dark" ? "40" : "60"}`,
+    "editor.selectionHighlightBackground": `${selectionAccent}${theme.type === "dark" ? "20" : "30"}`,
+    "editor.selectionHighlightBorder": `${selectionAccent}80`,
+  };
+
+  for (const [selectionColorIdentifier, expectedSelectionColor] of Object.entries(
+    expectedSelectionColors
+  )) {
+    assert.equal(
+      theme.colors[selectionColorIdentifier],
+      expectedSelectionColor,
+      `${themeLabel} must install ${selectionColorIdentifier}`
+    );
+  }
+
+  const compositedSelectionBackground = compositeHexColor(
+    theme.colors["editor.selectionBackground"],
+    theme.colors["editor.background"]
+  );
+  assert.ok(
+    contrastRatio(compositedSelectionBackground, theme.colors["editor.background"]) >=
+      (theme.type === "dark" ? 1.9 : 1.3),
+    `${themeLabel} active selection must remain distinct from the editor surface`
+  );
+  assert.ok(
+    contrastRatio(theme.colors["editor.selectionForeground"], compositedSelectionBackground) >= 4.5,
+    `${themeLabel} selected text must meet 4.5:1 contrast`
+  );
+
+  assert.equal(
+    theme.colors["terminal.selectionBackground"],
+    theme.colors["editor.selectionBackground"],
+    `${themeLabel} editor and terminal active selections must match`
+  );
+  assert.equal(
+    theme.colors["minimap.selectionHighlight"],
+    theme.colors["editor.selectionBackground"],
+    `${themeLabel} editor and minimap active selections must match`
+  );
+  assert.equal(
+    theme.colors["terminal.inactiveSelectionBackground"],
+    theme.colors["editor.inactiveSelectionBackground"],
+    `${themeLabel} editor and terminal inactive selections must match`
+  );
+  assert.equal(
+    theme.colors["terminal.selectionForeground"],
+    theme.colors["editor.selectionForeground"],
+    `${themeLabel} editor and terminal selected text must match`
+  );
+}
+
 function validateInstalledDesktopWorkbenchColors(
   theme,
   themeLabel,
@@ -392,7 +448,7 @@ function validateInstalledDesktopWorkbenchColors(
 }
 
 async function run() {
-  const { contrastRatio } = await import("../../scripts/color-contrast.mjs");
+  const { compositeHexColor, contrastRatio } = await import("../../scripts/color-contrast.mjs");
   const { findIndistinguishableHoverBackgroundPairs } =
     await import("../../scripts/workbench-interaction-contract.mjs");
   const jsonLanguageFeatures = vscode.extensions.getExtension("vscode.json-language-features");
@@ -486,6 +542,12 @@ async function run() {
     );
     validateInstalledSourceControlGraphColors(theme, themeContribution.label, contrastRatio);
     validateInstalledSemanticWorkbenchStateColors(theme, themeContribution.label, contrastRatio);
+    validateInstalledSelectionColors(
+      theme,
+      themeContribution.label,
+      compositeHexColor,
+      contrastRatio
+    );
     validateInstalledDesktopWorkbenchColors(
       theme,
       themeContribution.label,
