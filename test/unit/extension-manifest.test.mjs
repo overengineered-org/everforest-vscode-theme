@@ -16,8 +16,8 @@ const integrationHarnessManifest = JSON.parse(
 const { expectedThemeContributions } = themeManifest;
 const marketplaceItemUrl =
   "https://marketplace.visualstudio.com/items?itemName=overengineered-org.everforest-complete";
-const marketplaceBadgeImageUrl =
-  "https://img.shields.io/visual-studio-marketplace/v/overengineered-org.everforest-complete?label=Marketplace";
+const marketplaceVersionBadgeImageUrl =
+  "https://vsmarketplacebadges.dev/version/overengineered-org.everforest-complete.svg?subject=Marketplace";
 const themeGalleryImagePath = "media/previews/everforest-complete-variants.webp";
 
 test("requires VS Code 1.95 and preserves presets beside configurable themes", () => {
@@ -42,9 +42,10 @@ test("improves Marketplace discovery and installation", () => {
   );
   assert.ok(
     readme.includes(
-      `![Visual Studio Marketplace](${marketplaceBadgeImageUrl})](${marketplaceItemUrl})`
+      `[![Visual Studio Marketplace](${marketplaceVersionBadgeImageUrl})](${marketplaceItemUrl})`
     )
   );
+  assert.doesNotMatch(readme, /img\.shields\.io\/visual-studio-marketplace\//);
   assert.ok(readme.includes(`](${themeGalleryImagePath})`));
   assert.ok(extensionManifest.files.includes("README.md"));
   assert.ok(extensionManifest.files.includes(themeGalleryImagePath));

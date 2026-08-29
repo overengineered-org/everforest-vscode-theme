@@ -3,7 +3,7 @@
 [![CI](https://github.com/overengineered-org/everforest-vscode-theme/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/overengineered-org/everforest-vscode-theme/actions/workflows/ci.yml)
 [![Build](https://img.shields.io/github/check-runs/overengineered-org/everforest-vscode-theme/main?nameFilter=Static%20validation%20and%20VSIX&label=Build)](https://github.com/overengineered-org/everforest-vscode-theme/actions/workflows/ci.yml)
 [![Tests](https://img.shields.io/github/check-runs/overengineered-org/everforest-vscode-theme/main?nameFilter=Tests&label=Tests)](https://github.com/overengineered-org/everforest-vscode-theme/actions/workflows/ci.yml)
-[![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/overengineered-org.everforest-complete?label=Marketplace)](https://marketplace.visualstudio.com/items?itemName=overengineered-org.everforest-complete)
+[![Visual Studio Marketplace](https://vsmarketplacebadges.dev/version/overengineered-org.everforest-complete.svg?subject=Marketplace)](https://marketplace.visualstudio.com/items?itemName=overengineered-org.everforest-complete)
 [![VS Code 1.95.0+](https://img.shields.io/badge/VS_Code-1.95.0%2B-007ACC?logo=visualstudiocode&logoColor=white)](./package.json)
 
 **Requires VS Code 1.95.0 or later.**
