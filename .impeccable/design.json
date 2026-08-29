@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-29T09:28:32Z",
+  "title": "Design System: Everforest Complete",
+  "extensions": {
+    "colorMeta": {
+      "dark-canvas": {
+        "role": "neutral",
+        "displayName": "Forest Canvas",
+        "canonical": "#2d353b",
+        "tonalRamp": [
+          "#1b2024",
+          "#21272b",
+          "#272e33",
+          "#2d353b",
+          "#333c43",
+          "#3a464c",
+          "#475258",
+          "#555f66"
+        ]
+      },
+      "light-canvas": {
+        "role": "neutral",
+        "displayName": "Sunlit Canvas",
+        "canonical": "#fdf6e3",
+        "tonalRamp": [
+          "#d8d3ba",
+          "#ddd8be",
+          "#e5dfc5",
+          "#eae4ca",
+          "#efebd4",
+          "#f3ead3",
+          "#fdf6e3",
+          "#fffbef"
+        ]
+      },
+      "dark-green": {
+        "role": "primary",
+        "displayName": "Canopy Green",
+        "canonical": "#a7c080",
+        "tonalRamp": [
+          "#26301f",
+          "#3b492e",
+          "#52643f",
+          "#6b8053",
+          "#859d69",
+          "#a7c080",
+          "#c5d6a7",
+          "#e5edd2"
+        ]
+      },
+      "dark-aqua": {
+        "role": "secondary",
+        "displayName": "Rainwashed Aqua",
+        "canonical": "#83c092",
+        "tonalRamp": [
+          "#1f3025",
+          "#304a39",
+          "#42664f",
+          "#578268",
+          "#6fa184",
+          "#83c092",
+          "#add6b7",
+          "#d7ecdc"
+        ]
+      }
+    },
+    "typographyMeta": {},
+    "shadows": [
+      {
+        "name": "dark-ambient",
+        "value": "#00000070",
+        "purpose": "Floating VS Code surfaces in Dark themes."
+      },
+      {
+        "name": "light-ambient",
+        "value": "#3c474d20",
+        "purpose": "Floating VS Code surfaces in Light themes."
+      }
+    ],
+    "motion": [],
+    "breakpoints": []
+  },
+  "components": [],
+  "narrative": {
+    "northStar": "The Quiet Forest Workbench",
+    "overview": "Everforest Complete disappears behind the work. Forest-tinted surfaces reduce glare while semantic accents make state changes immediately legible.",
+    "keyCharacteristics": [
+      "Restrained forest neutrals with semantic accent color.",
+      "Tonal depth before shadow.",
+      "Complete interaction-state coverage.",
+      "Stable presets plus configurable themes."
+    ],
+    "rules": [
+      {
+        "name": "The Functional Color Rule",
+        "body": "Accent color communicates meaning; it never decorates empty space.",
+        "section": "colors"
+      },
+      {
+        "name": "The User Font Rule",
+        "body": "Never bundle, download, or force a font.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tonal-First Rule",
+        "body": "Change surface tone before adding shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do compile every theme through src/theme.ts.",
+      "Do preserve the six fixed theme labels and paths during upgrades.",
+      "Do keep premium controls application-scoped, local, and reversible."
+    ],
+    "donts": [
+      "Don't add paid feature gates, trials, upgrade prompts, or artificial limits.",
+      "Don't ship generic recolors that ignore workbench, extension, terminal, or interaction states.",
+      "Don't duplicate theme logic or add speculative settings."
+    ]
+  }
+}

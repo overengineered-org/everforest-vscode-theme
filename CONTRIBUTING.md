@@ -2,6 +2,9 @@
 
 Run `npm ci` first. Required: Node.js 24.
 
+Read [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md) before changing product behavior or color
+semantics.
+
 ## Make one change
 
 1. Create a focused branch from `main`.

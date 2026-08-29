@@ -151,4 +151,12 @@ test("exposes the proven Everforest premium configuration contract", () => {
     "37.5%",
     "50%",
   ]);
+  assert.ok(readme.includes("## Use all 14 premium controls"));
+  assert.ok(readme.includes("Everforest Complete: Open Premium Settings"));
+  for (const premiumSettingKey of Object.keys(premiumSettings)) {
+    assert.ok(
+      readme.includes(`\`${premiumSettingKey}\``),
+      `${premiumSettingKey} missing from README`
+    );
+  }
 });

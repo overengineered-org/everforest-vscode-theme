@@ -35,21 +35,31 @@ Time: 2 minutes.
 
 Done: the complete VS Code interface now uses Everforest.
 
-## Premium customization
+## Use all 14 premium controls
 
-Run **Everforest Complete: Open Premium Settings** from the Command Palette.
+Time: 1 minute.
 
-| Control             | Options                                    |
-| ------------------- | ------------------------------------------ |
-| Background contrast | Soft, Medium, or Hard for Light and Dark   |
-| Workbench           | Material, Flat, or High Contrast           |
-| Editor focus        | Cursor and selection colors for Light/Dark |
-| Typography          | Keyword italics and comment italics        |
-| Accessibility       | Diagnostic opacity and stronger UI borders |
+1. Choose **Everforest Complete Dark** or **Everforest Complete Light** as your color theme.
+2. Open the Command Palette: `⌘⇧P` on macOS or `Ctrl+Shift+P` on Windows/Linux.
+3. Run **Everforest Complete: Open Premium Settings**.
+4. Change any control below.
+5. Select **Reload Window** when prompted.
 
-After a theme setting changes, select **Reload Window** when prompted. The extension regenerates
-only its configurable Light and Dark theme files. Fixed presets do not change. Premium settings
-apply across VS Code, never per workspace.
+Done: your configurable Light and Dark themes now use the new settings. Fixed Soft, Medium, and Hard
+presets never change.
+
+| Controls                      | Settings                                                                                  | Options                                |
+| ----------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------- |
+| 1–2. Dark/Light contrast      | `everforestComplete.darkContrast`<br>`everforestComplete.lightContrast`                   | Soft, Medium, Hard                     |
+| 3–4. Dark/Light workbench     | `everforestComplete.darkWorkbench`<br>`everforestComplete.lightWorkbench`                 | Material, Flat, High Contrast          |
+| 5–6. Dark/Light cursor        | `everforestComplete.darkCursor`<br>`everforestComplete.lightCursor`                       | Black/white or an Everforest accent    |
+| 7–8. Dark/Light selection     | `everforestComplete.darkSelection`<br>`everforestComplete.lightSelection`                 | Grey or an Everforest accent           |
+| 9–10. Keyword/comment italics | `everforestComplete.italicKeywords`<br>`everforestComplete.italicComments`                | On or off                              |
+| 11–12. Diagnostics/borders    | `everforestComplete.diagnosticTextBackgroundOpacity`<br>`everforestComplete.highContrast` | 0–50% opacity; stronger borders on/off |
+| 13–14. Scheduled switching    | `everforestComplete.autoSwitch.enabled`<br>`everforestComplete.autoSwitch.schedule`       | On/off; local `HH:MM` theme entries    |
+
+Premium settings apply across VS Code, never per workspace. Scheduled switching requires VS Code
+Desktop.
 
 Example:
 
@@ -183,7 +193,8 @@ npm run package:verify
 Edit `src/`, then run `npm run generate`. Do not hand-edit `themes/*.json`.
 
 See [Contributing](CONTRIBUTING.md), [Architecture](docs/ARCHITECTURE.md), and
-[Visual testing](docs/VISUAL_TESTING.md).
+[Visual testing](docs/VISUAL_TESTING.md). Product decisions live in [PRODUCT.md](PRODUCT.md); visual
+rules live in [DESIGN.md](DESIGN.md).
 
 ## Release model
 
