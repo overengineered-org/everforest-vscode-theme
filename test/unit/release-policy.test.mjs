@@ -170,17 +170,71 @@ test("reuses one validated VSIX across every integration matrix job", () => {
   );
 });
 
-test("enforces theme performance budgets before packaging", () => {
+test("installs lean dependencies only after the VSIX is built", () => {
+  const continuousIntegrationWorkflow = readFileSync(
+    resolve(repositoryDirectory, ".github/workflows/ci.yml"),
+    "utf8"
+  );
+  const releaseRecoveryWorkflow = readFileSync(
+    resolve(repositoryDirectory, ".github/workflows/github-release-recovery.yml"),
+    "utf8"
+  );
+  const leanIntegrationInstallCommand =
+    "run: npm ci --ignore-scripts --omit=optional --no-audit --no-fund";
+  const staticJob = workflowJobBlock(continuousIntegrationWorkflow, "static");
+  const integrationJob = workflowJobBlock(continuousIntegrationWorkflow, "integration");
+  const releaseDryRunJob = workflowJobBlock(continuousIntegrationWorkflow, "release-dry-run");
+  const releaseJob = workflowJobBlock(continuousIntegrationWorkflow, "release");
+  const marketplaceJob = workflowJobBlock(continuousIntegrationWorkflow, "marketplace");
+  const recoveryBuildJob = workflowJobBlock(releaseRecoveryWorkflow, "build");
+
+  assert.ok(integrationJob.includes(leanIntegrationInstallCommand));
+  assert.equal(
+    continuousIntegrationWorkflow.split(leanIntegrationInstallCommand).length - 1,
+    1,
+    "only the integration matrix may omit build and release dependencies"
+  );
+  for (const packagingOrReleaseJob of [
+    staticJob,
+    releaseDryRunJob,
+    releaseJob,
+    marketplaceJob,
+    recoveryBuildJob,
+  ]) {
+    assert.match(packagingOrReleaseJob, /^\s+run: npm ci$/m);
+    assert.equal(packagingOrReleaseJob.includes(leanIntegrationInstallCommand), false);
+  }
+});
+
+test("compiles once during static validation", () => {
   const extensionManifest = JSON.parse(
     readFileSync(resolve(repositoryDirectory, "package.json"), "utf8")
   );
+  const extensionScripts = extensionManifest.scripts;
+  const staticValidationSteps = extensionScripts["verify:static"].split(" && ");
 
+  assert.equal(extensionScripts["test:unit"], "npm run compile && npm run test:unit:compiled");
   assert.equal(
-    extensionManifest.scripts["test:performance"],
-    "npm run compile && node --test test/performance/*.test.mjs"
+    extensionScripts["test:performance"],
+    "npm run compile && npm run test:performance:compiled"
   );
-  assert.ok(extensionManifest.scripts["verify:static"].includes("npm run test:performance"));
-  assert.equal(extensionManifest.scripts["vscode:prepublish"], "npm run verify:static");
+  assert.ok(extensionScripts["test:unit:compiled"].includes("node --test"));
+  assert.equal(
+    extensionScripts["test:performance:compiled"],
+    "node --test test/performance/*.test.mjs"
+  );
+  assert.deepEqual(staticValidationSteps.slice(0, 4), [
+    "npm run clean",
+    "npm run compile",
+    "npm run test:unit:compiled",
+    "npm run test:performance:compiled",
+  ]);
+  assert.equal(
+    staticValidationSteps.filter((validationStep) => validationStep === "npm run compile").length,
+    1
+  );
+  assert.match(extensionManifest.devDependencies["@types/node"], /^\^24\.\d+\.\d+$/);
+  assert.equal(extensionScripts["vscode:prepublish"], "npm run verify:static");
 });
 
 test("fails the test aggregate unless integration passes", () => {
