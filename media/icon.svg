@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
   <title id="title">Everforest Complete</title>
-  <description id="description">A warm green evergreen tree on a dark rounded square.</description>
-  <rect width="512" height="512" rx="112" fill="#2d353b"/>
-  <circle cx="256" cy="242" r="170" fill="#343f44"/>
-  <path d="M256 72 132 244h70L112 360h288l-90-116h70L256 72Z" fill="#a7c080"/>
-  <path d="M256 72v288H112l90-116h-70L256 72Z" fill="#8da101"/>
-  <rect x="232" y="350" width="48" height="92" rx="16" fill="#d3c6aa"/>
+  <description id="description">A precise three-tier evergreen mark on a deep forest square.</description>
+  <rect width="512" height="512" fill="#2d353b"/>
+  <path d="M256 104 333 195c6 7 2 13-7 13H186c-9 0-13-6-7-13l77-91Z" fill="#83c092"/>
+  <path d="M211 224h90l65 75c6 7 2 13-8 13H154c-10 0-14-6-8-13l65-75Z" fill="#a7c080"/>
+  <path d="M169 328h174l66 75c7 8 2 15-9 15H112c-11 0-16-7-9-15l66-75Z" fill="#8da101"/>
+  <rect x="237" y="418" width="38" height="32" rx="12" fill="#d3c6aa"/>
 </svg>

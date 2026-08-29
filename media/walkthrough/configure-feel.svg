@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" role="img" aria-labelledby="title description">
+  <title id="title">Configure the Everforest feel</title>
+  <description id="description">A native three-step choice flow for appearance, contrast, and workbench style.</description>
+  <rect width="800" height="450" fill="var(--vscode-editor-background, #2d353b)"/>
+  <rect x="125" y="62" width="550" height="326" rx="18" fill="var(--vscode-quickInput-background, #343f44)" stroke="var(--vscode-widget-border, #475258)" stroke-width="2"/>
+  <rect x="155" y="94" width="380" height="14" rx="7" fill="var(--vscode-input-foreground, #d3c6aa)" opacity="0.82"/>
+  <rect x="563" y="90" width="78" height="24" rx="12" fill="var(--vscode-badge-background, #a7c080)"/>
+  <text x="602" y="107" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="13" font-weight="600" fill="#1b2024">1 of 3</text>
+  <g font-family="-apple-system, BlinkMacSystemFont, sans-serif">
+    <rect x="145" y="140" width="510" height="62" rx="10" fill="var(--vscode-list-activeSelectionBackground, #475258)"/>
+    <circle cx="182" cy="171" r="17" fill="#a7c080"/>
+    <text x="182" y="177" text-anchor="middle" font-size="16" font-weight="700" fill="#1b2024">1</text>
+    <text x="216" y="168" font-size="17" font-weight="600" fill="var(--vscode-list-activeSelectionForeground, #fdf6e3)">Appearance</text>
+    <text x="216" y="187" font-size="13" fill="var(--vscode-descriptionForeground, #9da9a0)">Dark, Light, System, or Schedule</text>
+    <rect x="145" y="214" width="510" height="62" rx="10" fill="var(--vscode-list-inactiveSelectionBackground, #3a464c)" opacity="0.72"/>
+    <circle cx="182" cy="245" r="17" fill="#83c092"/>
+    <text x="182" y="251" text-anchor="middle" font-size="16" font-weight="700" fill="#1b2024">2</text>
+    <text x="216" y="242" font-size="17" font-weight="600" fill="var(--vscode-foreground, #d3c6aa)">Contrast</text>
+    <text x="216" y="261" font-size="13" fill="var(--vscode-descriptionForeground, #9da9a0)">Soft, Medium, or Hard</text>
+    <rect x="145" y="288" width="510" height="62" rx="10" fill="var(--vscode-list-inactiveSelectionBackground, #3a464c)" opacity="0.72"/>
+    <circle cx="182" cy="319" r="17" fill="#7fbbb3"/>
+    <text x="182" y="325" text-anchor="middle" font-size="16" font-weight="700" fill="#1b2024">3</text>
+    <text x="216" y="316" font-size="17" font-weight="600" fill="var(--vscode-foreground, #d3c6aa)">Workbench</text>
+    <text x="216" y="335" font-size="13" fill="var(--vscode-descriptionForeground, #9da9a0)">Material, Flat, or High Contrast</text>
+  </g>
+</svg>

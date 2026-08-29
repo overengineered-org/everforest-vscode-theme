@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
 import themeManifest from "../support/theme-manifest.cjs";
@@ -12,13 +12,34 @@ const readme = readFileSync(resolve(repositoryDirectory, "README.md"), "utf8");
 const integrationHarnessManifest = JSON.parse(
   readFileSync(resolve(repositoryDirectory, "test/harness/package.json"), "utf8")
 );
+const premiumConfigurationCategories = extensionManifest.contributes.configuration;
+const premiumSettings = Object.assign(
+  {},
+  ...premiumConfigurationCategories.map((configurationCategory) => configurationCategory.properties)
+);
 
 const { expectedThemeContributions } = themeManifest;
 const marketplaceItemUrl =
   "https://marketplace.visualstudio.com/items?itemName=overengineered-org.everforest-complete";
 const marketplaceVersionBadgeImageUrl =
   "https://vsmarketplacebadges.dev/version/overengineered-org.everforest-complete.svg?subject=Marketplace";
-const themeGalleryImagePath = "media/previews/everforest-complete-variants.webp";
+const marketplaceImagePaths = [
+  "media/previews/everforest-complete-light-dark.webp",
+  "media/previews/everforest-complete-workbench.webp",
+  "media/previews/everforest-complete-customization.webp",
+];
+
+function readMarketplaceImageDimensions(marketplaceImagePath) {
+  const marketplaceImageBytes = readFileSync(resolve(repositoryDirectory, marketplaceImagePath));
+  assert.equal(marketplaceImageBytes.toString("ascii", 0, 4), "RIFF");
+  assert.equal(marketplaceImageBytes.toString("ascii", 8, 12), "WEBP");
+  assert.equal(marketplaceImageBytes.toString("ascii", 12, 16), "VP8 ");
+  assert.deepEqual([...marketplaceImageBytes.subarray(23, 26)], [0x9d, 0x01, 0x2a]);
+  return {
+    width: marketplaceImageBytes.readUInt16LE(26) & 0x3fff,
+    height: marketplaceImageBytes.readUInt16LE(28) & 0x3fff,
+  };
+}
 
 test("requires VS Code 1.95 and preserves presets beside configurable themes", () => {
   assert.equal(extensionManifest.engines.vscode, "^1.95.0");
@@ -26,7 +47,7 @@ test("requires VS Code 1.95 and preserves presets beside configurable themes", (
   assert.deepEqual(extensionManifest.contributes.themes, expectedThemeContributions);
 });
 
-test("improves Marketplace discovery and installation", () => {
+test("uses truthful premium imagery for Marketplace discovery", () => {
   assert.deepEqual(extensionManifest.keywords, [
     "everforest",
     "color theme",
@@ -46,9 +67,19 @@ test("improves Marketplace discovery and installation", () => {
     )
   );
   assert.doesNotMatch(readme, /img\.shields\.io\/visual-studio-marketplace\//);
-  assert.ok(readme.includes(`](${themeGalleryImagePath})`));
-  assert.ok(extensionManifest.files.includes("README.md"));
-  assert.ok(extensionManifest.files.includes(themeGalleryImagePath));
+  assert.doesNotMatch(readme, /everforest-complete-variants\.webp/);
+  assert.equal(
+    existsSync(resolve(repositoryDirectory, "media/previews/everforest-complete-variants.webp")),
+    false
+  );
+  for (const marketplaceImagePath of marketplaceImagePaths) {
+    assert.ok(readme.includes(`](${marketplaceImagePath})`), marketplaceImagePath);
+    assert.ok(extensionManifest.files.includes(marketplaceImagePath), marketplaceImagePath);
+    assert.deepEqual(readMarketplaceImageDimensions(marketplaceImagePath), {
+      width: 1600,
+      height: 900,
+    });
+  }
 });
 
 test("ships one local-only premium runtime with a minimal package allowlist", () => {
@@ -59,6 +90,8 @@ test("ships one local-only premium runtime with a minimal package allowlist", ()
   assert.equal(extensionManifest.dependencies, undefined);
   assert.deepEqual(extensionManifest.files, [
     "themes/*.json",
+    "dist/configuration.js",
+    "dist/configuration-ui.js",
     "dist/extension.js",
     "dist/extension-web.js",
     "dist/palette/index.js",
@@ -69,7 +102,10 @@ test("ships one local-only premium runtime with a minimal package allowlist", ()
     "dist/workbench/colors.js",
     "dist/workbench/documented-workbench-colors.json",
     "media/icon.png",
-    "media/previews/everforest-complete-variants.webp",
+    "media/previews/everforest-complete-light-dark.webp",
+    "media/previews/everforest-complete-workbench.webp",
+    "media/previews/everforest-complete-customization.webp",
+    "media/walkthrough/*.svg",
     "README.md",
     "CHANGELOG.md",
     "SUPPORT.md",
@@ -82,32 +118,83 @@ test("ships one local-only premium runtime with a minimal package allowlist", ()
   });
   assert.deepEqual(
     extensionManifest.contributes.commands.map(({ command }) => command),
-    ["everforestComplete.openSettings", "everforestComplete.regenerateThemes"]
+    [
+      "everforestComplete.configureTheme",
+      "everforestComplete.configureAdvancedControls",
+      "everforestComplete.configureAutomaticSwitching",
+      "everforestComplete.regenerateThemes",
+    ]
   );
-  assert.deepEqual(Object.keys(extensionManifest.contributes.configuration.properties), [
-    "everforestComplete.darkContrast",
-    "everforestComplete.lightContrast",
-    "everforestComplete.darkWorkbench",
-    "everforestComplete.lightWorkbench",
-    "everforestComplete.darkCursor",
-    "everforestComplete.lightCursor",
-    "everforestComplete.darkSelection",
-    "everforestComplete.lightSelection",
-    "everforestComplete.italicKeywords",
-    "everforestComplete.italicComments",
-    "everforestComplete.diagnosticTextBackgroundOpacity",
-    "everforestComplete.highContrast",
-    "everforestComplete.autoSwitch.enabled",
-    "everforestComplete.autoSwitch.schedule",
-  ]);
+  assert.equal(
+    extensionManifest.contributes.commands.some(
+      ({ command }) => command === "everforestComplete.openSettings"
+    ),
+    false
+  );
 });
 
-test("exposes the proven Everforest premium configuration contract", () => {
-  const premiumSettings = extensionManifest.contributes.configuration.properties;
+test("onboards through one completion-aware native walkthrough", () => {
+  const [premiumWalkthrough] = extensionManifest.contributes.walkthroughs;
+  assert.equal(premiumWalkthrough.id, "everforestComplete.gettingStarted");
+  assert.equal(premiumWalkthrough.when, "!isWeb");
+  assert.match(premiumWalkthrough.description, /under two minutes/i);
   assert.deepEqual(
-    new Set(Object.values(premiumSettings).map(({ scope }) => scope)),
-    new Set(["application"])
+    premiumWalkthrough.steps.map(({ id }) => id),
+    [
+      "everforestComplete.chooseTheme",
+      "everforestComplete.configureFeel",
+      "everforestComplete.automateAppearance",
+    ]
   );
+  assert.deepEqual(
+    premiumWalkthrough.steps.map(({ completionEvents }) => completionEvents),
+    [
+      ["onSettingChanged:workbench.colorTheme"],
+      ["onContext:everforestComplete.themeConfigurationCompleted"],
+      ["onContext:everforestComplete.automaticSwitchingCompleted"],
+    ]
+  );
+  for (const walkthroughStep of premiumWalkthrough.steps) {
+    assert.match(walkthroughStep.description, /\[.+\]\(command:.+\)/);
+    assert.ok(
+      existsSync(resolve(repositoryDirectory, walkthroughStep.media.image)),
+      walkthroughStep.media.image
+    );
+    assert.ok(extensionManifest.files.includes("media/walkthrough/*.svg"));
+  }
+});
+
+test("groups and orders every advanced setting with human labels", () => {
+  assert.deepEqual(
+    premiumConfigurationCategories.map(({ title, order }) => ({ title, order })),
+    [
+      { title: "Everforest Complete: Appearance", order: 10 },
+      { title: "Everforest Complete: Editor", order: 20 },
+      { title: "Everforest Complete: Accessibility", order: 30 },
+      { title: "Everforest Complete: Automation", order: 40 },
+    ]
+  );
+  for (const configurationCategory of premiumConfigurationCategories) {
+    const settingOrders = Object.values(configurationCategory.properties).map(({ order }) => order);
+    assert.deepEqual(
+      settingOrders,
+      [...settingOrders].sort((first, second) => first - second)
+    );
+  }
+  for (const configurationSchema of Object.values(premiumSettings)) {
+    assert.equal(configurationSchema.scope, "application");
+    assert.match(configurationSchema.markdownDescription, /command:everforestComplete\./);
+    if (configurationSchema.enum) {
+      assert.equal(configurationSchema.enumItemLabels.length, configurationSchema.enum.length);
+    }
+  }
+  assert.deepEqual(
+    premiumSettings["everforestComplete.diagnosticTextBackgroundOpacity"].enumItemLabels,
+    ["Off", "Subtle — 12.5%", "Moderate — 25%", "Strong — 37.5%", "Maximum — 50%"]
+  );
+});
+
+test("preserves the proven premium configuration defaults behind native commands", () => {
   assert.deepEqual(
     Object.fromEntries(
       Object.entries(premiumSettings).map(([configurationKey, configurationSchema]) => [
@@ -135,29 +222,9 @@ test("exposes the proven Everforest premium configuration contract", () => {
       ],
     }
   );
-  assert.deepEqual(premiumSettings["everforestComplete.darkContrast"].enum, [
-    "soft",
-    "medium",
-    "hard",
-  ]);
-  assert.deepEqual(premiumSettings["everforestComplete.darkWorkbench"].enum, [
-    "material",
-    "flat",
-    "high-contrast",
-  ]);
-  assert.deepEqual(premiumSettings["everforestComplete.diagnosticTextBackgroundOpacity"].enum, [
-    "0%",
-    "12.5%",
-    "25%",
-    "37.5%",
-    "50%",
-  ]);
-  assert.ok(readme.includes("## Use all 14 premium controls"));
-  assert.ok(readme.includes("Everforest Complete: Open Premium Settings"));
-  for (const premiumSettingKey of Object.keys(premiumSettings)) {
-    assert.ok(
-      readme.includes(`\`${premiumSettingKey}\``),
-      `${premiumSettingKey} missing from README`
-    );
-  }
+  assert.ok(readme.includes("Everforest Complete: Configure Theme"));
+  assert.ok(readme.includes("Everforest Complete: Configure Advanced Controls"));
+  assert.ok(readme.includes("Everforest Complete: Configure Automatic Light/Dark"));
+  assert.doesNotMatch(readme, /Open Premium Settings/);
+  assert.doesNotMatch(readme, /User Settings \(JSON\)/);
 });

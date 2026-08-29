@@ -1,4 +1,4 @@
-import { ScheduledTheme } from "./interface";
+import type { ScheduledTheme } from "./interface";
 
 interface ParsedScheduledTheme extends ScheduledTheme {
   minuteOfDay: number;

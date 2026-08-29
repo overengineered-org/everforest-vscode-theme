@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" role="img" aria-labelledby="title description">
+  <title id="title">Choose an Everforest theme</title>
+  <description id="description">A precise split preview of the Light and Dark Everforest workbenches.</description>
+  <defs>
+    <clipPath id="workbench-frame">
+      <rect x="70" y="55" width="660" height="340" rx="20"/>
+    </clipPath>
+  </defs>
+  <rect width="800" height="450" fill="var(--vscode-editor-background, #2d353b)"/>
+  <g clip-path="url(#workbench-frame)">
+    <rect x="70" y="55" width="330" height="340" fill="#fdf6e3"/>
+    <rect x="400" y="55" width="330" height="340" fill="#2d353b"/>
+    <rect x="70" y="55" width="660" height="40" fill="#272e33"/>
+    <circle cx="96" cy="75" r="6" fill="#e67e80"/>
+    <circle cx="116" cy="75" r="6" fill="#dbbc7f"/>
+    <circle cx="136" cy="75" r="6" fill="#a7c080"/>
+    <rect x="70" y="95" width="88" height="300" fill="#f3ead3"/>
+    <rect x="400" y="95" width="88" height="300" fill="#272e33"/>
+    <rect x="92" y="126" width="44" height="8" rx="4" fill="#8da101"/>
+    <rect x="422" y="126" width="44" height="8" rx="4" fill="#a7c080"/>
+    <g fill="#5c6a72">
+      <rect x="187" y="132" width="150" height="10" rx="5"/>
+      <rect x="187" y="166" width="112" height="10" rx="5"/>
+      <rect x="213" y="200" width="142" height="10" rx="5"/>
+      <rect x="213" y="234" width="92" height="10" rx="5"/>
+      <rect x="187" y="268" width="166" height="10" rx="5"/>
+    </g>
+    <g fill="#d3c6aa">
+      <rect x="517" y="132" width="150" height="10" rx="5"/>
+      <rect x="517" y="166" width="112" height="10" rx="5"/>
+      <rect x="543" y="200" width="142" height="10" rx="5"/>
+      <rect x="543" y="234" width="92" height="10" rx="5"/>
+      <rect x="517" y="268" width="166" height="10" rx="5"/>
+    </g>
+    <rect x="187" y="317" width="168" height="34" rx="8" fill="#e5dfc5"/>
+    <rect x="517" y="317" width="168" height="34" rx="8" fill="#343f44"/>
+    <rect x="399" y="95" width="2" height="300" fill="#83c092"/>
+  </g>
+  <rect x="70" y="55" width="660" height="340" rx="20" fill="none" stroke="var(--vscode-widget-border, #475258)" stroke-width="2"/>
+</svg>

@@ -95,8 +95,18 @@
     ],
     "commands": [
       {
-        "command": "everforestComplete.openSettings",
-        "title": "Open Premium Settings",
+        "command": "everforestComplete.configureTheme",
+        "title": "Configure Theme",
+        "category": "Everforest Complete"
+      },
+      {
+        "command": "everforestComplete.configureAdvancedControls",
+        "title": "Configure Advanced Controls",
+        "category": "Everforest Complete"
+      },
+      {
+        "command": "everforestComplete.configureAutomaticSwitching",
+        "title": "Configure Automatic Light/Dark",
         "category": "Everforest Complete"
       },
       {
@@ -105,197 +115,374 @@
         "category": "Everforest Complete"
       }
     ],
-    "configuration": {
-      "title": "Everforest Complete",
-      "properties": {
-        "everforestComplete.darkContrast": {
-          "type": "string",
-          "scope": "application",
-          "default": "medium",
-          "enum": [
-            "soft",
-            "medium",
-            "hard"
-          ],
-          "description": "Dark theme background contrast."
-        },
-        "everforestComplete.lightContrast": {
-          "type": "string",
-          "scope": "application",
-          "default": "medium",
-          "enum": [
-            "soft",
-            "medium",
-            "hard"
-          ],
-          "description": "Light theme background contrast."
-        },
-        "everforestComplete.darkWorkbench": {
-          "type": "string",
-          "scope": "application",
-          "default": "material",
-          "enum": [
-            "material",
-            "flat",
-            "high-contrast"
-          ],
-          "description": "Dark theme workbench style."
-        },
-        "everforestComplete.lightWorkbench": {
-          "type": "string",
-          "scope": "application",
-          "default": "material",
-          "enum": [
-            "material",
-            "flat",
-            "high-contrast"
-          ],
-          "description": "Light theme workbench style."
-        },
-        "everforestComplete.darkCursor": {
-          "type": "string",
-          "scope": "application",
-          "default": "white",
-          "enum": [
-            "white",
-            "red",
-            "orange",
-            "yellow",
-            "green",
-            "aqua",
-            "blue",
-            "purple"
-          ],
-          "description": "Dark theme cursor color."
-        },
-        "everforestComplete.lightCursor": {
-          "type": "string",
-          "scope": "application",
-          "default": "black",
-          "enum": [
-            "black",
-            "red",
-            "orange",
-            "yellow",
-            "green",
-            "aqua",
-            "blue",
-            "purple"
-          ],
-          "description": "Light theme cursor color."
-        },
-        "everforestComplete.darkSelection": {
-          "type": "string",
-          "scope": "application",
-          "default": "grey",
-          "enum": [
-            "grey",
-            "red",
-            "orange",
-            "yellow",
-            "green",
-            "aqua",
-            "blue",
-            "purple"
-          ],
-          "description": "Dark theme selection color."
-        },
-        "everforestComplete.lightSelection": {
-          "type": "string",
-          "scope": "application",
-          "default": "grey",
-          "enum": [
-            "grey",
-            "red",
-            "orange",
-            "yellow",
-            "green",
-            "aqua",
-            "blue",
-            "purple"
-          ],
-          "description": "Light theme selection color."
-        },
-        "everforestComplete.italicKeywords": {
-          "type": "boolean",
-          "scope": "application",
-          "default": false,
-          "description": "Italicize keywords."
-        },
-        "everforestComplete.italicComments": {
-          "type": "boolean",
-          "scope": "application",
-          "default": true,
-          "description": "Italicize comments."
-        },
-        "everforestComplete.diagnosticTextBackgroundOpacity": {
-          "type": "string",
-          "scope": "application",
-          "default": "0%",
-          "enum": [
-            "0%",
-            "12.5%",
-            "25%",
-            "37.5%",
-            "50%"
-          ],
-          "description": "Error, warning, and information background opacity."
-        },
-        "everforestComplete.highContrast": {
-          "type": "boolean",
-          "scope": "application",
-          "default": false,
-          "description": "Add stronger borders across the workbench."
-        },
-        "everforestComplete.autoSwitch.enabled": {
-          "type": "boolean",
-          "scope": "application",
-          "default": false,
-          "description": "Switch themes on schedule. Disable Window: Auto Detect Color Scheme first."
-        },
-        "everforestComplete.autoSwitch.schedule": {
-          "type": "array",
-          "scope": "application",
-          "default": [
-            {
-              "time": "07:00",
-              "theme": "Everforest Complete Light"
+    "walkthroughs": [
+      {
+        "id": "everforestComplete.gettingStarted",
+        "title": "Settle into Everforest Complete",
+        "description": "A calm, private setup in under two minutes.",
+        "when": "!isWeb",
+        "steps": [
+          {
+            "id": "everforestComplete.chooseTheme",
+            "title": "Choose your Everforest theme",
+            "description": "Open [Color Theme](command:workbench.action.selectTheme) and choose a configurable Light or Dark theme, or one of the six fixed presets.",
+            "media": {
+              "image": "media/walkthrough/choose-theme.svg",
+              "altText": "Light and Dark Everforest workbench surfaces"
             },
-            {
-              "time": "19:00",
-              "theme": "Everforest Complete Dark"
-            }
-          ],
-          "description": "Theme changes in local 24-hour time.",
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "time",
-              "theme"
+            "completionEvents": [
+              "onSettingChanged:workbench.colorTheme"
+            ]
+          },
+          {
+            "id": "everforestComplete.configureFeel",
+            "title": "Configure the feel",
+            "description": "Run [Configure Theme](command:everforestComplete.configureTheme) for three guided choices. Use [Advanced Controls](command:everforestComplete.configureAdvancedControls) only when you want finer control.",
+            "media": {
+              "image": "media/walkthrough/configure-feel.svg",
+              "altText": "Three-step native theme configuration"
+            },
+            "completionEvents": [
+              "onContext:everforestComplete.themeConfigurationCompleted"
+            ]
+          },
+          {
+            "id": "everforestComplete.automateAppearance",
+            "title": "Automate Light and Dark",
+            "description": "Run [Configure Automatic Light/Dark](command:everforestComplete.configureAutomaticSwitching) to follow your operating system or an exact local schedule.",
+            "media": {
+              "image": "media/walkthrough/automate-appearance.svg",
+              "altText": "Light and Dark themes changing across a daily timeline"
+            },
+            "completionEvents": [
+              "onContext:everforestComplete.automaticSwitchingCompleted"
+            ]
+          }
+        ]
+      }
+    ],
+    "configuration": [
+      {
+        "title": "Everforest Complete: Appearance",
+        "order": 10,
+        "properties": {
+          "everforestComplete.darkContrast": {
+            "type": "string",
+            "scope": "application",
+            "default": "medium",
+            "order": 10,
+            "enum": [
+              "soft",
+              "medium",
+              "hard"
             ],
-            "properties": {
-              "time": {
-                "type": "string",
-                "pattern": "^([0-1][0-9]|2[0-3]):[0-5][0-9]$",
-                "description": "Local time in HH:MM format."
+            "enumItemLabels": [
+              "Soft",
+              "Medium",
+              "Hard"
+            ],
+            "enumDescriptions": [
+              "Gentlest surface separation.",
+              "Balanced surface separation.",
+              "Strongest surface separation."
+            ],
+            "markdownDescription": "Dark background contrast. Prefer [Configure Theme](command:everforestComplete.configureTheme)."
+          },
+          "everforestComplete.lightContrast": {
+            "type": "string",
+            "scope": "application",
+            "default": "medium",
+            "order": 20,
+            "enum": [
+              "soft",
+              "medium",
+              "hard"
+            ],
+            "enumItemLabels": [
+              "Soft",
+              "Medium",
+              "Hard"
+            ],
+            "enumDescriptions": [
+              "Gentlest surface separation.",
+              "Balanced surface separation.",
+              "Strongest surface separation."
+            ],
+            "markdownDescription": "Light background contrast. Prefer [Configure Theme](command:everforestComplete.configureTheme)."
+          },
+          "everforestComplete.darkWorkbench": {
+            "type": "string",
+            "scope": "application",
+            "default": "material",
+            "order": 30,
+            "enum": [
+              "material",
+              "flat",
+              "high-contrast"
+            ],
+            "enumItemLabels": [
+              "Material",
+              "Flat",
+              "High Contrast"
+            ],
+            "enumDescriptions": [
+              "Tonal depth between editor and supporting surfaces.",
+              "One continuous, minimal surface.",
+              "Strongest structural separation."
+            ],
+            "markdownDescription": "Dark workbench style. Prefer [Configure Theme](command:everforestComplete.configureTheme)."
+          },
+          "everforestComplete.lightWorkbench": {
+            "type": "string",
+            "scope": "application",
+            "default": "material",
+            "order": 40,
+            "enum": [
+              "material",
+              "flat",
+              "high-contrast"
+            ],
+            "enumItemLabels": [
+              "Material",
+              "Flat",
+              "High Contrast"
+            ],
+            "enumDescriptions": [
+              "Tonal depth between editor and supporting surfaces.",
+              "One continuous, minimal surface.",
+              "Strongest structural separation."
+            ],
+            "markdownDescription": "Light workbench style. Prefer [Configure Theme](command:everforestComplete.configureTheme)."
+          }
+        }
+      },
+      {
+        "title": "Everforest Complete: Editor",
+        "order": 20,
+        "properties": {
+          "everforestComplete.darkCursor": {
+            "type": "string",
+            "scope": "application",
+            "default": "white",
+            "order": 10,
+            "enum": [
+              "white",
+              "red",
+              "orange",
+              "yellow",
+              "green",
+              "aqua",
+              "blue",
+              "purple"
+            ],
+            "enumItemLabels": [
+              "White",
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Aqua",
+              "Blue",
+              "Purple"
+            ],
+            "markdownDescription": "Dark editor and terminal cursor. Prefer [Advanced Controls](command:everforestComplete.configureAdvancedControls)."
+          },
+          "everforestComplete.lightCursor": {
+            "type": "string",
+            "scope": "application",
+            "default": "black",
+            "order": 20,
+            "enum": [
+              "black",
+              "red",
+              "orange",
+              "yellow",
+              "green",
+              "aqua",
+              "blue",
+              "purple"
+            ],
+            "enumItemLabels": [
+              "Black",
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Aqua",
+              "Blue",
+              "Purple"
+            ],
+            "markdownDescription": "Light editor and terminal cursor. Prefer [Advanced Controls](command:everforestComplete.configureAdvancedControls)."
+          },
+          "everforestComplete.darkSelection": {
+            "type": "string",
+            "scope": "application",
+            "default": "grey",
+            "order": 30,
+            "enum": [
+              "grey",
+              "red",
+              "orange",
+              "yellow",
+              "green",
+              "aqua",
+              "blue",
+              "purple"
+            ],
+            "enumItemLabels": [
+              "Grey",
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Aqua",
+              "Blue",
+              "Purple"
+            ],
+            "markdownDescription": "Dark selection emphasis across editor, terminal, and minimap. Prefer [Advanced Controls](command:everforestComplete.configureAdvancedControls)."
+          },
+          "everforestComplete.lightSelection": {
+            "type": "string",
+            "scope": "application",
+            "default": "grey",
+            "order": 40,
+            "enum": [
+              "grey",
+              "red",
+              "orange",
+              "yellow",
+              "green",
+              "aqua",
+              "blue",
+              "purple"
+            ],
+            "enumItemLabels": [
+              "Grey",
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Aqua",
+              "Blue",
+              "Purple"
+            ],
+            "markdownDescription": "Light selection emphasis across editor, terminal, and minimap. Prefer [Advanced Controls](command:everforestComplete.configureAdvancedControls)."
+          },
+          "everforestComplete.italicKeywords": {
+            "type": "boolean",
+            "scope": "application",
+            "default": false,
+            "order": 50,
+            "markdownDescription": "Italicize keywords. Prefer [Advanced Controls](command:everforestComplete.configureAdvancedControls)."
+          },
+          "everforestComplete.italicComments": {
+            "type": "boolean",
+            "scope": "application",
+            "default": true,
+            "order": 60,
+            "markdownDescription": "Italicize comments. Prefer [Advanced Controls](command:everforestComplete.configureAdvancedControls)."
+          }
+        }
+      },
+      {
+        "title": "Everforest Complete: Accessibility",
+        "order": 30,
+        "properties": {
+          "everforestComplete.diagnosticTextBackgroundOpacity": {
+            "type": "string",
+            "scope": "application",
+            "default": "0%",
+            "order": 10,
+            "enum": [
+              "0%",
+              "12.5%",
+              "25%",
+              "37.5%",
+              "50%"
+            ],
+            "enumItemLabels": [
+              "Off",
+              "Subtle — 12.5%",
+              "Moderate — 25%",
+              "Strong — 37.5%",
+              "Maximum — 50%"
+            ],
+            "enumDescriptions": [
+              "No diagnostic fill.",
+              "Light diagnostic emphasis.",
+              "Balanced diagnostic emphasis.",
+              "Prominent diagnostic emphasis.",
+              "Maximum diagnostic emphasis."
+            ],
+            "markdownDescription": "Error, warning, and information background emphasis. Prefer [Advanced Controls](command:everforestComplete.configureAdvancedControls)."
+          },
+          "everforestComplete.highContrast": {
+            "type": "boolean",
+            "scope": "application",
+            "default": false,
+            "order": 20,
+            "markdownDescription": "Add stronger borders independently from the workbench style. Prefer [Advanced Controls](command:everforestComplete.configureAdvancedControls)."
+          }
+        }
+      },
+      {
+        "title": "Everforest Complete: Automation",
+        "order": 40,
+        "properties": {
+          "everforestComplete.autoSwitch.enabled": {
+            "type": "boolean",
+            "scope": "application",
+            "default": false,
+            "order": 10,
+            "markdownDescription": "Switch themes on a local schedule. Prefer [Configure Automatic Light/Dark](command:everforestComplete.configureAutomaticSwitching), which safely coordinates this with system appearance detection."
+          },
+          "everforestComplete.autoSwitch.schedule": {
+            "type": "array",
+            "scope": "application",
+            "order": 20,
+            "default": [
+              {
+                "time": "07:00",
+                "theme": "Everforest Complete Light"
               },
-              "theme": {
-                "type": "string",
-                "enum": [
-                  "Everforest Complete Dark",
-                  "Everforest Complete Light"
-                ],
-                "description": "Theme activated at this time."
+              {
+                "time": "19:00",
+                "theme": "Everforest Complete Dark"
+              }
+            ],
+            "markdownDescription": "Exact local switch times. Manage them without JSON using [Configure Automatic Light/Dark](command:everforestComplete.configureAutomaticSwitching).",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "time",
+                "theme"
+              ],
+              "properties": {
+                "time": {
+                  "type": "string",
+                  "pattern": "^([0-1][0-9]|2[0-3]):[0-5][0-9]$",
+                  "description": "Local time in HH:MM format."
+                },
+                "theme": {
+                  "type": "string",
+                  "enum": [
+                    "Everforest Complete Dark",
+                    "Everforest Complete Light"
+                  ],
+                  "description": "Theme activated at this time."
+                }
               }
             }
           }
         }
       }
-    }
+    ]
   },
   "files": [
     "themes/*.json",
+    "dist/configuration.js",
+    "dist/configuration-ui.js",
     "dist/extension.js",
     "dist/extension-web.js",
     "dist/palette/index.js",
@@ -306,7 +493,10 @@
     "dist/workbench/colors.js",
     "dist/workbench/documented-workbench-colors.json",
     "media/icon.png",
-    "media/previews/everforest-complete-variants.webp",
+    "media/previews/everforest-complete-light-dark.webp",
+    "media/previews/everforest-complete-workbench.webp",
+    "media/previews/everforest-complete-customization.webp",
+    "media/walkthrough/*.svg",
     "README.md",
     "CHANGELOG.md",
     "SUPPORT.md",

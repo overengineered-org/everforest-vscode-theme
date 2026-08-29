@@ -10,7 +10,7 @@
 
 Everforest Light and Dark with Soft, Medium, and Hard contrast—plus premium customization, free.
 
-![Everforest Complete Light Soft, Light Medium, Light Hard, Dark Soft, Dark Medium, and Dark Hard themes](media/previews/everforest-complete-variants.webp)
+![Everforest Complete Light and Dark workbenches](media/previews/everforest-complete-light-dark.webp)
 
 Private by design:
 
@@ -29,94 +29,41 @@ Time: 2 minutes.
 1. Open the extension published by **Overengineered**.
 2. Select **Install**.
 3. Select **Set Color Theme**.
-4. Choose a theme:
-   - **Everforest Complete Dark** or **Light** for premium customization.
-   - A named **Soft**, **Medium**, or **Hard** preset for fixed settings.
+4. Complete the three-step **Settle into Everforest Complete** walkthrough.
 
-Done: the complete VS Code interface now uses Everforest.
+Done: Everforest now covers the complete interface and matches the way you work.
 
 ## Use all 14 premium controls
 
-Time: 1 minute.
+Time: 2 minutes.
 
-1. Choose **Everforest Complete Dark** or **Everforest Complete Light** as your color theme.
-2. Open the Command Palette: `⌘⇧P` on macOS or `Ctrl+Shift+P` on Windows/Linux.
-3. Run **Everforest Complete: Open Premium Settings**.
-4. Change any control below.
-5. Select **Reload Window** when prompted.
+1. Open the Command Palette: `⌘⇧P` on macOS or `Ctrl+Shift+P` on Windows/Linux.
+2. Run **Everforest Complete: Configure Theme**.
+3. Choose Appearance, Contrast, then Workbench.
+4. Select **Reload Window** once when prompted.
 
-Done: your configurable Light and Dark themes now use the new settings. Fixed Soft, Medium, and Hard
-presets never change.
+Escape at any choice discards everything. Fixed Soft, Medium, and Hard presets never change.
 
-| Controls                      | Settings                                                                                  | Options                                |
-| ----------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------- |
-| 1–2. Dark/Light contrast      | `everforestComplete.darkContrast`<br>`everforestComplete.lightContrast`                   | Soft, Medium, Hard                     |
-| 3–4. Dark/Light workbench     | `everforestComplete.darkWorkbench`<br>`everforestComplete.lightWorkbench`                 | Material, Flat, High Contrast          |
-| 5–6. Dark/Light cursor        | `everforestComplete.darkCursor`<br>`everforestComplete.lightCursor`                       | Black/white or an Everforest accent    |
-| 7–8. Dark/Light selection     | `everforestComplete.darkSelection`<br>`everforestComplete.lightSelection`                 | Grey or an Everforest accent           |
-| 9–10. Keyword/comment italics | `everforestComplete.italicKeywords`<br>`everforestComplete.italicComments`                | On or off                              |
-| 11–12. Diagnostics/borders    | `everforestComplete.diagnosticTextBackgroundOpacity`<br>`everforestComplete.highContrast` | 0–50% opacity; stronger borders on/off |
-| 13–14. Scheduled switching    | `everforestComplete.autoSwitch.enabled`<br>`everforestComplete.autoSwitch.schedule`       | On/off; local `HH:MM` theme entries    |
+| Native command                                          | Controls                                         |
+| ------------------------------------------------------- | ------------------------------------------------ |
+| **Everforest Complete: Configure Theme**                | Appearance, Light/Dark contrast, workbench style |
+| **Everforest Complete: Configure Advanced Controls**    | Cursor, selection, italics, diagnostics, borders |
+| **Everforest Complete: Configure Automatic Light/Dark** | Off, operating system, or exact local schedule   |
 
-Premium settings apply across VS Code, never per workspace. Scheduled switching requires VS Code
-Desktop.
+Advanced changes remain staged until **Apply Changes**. You never need to edit `settings.json`.
+Controls apply across VS Code, never per workspace. Configuration requires VS Code Desktop.
 
-Example:
-
-```json
-{
-  "everforestComplete.darkContrast": "hard",
-  "everforestComplete.lightContrast": "soft",
-  "everforestComplete.darkWorkbench": "material",
-  "everforestComplete.lightWorkbench": "flat",
-  "everforestComplete.darkCursor": "aqua",
-  "everforestComplete.lightCursor": "blue",
-  "everforestComplete.darkSelection": "green",
-  "everforestComplete.lightSelection": "aqua",
-  "everforestComplete.italicKeywords": false,
-  "everforestComplete.italicComments": true,
-  "everforestComplete.diagnosticTextBackgroundOpacity": "12.5%",
-  "everforestComplete.highContrast": false
-}
-```
+![Everforest Complete native configuration command](media/previews/everforest-complete-customization.webp)
 
 ## Automatic Light/Dark
 
-Choose one switching method. Do not enable both.
-
-### Follow your operating system
-
-1. Open VS Code Settings.
-2. Enable **Window: Auto Detect Color Scheme**.
-3. Set **Preferred Dark Color Theme** to **Everforest Complete Dark**.
-4. Set **Preferred Light Color Theme** to **Everforest Complete Light**.
-
-Equivalent JSON:
-
-```json
-{
-  "window.autoDetectColorScheme": true,
-  "workbench.preferredDarkColorTheme": "Everforest Complete Dark",
-  "workbench.preferredLightColorTheme": "Everforest Complete Light"
-}
-```
-
-### Follow a schedule
-
-Disable **Window: Auto Detect Color Scheme**, then add:
-
-```json
-{
-  "everforestComplete.autoSwitch.enabled": true,
-  "everforestComplete.autoSwitch.schedule": [
-    { "time": "07:00", "theme": "Everforest Complete Light" },
-    { "time": "19:00", "theme": "Everforest Complete Dark" }
-  ]
-}
-```
+1. Run **Everforest Complete: Configure Automatic Light/Dark**.
+2. Choose **Off**, **Follow System**, or **Follow Schedule**.
+3. For a schedule, enter the Light and Dark start times.
 
 Times use your computer's local 24-hour clock. The extension sleeps until the next configured
-boundary; it does not poll every minute.
+boundary; it does not poll every minute. The command prevents system and scheduled switching from
+competing.
 
 ## Desktop, remote, and web
 
@@ -175,6 +122,8 @@ Marketplace installations receive updates through VS Code. Manually installed VS
 another download.
 
 ## Coverage
+
+![Everforest Complete workbench coverage](media/previews/everforest-complete-workbench.webp)
 
 - Every documented VS Code workbench color: 937/937.
 - TextMate and semantic tokens for common programming and markup languages.
