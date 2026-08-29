@@ -139,6 +139,17 @@ Everforest Complete styles native VS Code components. It does not invent custom 
 - Native VS Code shapes, spacing, and typography remain intact.
 - Primary, hover, active, disabled, error, warning, and success colors stay distinct.
 
+### Setup and Configuration
+
+- First install uses one three-step native walkthrough.
+- Primary configuration asks Appearance, Contrast, then Workbench.
+- Advanced changes remain staged until Apply; Escape changes nothing.
+- Automatic Light/Dark coordinates system and schedule modes instead of exposing JSON.
+- A completed configuration flow regenerates once and offers at most one reload.
+
+**The Three-Step Rule.** Keep primary setup to three consequential choices. Move optional detail to
+Advanced Controls.
+
 ### Diagnostics and Extensions
 
 - Diagnostic foregrounds remain readable at every supported background opacity.
@@ -153,6 +164,7 @@ Everforest Complete styles native VS Code components. It does not invent custom 
 - **Do** preserve the six fixed theme labels and paths during upgrades.
 - **Do** keep premium controls application-scoped, local, and reversible.
 - **Do** explain user actions as numbered steps with an observable completion state.
+- **Do** use native Quick Picks, Input Boxes, Settings, and Walkthroughs.
 
 ### Don't:
 
@@ -161,3 +173,4 @@ Everforest Complete styles native VS Code components. It does not invent custom 
 - **Don't** add decorative visual gimmicks that compete with code.
 - **Don't** duplicate theme logic or add speculative settings.
 - **Don't** hide the first action or require users to remember earlier documentation steps.
+- **Don't** require `settings.json` for a supported product control.

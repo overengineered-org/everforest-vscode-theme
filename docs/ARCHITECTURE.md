@@ -4,7 +4,10 @@ Start at `src/theme.ts`. It is the single theme compiler.
 
 ```mermaid
 flowchart LR
-  Settings[VS Code settings] --> Desktop[src/extension.ts]
+  Walkthrough[Native walkthrough] --> Commands[src/configuration-ui.ts]
+  Commands --> Domain[src/configuration.ts]
+  Domain --> Settings[Application settings]
+  Settings --> Desktop[src/extension.ts]
   Desktop --> Compiler[src/theme.ts]
   Compiler --> Themes[Six presets and two configurable themes]
   Schedule[Local schedule] --> Desktop
@@ -13,13 +16,15 @@ flowchart LR
 
 ## One path per capability
 
-| Capability          | Owner                    | Output                            |
-| ------------------- | ------------------------ | --------------------------------- |
-| Palette             | `src/palette/index.ts`   | Everforest colors                 |
-| Theme compilation   | `src/theme.ts`           | Complete preset/configurable data |
-| Desktop preferences | `src/extension.ts`       | Regenerated installed JSON        |
-| Scheduled switching | `src/schedule.ts`        | Active theme and next boundary    |
-| Build generation    | `src/generate-themes.ts` | Eight committed theme files       |
+| Capability          | Owner                     | Output                            |
+| ------------------- | ------------------------- | --------------------------------- |
+| Palette             | `src/palette/index.ts`    | Everforest colors                 |
+| Theme compilation   | `src/theme.ts`            | Complete preset/configurable data |
+| Configuration model | `src/configuration.ts`    | Staged native setting updates     |
+| Native controls     | `src/configuration-ui.ts` | Guided and advanced choices       |
+| Desktop preferences | `src/extension.ts`        | Regenerated installed JSON        |
+| Scheduled switching | `src/schedule.ts`         | Active theme and next boundary    |
+| Build generation    | `src/generate-themes.ts`  | Eight committed theme files       |
 
 ## Decisions
 
@@ -35,6 +40,11 @@ flowchart LR
    switching remains the recommended alternative.
 6. Browser-hosted VS Code receives all committed themes. File regeneration and scheduling require VS
    Code Desktop.
+7. Primary setup has three required choices. Commands stage all values, persist only after
+   completion, roll back an incomplete write, regenerate once, and offer at most one reload. Escape
+   writes nothing.
+8. `package.json` groups the same persisted settings for transparency, but supported workflows never
+   require manual JSON.
 
 ## Theme coverage
 

@@ -26,6 +26,60 @@ const fixtureLanguageIdentifiers = new Map([
   ["showcase.ts", "typescript"],
   ["showcase.yaml", "yaml"],
 ]);
+const nativeConfigurationCommandIdentifiers = [
+  "everforestComplete.configureTheme",
+  "everforestComplete.configureAdvancedControls",
+  "everforestComplete.configureAutomaticSwitching",
+];
+const commandManagedConfigurationKeys = [
+  ["everforestComplete", "darkContrast"],
+  ["everforestComplete", "lightContrast"],
+  ["everforestComplete", "darkWorkbench"],
+  ["everforestComplete", "lightWorkbench"],
+  ["everforestComplete", "darkCursor"],
+  ["everforestComplete", "lightCursor"],
+  ["everforestComplete", "darkSelection"],
+  ["everforestComplete", "lightSelection"],
+  ["everforestComplete", "italicKeywords"],
+  ["everforestComplete", "italicComments"],
+  ["everforestComplete", "diagnosticTextBackgroundOpacity"],
+  ["everforestComplete", "highContrast"],
+  ["everforestComplete", "autoSwitch.enabled"],
+  ["everforestComplete", "autoSwitch.schedule"],
+  ["window", "autoDetectColorScheme"],
+  ["workbench", "colorTheme"],
+  ["workbench", "preferredDarkColorTheme"],
+  ["workbench", "preferredLightColorTheme"],
+];
+
+function serializeCommandManagedGlobalConfiguration() {
+  return JSON.stringify(
+    commandManagedConfigurationKeys.map(([configurationSection, configurationKey]) => [
+      configurationSection,
+      configurationKey,
+      vscode.workspace.getConfiguration(configurationSection).inspect(configurationKey)
+        ?.globalValue,
+    ])
+  );
+}
+
+async function validateNativeConfigurationCommandCancellation() {
+  for (const nativeConfigurationCommandIdentifier of nativeConfigurationCommandIdentifiers) {
+    const configurationBeforeCancellation = serializeCommandManagedGlobalConfiguration();
+    const configurationCommandCompletion = vscode.commands.executeCommand(
+      nativeConfigurationCommandIdentifier
+    );
+    await new Promise((resolveQuickPickDisplay) => setTimeout(resolveQuickPickDisplay, 150));
+    await vscode.commands.executeCommand("workbench.action.closeQuickOpen");
+    await configurationCommandCompletion;
+    assert.equal(
+      serializeCommandManagedGlobalConfiguration(),
+      configurationBeforeCancellation,
+      `${nativeConfigurationCommandIdentifier} cancellation must write nothing`
+    );
+  }
+}
+
 function registeredThemeExtension() {
   const extension = vscode.extensions.getExtension(extensionIdentifier);
   assert.ok(extension, "Extension is registered");
@@ -483,6 +537,32 @@ async function run() {
   assert.deepEqual(extension.packageJSON.contributes.themes, expectedThemeContributions);
   await extension.activate();
   assert.equal(extension.isActive, true, "Premium runtime activates in VS Code Desktop");
+  const registeredCommandIdentifiers = new Set(await vscode.commands.getCommands(true));
+  for (const premiumCommandIdentifier of [
+    ...nativeConfigurationCommandIdentifiers,
+    "everforestComplete.regenerateThemes",
+  ]) {
+    assert.ok(
+      registeredCommandIdentifiers.has(premiumCommandIdentifier),
+      `${premiumCommandIdentifier} is registered in the installed VSIX`
+    );
+  }
+  assert.equal(
+    registeredCommandIdentifiers.has("everforestComplete.openSettings"),
+    false,
+    "The retired Settings command is not registered"
+  );
+  await validateNativeConfigurationCommandCancellation();
+  assert.equal(extension.packageJSON.contributes.walkthroughs.length, 1);
+  assert.deepEqual(
+    extension.packageJSON.contributes.configuration.map(({ title }) => title),
+    [
+      "Everforest Complete: Appearance",
+      "Everforest Complete: Editor",
+      "Everforest Complete: Accessibility",
+      "Everforest Complete: Automation",
+    ]
+  );
 
   for (const themeContribution of extension.packageJSON.contributes.themes) {
     const themePath = join(extension.extensionPath, themeContribution.path);

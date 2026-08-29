@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" role="img" aria-labelledby="title description">
+  <title id="title">Automate Light and Dark</title>
+  <description id="description">A daily timeline moves from a sunlit Light theme to a moonlit Dark theme.</description>
+  <rect width="800" height="450" fill="var(--vscode-editor-background, #2d353b)"/>
+  <rect x="74" y="82" width="652" height="286" rx="24" fill="var(--vscode-editorWidget-background, #343f44)" stroke="var(--vscode-widget-border, #475258)" stroke-width="2"/>
+  <path d="M112 278C205 278 230 172 326 172s126 106 224 106 112-66 138-66" fill="none" stroke="#83c092" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="208" cy="208" r="44" fill="#dbbc7f"/>
+  <g stroke="#dbbc7f" stroke-width="7" stroke-linecap="round">
+    <path d="M208 138v-18M208 296v-18M138 208h-18M296 208h-18M158 158l-13-13M271 271l-13-13M258 158l13-13M145 271l13-13"/>
+  </g>
+  <path d="M572 156a58 58 0 1 0 54 86 48 48 0 0 1-54-86Z" fill="#d3c6aa"/>
+  <circle cx="208" cy="278" r="10" fill="#8da101" stroke="#fdf6e3" stroke-width="4"/>
+  <circle cx="572" cy="278" r="10" fill="#a7c080" stroke="#2d353b" stroke-width="4"/>
+  <g font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="16" font-weight="600" fill="var(--vscode-foreground, #d3c6aa)">
+    <text x="208" y="326" text-anchor="middle">07:00 · Light</text>
+    <text x="572" y="326" text-anchor="middle">19:00 · Dark</text>
+  </g>
+</svg>

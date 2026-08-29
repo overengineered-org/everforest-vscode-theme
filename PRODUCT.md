@@ -6,7 +6,7 @@ product
 
 ## Platform
 
-web
+Visual Studio Code extension
 
 ## Users
 
@@ -17,8 +17,8 @@ premium control without paying for another theme or maintaining private override
 ## Product Purpose
 
 Everforest Complete provides a complete, configurable, private Everforest experience. Success means
-a developer can install once, choose a fixed preset or configure Light and Dark, and trust upgrades
-not to reset their theme or expose repository data.
+a developer can install once, finish a three-step native setup, choose a fixed preset or configure
+Light and Dark, and trust upgrades not to reset their theme or expose repository data.
 
 ## Positioning
 
@@ -46,10 +46,13 @@ voice is direct, factual, and action-first.
 3. **Premium without extraction.** Advanced controls remain free, local, and private.
 4. **Safe upgrades.** Preserve existing theme selections and make every change reversible.
 5. **Action before explanation.** Documentation starts with the exact command or click path.
+6. **Three choices to confidence.** Primary setup asks only Appearance, Contrast, and Workbench;
+   advanced controls stay optional.
 
 ## Accessibility & Inclusion
 
 Target WCAG AA contrast for readable text and critical states. Never rely on color alone when VS
 Code provides another state cue. Support stronger borders, diagnostic opacity, distinct selection
-states, and user-controlled typography. Documentation uses short numbered flows, visible completion
-states, and concrete time estimates for readers with ADHD.
+states, and user-controlled typography. Native controls stage changes until completion, Escape
+discards them, and one finished flow causes at most one reload prompt. Documentation uses short
+numbered flows, visible completion states, and concrete time estimates for readers with ADHD.

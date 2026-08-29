@@ -10,6 +10,10 @@ All versions:
 
 - Add configurable Light and Dark themes with premium controls.
 - Add exact local-time theme scheduling.
+- Add native guided, advanced, and automatic Light/Dark configuration commands.
+- Add a three-step first-install walkthrough.
+- Group settings into ordered Appearance, Editor, Accessibility, and Automation sections.
+- Replace the Marketplace icon and gallery with focused product imagery.
 - Preserve all six existing Soft, Medium, and Hard theme selections.
 - Add the approved theme gallery and privacy-first documentation.
 
