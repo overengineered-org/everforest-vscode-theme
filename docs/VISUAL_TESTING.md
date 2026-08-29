@@ -1,13 +1,29 @@
 # Visual testing
 
-Open `fixtures/` in an Extension Development Host and inspect each of the six themes.
+Open `fixtures/` in an Extension Development Host.
 
-Check:
+## Check the product
 
-1. Code hierarchy: comments, keywords, types, functions, properties, strings, and constants.
-2. Interaction states: focus, hover, selection, inactive selection, and disabled controls.
-3. Diagnostics and change states: errors, warnings, Git additions/deletions, and diff editors.
-4. Surfaces: terminal, notebooks, testing, command center, notifications, chat, and inline chat.
-5. Auto mode: Medium Light/Dark follows the operating-system appearance.
+1. Test Light and Dark at Soft, Medium, and Hard contrast.
+2. Test Material, Flat, and High Contrast workbenches.
+3. Change cursor, selection, italics, and diagnostic opacity.
+4. Confirm each change regenerates themes and offers **Reload Window**.
+5. Test native system switching and scheduled switching separately.
 
-Record release screenshots at the same window size with all user color overrides disabled.
+Inspect these surfaces:
+
+- Code hierarchy and every fixture language.
+- Focus, hover, selection, inactive selection, and disabled states.
+- Errors, warnings, Git changes, and diff editors.
+- Terminal, notebooks, testing, notifications, command center, and chat.
+- GitLens, Error Lens, and GitHub Pull Requests and Issues when installed.
+
+## Capture public screenshots
+
+Use the same window size and an isolated VS Code profile.
+
+1. Open only this Everforest repository.
+2. Open a public file such as `src/generate-themes.ts`.
+3. Hide terminals, home paths, usernames, private repositories, and notifications.
+4. Capture the VS Code window only—not the desktop.
+5. Review every full-size image before README or Marketplace use.

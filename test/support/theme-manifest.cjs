@@ -29,6 +29,16 @@ const expectedThemeContributions = [
     uiTheme: "vs",
     path: "./themes/everforest-complete-light-hard-color-theme.json",
   },
+  {
+    label: "Everforest Complete Dark",
+    uiTheme: "vs-dark",
+    path: "./themes/everforest-complete-dark-color-theme.json",
+  },
+  {
+    label: "Everforest Complete Light",
+    uiTheme: "vs",
+    path: "./themes/everforest-complete-light-color-theme.json",
+  },
 ];
 
 const requiredSemanticTokenIdentifiers = [
@@ -40,6 +50,7 @@ const requiredSemanticTokenIdentifiers = [
   "event",
   "function",
   "interface",
+  "keyword",
   "label",
   "macro",
   "method",

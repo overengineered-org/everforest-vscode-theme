@@ -1,68 +1,71 @@
 # Contributing
 
-## Setup
+Run `npm ci` first. Required: Node.js 24.
 
-This is a zero-runtime VS Code theme. Use Node.js 24, then install the locked development
-dependencies:
-
-```sh
-npm ci
-```
-
-## Make a change
+## Make one change
 
 1. Create a focused branch from `main`.
-2. Edit the TypeScript sources in `src/`; do not hand-edit files in `themes/`.
-3. When source changes affect a theme, regenerate and commit all updated `themes/*.json` files:
+2. Edit TypeScript under `src/`.
+3. Run `npm run generate` when theme output changes.
+4. Commit the generated `themes/*.json` files.
+5. Run the checks below.
 
-   ```sh
-   npm run generate
-   ```
+Do not hand-edit `themes/*.json`.
 
-4. Run the relevant checks. Before opening a PR, run:
+## Validate
 
-   ```sh
-   npm run verify:static
-   npm run test:integration
-   npm run package:vsix
-   npm run package:verify
-   ```
+Run before opening a pull request:
 
-`npm run verify:static` checks generated themes, types, unit tests, theme validation, and
-formatting. The packaged VSIX is build-time output only: the extension has no runtime service or
-backend.
+```sh
+npm run verify:static
+npm run test:integration
+npm run package:verify
+```
 
-## Commits and pull requests
+What each command proves:
 
-Use a focused Conventional Commit PR title and final squash-commit title:
+| Command                    | Proof                                                  |
+| -------------------------- | ------------------------------------------------------ |
+| `npm run verify:static`    | Types, unit tests, themes, performance, and formatting |
+| `npm run test:integration` | Exact VSIX works in a clean VS Code Extension Host     |
+| `npm run package:verify`   | VSIX contains only approved Marketplace files          |
+
+## Runtime boundaries
+
+- `src/theme.ts` owns theme compilation.
+- `src/extension.ts` owns desktop regeneration and scheduling.
+- `src/extension-web.ts` owns the web fallback message.
+- No runtime code may access workspaces, source files, telemetry, or the network.
+- Add dependencies only when VS Code or Node cannot meet the requirement clearly.
+
+## Pull requests
+
+Use a Conventional Commit title:
 
 ```text
 fix: correct terminal ANSI red
-feat(theme): add a semantic token mapping
+feat: add a theme preference
 docs: clarify local validation
 ```
 
-Accepted types are `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, and `chore`.
-Use an optional lowercase scope containing letters, digits, and hyphens. Use `!` or a
-`BREAKING CHANGE` footer for a breaking change.
+Accepted types: `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, and `chore`.
 
-Keep each PR scoped, explain the visible theme effect, include regenerated theme JSON where
-applicable, and ensure CI passes. PRs merge by squash only.
+- Keep one scope per pull request.
+- Explain the visible effect.
+- Include generated theme JSON when required.
+- Use squash merge only.
 
-## CI and releases
+## Releases
 
-GitHub Actions validates the VSIX and production dependency audit, runs desktop integration tests on
-Linux, macOS, and Windows, validates the PR title, and performs a semantic release dry run. A
-successful eligible squash merge to `main` creates a GitHub Release with a versioned VSIX and
-SHA-256 checksum. The release workflow verifies those exact bytes and automatically promotes them to
-the Visual Studio Marketplace through Microsoft Entra ID.
+- `fix:` → patch.
+- `feat:` → minor.
+- `feat!:` or `BREAKING CHANGE` → major.
+- Documentation and chore-only changes → no release.
 
-`fix:` releases a patch, `feat:` a minor, and `feat!:` or `BREAKING CHANGE` a major. Documentation
-and chore-only changes do not release. No Marketplace PAT is stored in the repository.
+CI creates one validated VSIX, a matching SHA-256 checksum, and the GitHub Release. Marketplace
+publishing verifies those exact bytes and uses the protected `VSCE_PAT` secret.
 
 ## Security
 
-Do not report vulnerabilities in public issues or include secrets, tokens, or private account
-information. Use
-[GitHub Security Advisories](https://github.com/overengineered-org/everforest-vscode-theme/security/advisories/new)
-for private reports.
+Do not publish secrets or private account information. Report vulnerabilities through
+[GitHub Security Advisories](https://github.com/overengineered-org/everforest-vscode-theme/security/advisories/new).

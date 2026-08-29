@@ -1,7 +1,7 @@
 {
   "name": "everforest-complete",
   "displayName": "Everforest Complete",
-  "description": "The complete Everforest color theme: Light and Dark in Soft, Medium, and Hard contrast.",
+  "description": "Everforest presets plus configurable Light and Dark themes, scheduled switching, and accessibility controls.",
   "version": "0.0.0-development",
   "publisher": "overengineered-org",
   "author": {
@@ -21,7 +21,8 @@
     "color theme",
     "dark theme",
     "light theme",
-    "contrast"
+    "contrast",
+    "customizable"
   ],
   "icon": "media/icon.png",
   "categories": [
@@ -35,6 +36,14 @@
   "engines": {
     "vscode": "^1.95.0"
   },
+  "main": "./dist/extension.js",
+  "browser": "./dist/extension-web.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "extensionKind": [
+    "ui"
+  ],
   "capabilities": {
     "untrustedWorkspaces": {
       "supported": true
@@ -72,12 +81,232 @@
         "label": "Everforest Complete Light Hard",
         "uiTheme": "vs",
         "path": "./themes/everforest-complete-light-hard-color-theme.json"
+      },
+      {
+        "label": "Everforest Complete Dark",
+        "uiTheme": "vs-dark",
+        "path": "./themes/everforest-complete-dark-color-theme.json"
+      },
+      {
+        "label": "Everforest Complete Light",
+        "uiTheme": "vs",
+        "path": "./themes/everforest-complete-light-color-theme.json"
       }
-    ]
+    ],
+    "commands": [
+      {
+        "command": "everforestComplete.openSettings",
+        "title": "Open Premium Settings",
+        "category": "Everforest Complete"
+      },
+      {
+        "command": "everforestComplete.regenerateThemes",
+        "title": "Regenerate Themes",
+        "category": "Everforest Complete"
+      }
+    ],
+    "configuration": {
+      "title": "Everforest Complete",
+      "properties": {
+        "everforestComplete.darkContrast": {
+          "type": "string",
+          "scope": "application",
+          "default": "medium",
+          "enum": [
+            "soft",
+            "medium",
+            "hard"
+          ],
+          "description": "Dark theme background contrast."
+        },
+        "everforestComplete.lightContrast": {
+          "type": "string",
+          "scope": "application",
+          "default": "medium",
+          "enum": [
+            "soft",
+            "medium",
+            "hard"
+          ],
+          "description": "Light theme background contrast."
+        },
+        "everforestComplete.darkWorkbench": {
+          "type": "string",
+          "scope": "application",
+          "default": "material",
+          "enum": [
+            "material",
+            "flat",
+            "high-contrast"
+          ],
+          "description": "Dark theme workbench style."
+        },
+        "everforestComplete.lightWorkbench": {
+          "type": "string",
+          "scope": "application",
+          "default": "material",
+          "enum": [
+            "material",
+            "flat",
+            "high-contrast"
+          ],
+          "description": "Light theme workbench style."
+        },
+        "everforestComplete.darkCursor": {
+          "type": "string",
+          "scope": "application",
+          "default": "white",
+          "enum": [
+            "white",
+            "red",
+            "orange",
+            "yellow",
+            "green",
+            "aqua",
+            "blue",
+            "purple"
+          ],
+          "description": "Dark theme cursor color."
+        },
+        "everforestComplete.lightCursor": {
+          "type": "string",
+          "scope": "application",
+          "default": "black",
+          "enum": [
+            "black",
+            "red",
+            "orange",
+            "yellow",
+            "green",
+            "aqua",
+            "blue",
+            "purple"
+          ],
+          "description": "Light theme cursor color."
+        },
+        "everforestComplete.darkSelection": {
+          "type": "string",
+          "scope": "application",
+          "default": "grey",
+          "enum": [
+            "grey",
+            "red",
+            "orange",
+            "yellow",
+            "green",
+            "aqua",
+            "blue",
+            "purple"
+          ],
+          "description": "Dark theme selection color."
+        },
+        "everforestComplete.lightSelection": {
+          "type": "string",
+          "scope": "application",
+          "default": "grey",
+          "enum": [
+            "grey",
+            "red",
+            "orange",
+            "yellow",
+            "green",
+            "aqua",
+            "blue",
+            "purple"
+          ],
+          "description": "Light theme selection color."
+        },
+        "everforestComplete.italicKeywords": {
+          "type": "boolean",
+          "scope": "application",
+          "default": false,
+          "description": "Italicize keywords."
+        },
+        "everforestComplete.italicComments": {
+          "type": "boolean",
+          "scope": "application",
+          "default": true,
+          "description": "Italicize comments."
+        },
+        "everforestComplete.diagnosticTextBackgroundOpacity": {
+          "type": "string",
+          "scope": "application",
+          "default": "0%",
+          "enum": [
+            "0%",
+            "12.5%",
+            "25%",
+            "37.5%",
+            "50%"
+          ],
+          "description": "Error, warning, and information background opacity."
+        },
+        "everforestComplete.highContrast": {
+          "type": "boolean",
+          "scope": "application",
+          "default": false,
+          "description": "Add stronger borders across the workbench."
+        },
+        "everforestComplete.autoSwitch.enabled": {
+          "type": "boolean",
+          "scope": "application",
+          "default": false,
+          "description": "Switch themes on schedule. Disable Window: Auto Detect Color Scheme first."
+        },
+        "everforestComplete.autoSwitch.schedule": {
+          "type": "array",
+          "scope": "application",
+          "default": [
+            {
+              "time": "07:00",
+              "theme": "Everforest Complete Light"
+            },
+            {
+              "time": "19:00",
+              "theme": "Everforest Complete Dark"
+            }
+          ],
+          "description": "Theme changes in local 24-hour time.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "time",
+              "theme"
+            ],
+            "properties": {
+              "time": {
+                "type": "string",
+                "pattern": "^([0-1][0-9]|2[0-3]):[0-5][0-9]$",
+                "description": "Local time in HH:MM format."
+              },
+              "theme": {
+                "type": "string",
+                "enum": [
+                  "Everforest Complete Dark",
+                  "Everforest Complete Light"
+                ],
+                "description": "Theme activated at this time."
+              }
+            }
+          }
+        }
+      }
+    }
   },
   "files": [
     "themes/*.json",
+    "dist/extension.js",
+    "dist/extension-web.js",
+    "dist/palette/index.js",
+    "dist/schedule.js",
+    "dist/semantic.js",
+    "dist/syntax/default.js",
+    "dist/theme.js",
+    "dist/workbench/colors.js",
+    "dist/workbench/documented-workbench-colors.json",
     "media/icon.png",
+    "media/previews/everforest-complete-variants.webp",
     "README.md",
     "CHANGELOG.md",
     "SUPPORT.md",
@@ -109,6 +338,7 @@
   "devDependencies": {
     "@release-it/conventional-changelog": "12.0.0",
     "@types/node": "^24.13.3",
+    "@types/vscode": "1.95.0",
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^3.9.2",
     "conventional-changelog-conventionalcommits": "10.3.0",

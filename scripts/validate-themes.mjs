@@ -9,13 +9,55 @@ const documentedWorkbenchColorContract = JSON.parse(
   readFileSync(resolve("src", "workbench", "documented-workbench-colors.json"), "utf8")
 );
 
-const canonicalThemeVariants = [
-  { appearance: "dark", contrast: "soft", expectedBackground: "#333c43" },
-  { appearance: "dark", contrast: "medium", expectedBackground: "#2d353b" },
-  { appearance: "dark", contrast: "hard", expectedBackground: "#272e33" },
-  { appearance: "light", contrast: "soft", expectedBackground: "#f3ead3" },
-  { appearance: "light", contrast: "medium", expectedBackground: "#fdf6e3" },
-  { appearance: "light", contrast: "hard", expectedBackground: "#fffbef" },
+const shippedThemes = [
+  {
+    appearance: "dark",
+    expectedBackground: "#333c43",
+    expectedName: "Everforest Complete Dark Soft",
+    fileName: "everforest-complete-dark-soft-color-theme.json",
+  },
+  {
+    appearance: "dark",
+    expectedBackground: "#2d353b",
+    expectedName: "Everforest Complete Dark Medium",
+    fileName: "everforest-complete-dark-medium-color-theme.json",
+  },
+  {
+    appearance: "dark",
+    expectedBackground: "#272e33",
+    expectedName: "Everforest Complete Dark Hard",
+    fileName: "everforest-complete-dark-hard-color-theme.json",
+  },
+  {
+    appearance: "light",
+    expectedBackground: "#f3ead3",
+    expectedName: "Everforest Complete Light Soft",
+    fileName: "everforest-complete-light-soft-color-theme.json",
+  },
+  {
+    appearance: "light",
+    expectedBackground: "#fdf6e3",
+    expectedName: "Everforest Complete Light Medium",
+    fileName: "everforest-complete-light-medium-color-theme.json",
+  },
+  {
+    appearance: "light",
+    expectedBackground: "#fffbef",
+    expectedName: "Everforest Complete Light Hard",
+    fileName: "everforest-complete-light-hard-color-theme.json",
+  },
+  {
+    appearance: "dark",
+    expectedBackground: "#2d353b",
+    expectedName: "Everforest Complete Dark",
+    fileName: "everforest-complete-dark-color-theme.json",
+  },
+  {
+    appearance: "light",
+    expectedBackground: "#fdf6e3",
+    expectedName: "Everforest Complete Light",
+    fileName: "everforest-complete-light-color-theme.json",
+  },
 ];
 
 const terminalAnsiColorIdentifiers = [
@@ -134,15 +176,9 @@ function validateSelectionColorContract(themePath, themeColors, appearance) {
   }
 }
 
-for (const { appearance, contrast, expectedBackground } of canonicalThemeVariants) {
-  const themePath = resolve(
-    "themes",
-    `everforest-complete-${appearance}-${contrast}-color-theme.json`
-  );
+for (const { appearance, expectedBackground, expectedName, fileName } of shippedThemes) {
+  const themePath = resolve("themes", fileName);
   const generatedTheme = JSON.parse(readFileSync(themePath, "utf8"));
-  const displayAppearance = appearance === "dark" ? "Dark" : "Light";
-  const displayContrast = `${contrast.charAt(0).toUpperCase()}${contrast.slice(1)}`;
-  const expectedName = `Everforest Complete ${displayAppearance} ${displayContrast}`;
   const contributedThemePath = relative(repositoryDirectory, themePath).split(sep).join("/");
   const themeContribution = contributedThemesByPath.get(contributedThemePath);
 
@@ -392,4 +428,4 @@ for (const { appearance, contrast, expectedBackground } of canonicalThemeVariant
   }
 }
 
-console.log(`Validated ${canonicalThemeVariants.length} themes.`);
+console.log(`Validated ${shippedThemes.length} themes.`);
