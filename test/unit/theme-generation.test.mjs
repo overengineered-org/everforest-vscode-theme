@@ -7,7 +7,8 @@ import { findIndistinguishableHoverBackgroundPairs } from "../../scripts/workben
 import { getPalette } from "../../dist/palette/index.js";
 import { getSemantic } from "../../dist/semantic.js";
 import { getDefaultSyntax } from "../../dist/syntax/default.js";
-import { createWorkbenchColors } from "../../dist/workbench/material.js";
+import { defaultThemePreferences } from "../../dist/theme.js";
+import { createWorkbenchColors } from "../../dist/workbench/colors.js";
 
 const documentedWorkbenchColorContract = JSON.parse(
   readFileSync(
@@ -24,12 +25,20 @@ const themeVariants = [
   { appearance: "light", contrast: "hard", expectedBackground: "#fffbef" },
 ];
 
+function preferencesForThemeVariant(themeVariant) {
+  return {
+    ...defaultThemePreferences[themeVariant.appearance],
+    contrast: themeVariant.contrast,
+  };
+}
+
 for (const themeVariant of themeVariants) {
   test(`${themeVariant.appearance} ${themeVariant.contrast} generates complete source colors`, () => {
     const palette = getPalette(themeVariant.appearance, themeVariant.contrast);
     const semanticTokenColors = getSemantic(palette);
-    const syntaxTokenColors = getDefaultSyntax(palette);
-    const workbenchColors = createWorkbenchColors(palette, themeVariant.appearance);
+    const themePreferences = preferencesForThemeVariant(themeVariant);
+    const syntaxTokenColors = getDefaultSyntax(palette, themePreferences);
+    const workbenchColors = createWorkbenchColors(palette, themePreferences);
     const missingDocumentedWorkbenchColorIdentifiers =
       documentedWorkbenchColorContract.identifiers.filter(
         (documentedWorkbenchColorIdentifier) =>
@@ -51,11 +60,14 @@ for (const themeVariant of themeVariants) {
 
   test(`${themeVariant.appearance} ${themeVariant.contrast} keeps selected code unmistakable and readable`, () => {
     const palette = getPalette(themeVariant.appearance, themeVariant.contrast);
-    const workbenchColors = createWorkbenchColors(palette, themeVariant.appearance);
+    const workbenchColors = createWorkbenchColors(
+      palette,
+      preferencesForThemeVariant(themeVariant)
+    );
     const expectedSelectionForeground = themeVariant.appearance === "dark" ? "#fdf6e3" : "#2d353b";
-    const expectedSelectionBackground = `${palette.dimAqua}${themeVariant.appearance === "dark" ? "80" : "a0"}`;
-    const expectedInactiveSelectionBackground = `${palette.dimAqua}${themeVariant.appearance === "dark" ? "40" : "60"}`;
-    const expectedSelectionHighlightBackground = `${palette.dimAqua}${themeVariant.appearance === "dark" ? "20" : "30"}`;
+    const expectedSelectionBackground = `${palette.grey1}${themeVariant.appearance === "dark" ? "80" : "a0"}`;
+    const expectedInactiveSelectionBackground = `${palette.grey1}${themeVariant.appearance === "dark" ? "40" : "60"}`;
+    const expectedSelectionHighlightBackground = `${palette.grey1}${themeVariant.appearance === "dark" ? "20" : "30"}`;
 
     assert.equal(workbenchColors["editor.selectionForeground"], expectedSelectionForeground);
     assert.equal(workbenchColors["editor.selectionBackground"], expectedSelectionBackground);
@@ -67,7 +79,7 @@ for (const themeVariant of themeVariants) {
       workbenchColors["editor.selectionHighlightBackground"],
       expectedSelectionHighlightBackground
     );
-    assert.equal(workbenchColors["editor.selectionHighlightBorder"], `${palette.dimAqua}80`);
+    assert.equal(workbenchColors["editor.selectionHighlightBorder"], `${palette.grey1}80`);
     assert.equal(workbenchColors["minimap.selectionHighlight"], expectedSelectionBackground);
     assert.equal(workbenchColors["terminal.selectionBackground"], expectedSelectionBackground);
     assert.equal(
@@ -112,7 +124,10 @@ for (const themeVariant of themeVariants) {
 
   test(`${themeVariant.appearance} ${themeVariant.contrast} keeps source control graph labels semantic and readable`, () => {
     const palette = getPalette(themeVariant.appearance, themeVariant.contrast);
-    const workbenchColors = createWorkbenchColors(palette, themeVariant.appearance);
+    const workbenchColors = createWorkbenchColors(
+      palette,
+      preferencesForThemeVariant(themeVariant)
+    );
     const sourceControlGraphLabelForeground =
       workbenchColors["scmGraph.historyItemHoverLabelForeground"];
     const expectedSourceControlGraphColors = {
@@ -174,7 +189,10 @@ for (const themeVariant of themeVariants) {
 
   test(`${themeVariant.appearance} ${themeVariant.contrast} keeps extension install actions prominent and readable`, () => {
     const palette = getPalette(themeVariant.appearance, themeVariant.contrast);
-    const workbenchColors = createWorkbenchColors(palette, themeVariant.appearance);
+    const workbenchColors = createWorkbenchColors(
+      palette,
+      preferencesForThemeVariant(themeVariant)
+    );
 
     for (const extensionButtonColorIdentifiers of [
       {
@@ -212,7 +230,10 @@ for (const themeVariant of themeVariants) {
 
   test(`${themeVariant.appearance} ${themeVariant.contrast} keeps desktop workbench hierarchy and states readable`, () => {
     const palette = getPalette(themeVariant.appearance, themeVariant.contrast);
-    const workbenchColors = createWorkbenchColors(palette, themeVariant.appearance);
+    const workbenchColors = createWorkbenchColors(
+      palette,
+      preferencesForThemeVariant(themeVariant)
+    );
 
     for (const secondaryWorkbenchSurfaceIdentifier of [
       "activityBar.background",
@@ -297,7 +318,10 @@ for (const themeVariant of themeVariants) {
 
   test(`${themeVariant.appearance} ${themeVariant.contrast} keeps semantic workbench states distinct and readable`, () => {
     const palette = getPalette(themeVariant.appearance, themeVariant.contrast);
-    const workbenchColors = createWorkbenchColors(palette, themeVariant.appearance);
+    const workbenchColors = createWorkbenchColors(
+      palette,
+      preferencesForThemeVariant(themeVariant)
+    );
     const expectedAccessibleBlueForeground =
       themeVariant.appearance === "dark" ? palette.blue : "#2e5f94";
     const expectedAccessibleAquaForeground =
@@ -305,7 +329,7 @@ for (const themeVariant of themeVariants) {
     const expectedResolvedCommentIndicator =
       themeVariant.appearance === "dark" ? palette.grey2 : "#59646c";
     const expectedSemanticWorkbenchStateColors = {
-      "minimap.selectionOccurrenceHighlight": `${palette.dimAqua}${themeVariant.appearance === "dark" ? "20" : "30"}`,
+      "minimap.selectionOccurrenceHighlight": `${palette.grey1}${themeVariant.appearance === "dark" ? "20" : "30"}`,
       "minimap.chatEditHighlight": `${themeVariant.appearance === "dark" ? palette.green : "#596600"}${themeVariant.appearance === "dark" ? "99" : "80"}`,
       "chart.line": expectedAccessibleBlueForeground,
       "chart.axis": `${themeVariant.appearance === "dark" ? palette.fg : "#59646c"}${themeVariant.appearance === "dark" ? "66" : "99"}`,

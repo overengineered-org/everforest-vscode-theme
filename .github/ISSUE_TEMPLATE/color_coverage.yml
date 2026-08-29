@@ -16,12 +16,8 @@ body:
     attributes:
       label: Theme variant
       options:
-        - Dark Soft
-        - Dark Medium
-        - Dark Hard
-        - Light Soft
-        - Light Medium
-        - Light Hard
+        - Dark
+        - Light
     validations:
       required: true
   - type: input
@@ -31,6 +27,11 @@ body:
       placeholder: "1.96.0"
     validations:
       required: true
+  - type: textarea
+    id: everforest-settings
+    attributes:
+      label: Everforest settings
+      description: Paste only changed `everforestComplete.*` settings. Remove private data.
   - type: textarea
     id: evidence
     attributes:

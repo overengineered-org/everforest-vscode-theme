@@ -19,15 +19,15 @@ const isolatedUserDataDirectory = resolve(vscodeTestStateDirectory, "user-data")
 function writeSystemThemeSettings(autoDetectColorScheme) {
   const userSettingsDirectory = resolve(isolatedUserDataDirectory, "User");
   mkdirSync(userSettingsDirectory, { recursive: true });
-  // The Start here flow selects Dark Medium before users enable automatic switching.
+  // The Start here flow selects Dark before users enable automatic switching.
   writeFileSync(
     resolve(userSettingsDirectory, "settings.json"),
     `${JSON.stringify(
       {
         "window.autoDetectColorScheme": autoDetectColorScheme,
-        "workbench.colorTheme": "Everforest Complete Dark Medium",
-        "workbench.preferredDarkColorTheme": "Everforest Complete Dark Medium",
-        "workbench.preferredLightColorTheme": "Everforest Complete Light Medium",
+        "workbench.colorTheme": "Everforest Complete Dark",
+        "workbench.preferredDarkColorTheme": "Everforest Complete Dark",
+        "workbench.preferredLightColorTheme": "Everforest Complete Light",
       },
       null,
       2

@@ -6,6 +6,28 @@
 
 export type ThemeAppearance = "dark" | "light";
 export type ThemeContrast = "soft" | "medium" | "hard";
+export type ThemeWorkbenchStyle = "material" | "flat" | "high-contrast";
+export type ThemePaletteAccent = "red" | "orange" | "yellow" | "green" | "aqua" | "blue" | "purple";
+export type ThemeCursorColor = "white" | "black" | ThemePaletteAccent;
+export type ThemeSelectionColor = "grey" | ThemePaletteAccent;
+export type DiagnosticTextBackgroundOpacity = "0%" | "12.5%" | "25%" | "37.5%" | "50%";
+
+export interface ThemePreferences {
+  appearance: ThemeAppearance;
+  contrast: ThemeContrast;
+  workbenchStyle: ThemeWorkbenchStyle;
+  cursorColor: ThemeCursorColor;
+  selectionColor: ThemeSelectionColor;
+  italicKeywords: boolean;
+  italicComments: boolean;
+  diagnosticTextBackgroundOpacity: DiagnosticTextBackgroundOpacity;
+  highContrast: boolean;
+}
+
+export interface ScheduledTheme {
+  time: string;
+  theme: string;
+}
 
 export interface Palette {
   bg0: string;

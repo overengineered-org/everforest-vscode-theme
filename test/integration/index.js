@@ -62,18 +62,34 @@ async function waitForConfiguredTheme(expectedThemeLabel) {
   );
 }
 
+async function validatePremiumThemeRegeneration(extension) {
+  const premiumConfiguration = vscode.workspace.getConfiguration("everforestComplete");
+  await premiumConfiguration.update("darkCursor", "purple", vscode.ConfigurationTarget.Global);
+  const darkThemePath = join(
+    extension.extensionPath,
+    "themes/everforest-complete-dark-color-theme.json"
+  );
+
+  for (let attemptNumber = 0; attemptNumber < 40; attemptNumber += 1) {
+    const regeneratedDarkTheme = JSON.parse(await readFile(darkThemePath, "utf8"));
+    if (regeneratedDarkTheme.colors["editorCursor.foreground"] === "#d699b6") return;
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 50));
+  }
+
+  const regeneratedDarkTheme = JSON.parse(await readFile(darkThemePath, "utf8"));
+  assert.equal(
+    regeneratedDarkTheme.colors["editorCursor.foreground"],
+    "#d699b6",
+    "Configuration changes regenerate the installed Dark theme"
+  );
+}
+
 function validateNativeSystemThemePreferences() {
   const windowConfiguration = vscode.workspace.getConfiguration("window");
   const workbenchConfiguration = vscode.workspace.getConfiguration("workbench");
   assert.equal(windowConfiguration.get("autoDetectColorScheme"), true);
-  assert.equal(
-    workbenchConfiguration.get("preferredDarkColorTheme"),
-    "Everforest Complete Dark Medium"
-  );
-  assert.equal(
-    workbenchConfiguration.get("preferredLightColorTheme"),
-    "Everforest Complete Light Medium"
-  );
+  assert.equal(workbenchConfiguration.get("preferredDarkColorTheme"), "Everforest Complete Dark");
+  assert.equal(workbenchConfiguration.get("preferredLightColorTheme"), "Everforest Complete Light");
   assert.ok(
     vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Dark ||
       vscode.window.activeColorTheme.kind === vscode.ColorThemeKind.Light,
@@ -272,7 +288,7 @@ function validateInstalledSemanticWorkbenchStateColors(theme, themeLabel, contra
 }
 
 function validateInstalledSelectionColors(theme, themeLabel, compositeHexColor, contrastRatio) {
-  const selectionAccent = theme.type === "dark" ? "#569d79" : "#6ec398";
+  const selectionAccent = theme.type === "dark" ? "#859289" : "#939f91";
   const expectedSelectionColors = {
     "editor.selectionBackground": `${selectionAccent}${theme.type === "dark" ? "80" : "a0"}`,
     "editor.selectionForeground": theme.type === "dark" ? "#fdf6e3" : "#2d353b",
@@ -461,10 +477,12 @@ async function run() {
   );
   const extension = registeredThemeExtension();
   assert.match(extension.extensionPath, /extensions/i, "Extension was loaded from clean install");
-  assert.equal(extension.packageJSON.main, undefined);
-  assert.equal(extension.packageJSON.browser, undefined);
-  assert.equal(extension.packageJSON.activationEvents, undefined);
+  assert.equal(extension.packageJSON.main, "./dist/extension.js");
+  assert.equal(extension.packageJSON.browser, "./dist/extension-web.js");
+  assert.deepEqual(extension.packageJSON.activationEvents, ["onStartupFinished"]);
   assert.deepEqual(extension.packageJSON.contributes.themes, expectedThemeContributions);
+  await extension.activate();
+  assert.equal(extension.isActive, true, "Premium runtime activates in VS Code Desktop");
 
   for (const themeContribution of extension.packageJSON.contributes.themes) {
     const themePath = join(extension.extensionPath, themeContribution.path);
@@ -594,7 +612,7 @@ async function run() {
 
   if (integrationTestMode === "auto-mode") {
     validateNativeSystemThemePreferences();
-    console.log("Validated native VS Code system auto mode and Medium preferences.");
+    console.log("Validated native VS Code system auto mode preferences.");
     return;
   }
 
@@ -602,6 +620,7 @@ async function run() {
   const originalTheme = workbenchConfiguration.get("colorTheme");
   try {
     await validateLanguageFixtures();
+    await validatePremiumThemeRegeneration(extension);
     for (const themeContribution of extension.packageJSON.contributes.themes) {
       const expectedThemeKind =
         themeContribution.uiTheme === "vs-dark"
@@ -624,7 +643,7 @@ async function run() {
     );
   }
 
-  console.log("Validated six themes inside VS Code Extension Host.");
+  console.log("Validated six presets and two configurable themes inside VS Code Extension Host.");
 }
 
 module.exports = { run };

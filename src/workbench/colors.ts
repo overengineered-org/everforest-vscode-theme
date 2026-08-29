@@ -4,12 +4,45 @@
  *  License:    MIT
  *--------------------------------------------------------------------------------------------*/
 
-import { Palette, ThemeAppearance } from "../interface";
+import {
+  DiagnosticTextBackgroundOpacity,
+  Palette,
+  ThemeAppearance,
+  ThemePaletteAccent,
+  ThemePreferences,
+} from "../interface";
 import documentedWorkbenchColorContract from "./documented-workbench-colors.json";
 
 type SemanticStatusColorName = "red" | "yellow" | "green" | "blue";
 
 const brightAccentForeground = "#1b2024";
+const diagnosticOpacityAlpha: Record<DiagnosticTextBackgroundOpacity, string> = {
+  "0%": "00",
+  "12.5%": "20",
+  "25%": "40",
+  "37.5%": "60",
+  "50%": "80",
+};
+const dimPaletteColorByAccent: Record<ThemePaletteAccent, keyof Palette> = {
+  red: "dimRed",
+  orange: "dimOrange",
+  yellow: "dimYellow",
+  green: "dimGreen",
+  aqua: "dimAqua",
+  blue: "dimBlue",
+  purple: "dimPurple",
+};
+
+function configuredCursorColor(palette: Palette, themePreferences: ThemePreferences): string {
+  if (themePreferences.cursorColor === "white") return "#fdf6e3";
+  if (themePreferences.cursorColor === "black") return "#2d353b";
+  return palette[themePreferences.cursorColor];
+}
+
+function configuredSelectionColor(palette: Palette, themePreferences: ThemePreferences): string {
+  if (themePreferences.selectionColor === "grey") return palette.grey1;
+  return palette[dimPaletteColorByAccent[themePreferences.selectionColor]];
+}
 
 function semanticStatusColorNameForWorkbenchIdentifier(
   workbenchColorIdentifier: string
@@ -186,7 +219,63 @@ function getReadableWorkbenchAccentColors(appearance: ThemeAppearance, palette: 
   };
 }
 
-export function createWorkbenchColors(palette: Palette, appearance: ThemeAppearance) {
+function applyWorkbenchStyle(
+  workbenchColors: Record<string, string>,
+  palette: Palette,
+  themePreferences: ThemePreferences
+): void {
+  const flatSurfaceIdentifiers = [
+    "activityBar.background",
+    "sideBar.background",
+    "editorGroupHeader.tabsBackground",
+    "tab.activeBackground",
+    "tab.inactiveBackground",
+    "panel.background",
+    "statusBar.background",
+    "statusBar.noFolderBackground",
+    "titleBar.activeBackground",
+    "titleBar.inactiveBackground",
+    "menu.background",
+    "commandCenter.background",
+  ];
+  const structuralBorderIdentifiers = [
+    "activityBar.border",
+    "sideBar.border",
+    "editorGroup.border",
+    "panel.border",
+    "statusBar.border",
+    "statusBar.noFolderBorder",
+    "titleBar.border",
+    "tab.border",
+    "editorWidget.border",
+    "input.border",
+    "dropdown.border",
+    "checkbox.border",
+  ];
+
+  if (themePreferences.workbenchStyle === "flat") {
+    for (const surfaceIdentifier of flatSurfaceIdentifiers) {
+      workbenchColors[surfaceIdentifier] = palette.bg;
+    }
+    for (const borderIdentifier of structuralBorderIdentifiers) {
+      workbenchColors[borderIdentifier] = `${palette.bg}00`;
+    }
+  }
+
+  const usesStrongBorders =
+    themePreferences.workbenchStyle === "high-contrast" || themePreferences.highContrast;
+  if (!usesStrongBorders) return;
+
+  workbenchColors.contrastBorder = palette.grey1;
+  workbenchColors.contrastActiveBorder = palette.fg;
+  workbenchColors.focusBorder = palette.fg;
+  for (const borderIdentifier of structuralBorderIdentifiers) {
+    workbenchColors[borderIdentifier] = palette.grey1;
+  }
+}
+
+export function createWorkbenchColors(palette: Palette, themePreferences: ThemePreferences) {
+  const { appearance } = themePreferences;
   const accentForeground = appearance === "dark" ? palette.bg : "#2d353b";
   const {
     activeWorkbenchForeground,
@@ -197,14 +286,16 @@ export function createWorkbenchColors(palette: Palette, appearance: ThemeAppeara
   const readableWorkbenchAccentColors = getReadableWorkbenchAccentColors(appearance, palette);
   const accessibleAccentGreen = readableWorkbenchAccentColors.green;
   const accessibleBlueForeground = readableWorkbenchAccentColors.blue;
-  const activeSelectionBackgroundColor = `${palette.dimAqua}${appearance === "dark" ? "80" : "a0"}`;
-  const inactiveSelectionBackgroundColor = `${palette.dimAqua}${appearance === "dark" ? "40" : "60"}`;
-  const selectionOccurrenceBackgroundColor = `${palette.dimAqua}${appearance === "dark" ? "20" : "30"}`;
+  const selectionColor = configuredSelectionColor(palette, themePreferences);
+  const activeSelectionBackgroundColor = `${selectionColor}${appearance === "dark" ? "80" : "a0"}`;
+  const inactiveSelectionBackgroundColor = `${selectionColor}${appearance === "dark" ? "40" : "60"}`;
+  const selectionOccurrenceBackgroundColor = `${selectionColor}${appearance === "dark" ? "20" : "30"}`;
   const selectedTextForegroundColor = appearance === "dark" ? "#fdf6e3" : "#2d353b";
   const resolvedCommentIndicator = appearance === "dark" ? palette.grey2 : "#59646c";
   const unresolvedCommentIndicator = accessibleBlueForeground;
-  const cursorForeground = palette.fg;
-  const diagnosticBackgroundOpacity = "00";
+  const cursorForeground = configuredCursorColor(palette, themePreferences);
+  const diagnosticBackgroundOpacity =
+    diagnosticOpacityAlpha[themePreferences.diagnosticTextBackgroundOpacity];
   const workbenchColors: Record<string, string> = {
     ...createDocumentedWorkbenchColorFallbacks(palette, appearance),
     foreground: primaryWorkbenchForeground,
@@ -317,7 +408,7 @@ export function createWorkbenchColors(palette: Palette, appearance: ThemeAppeara
     "editor.selectionBackground": activeSelectionBackgroundColor,
     "editor.selectionForeground": selectedTextForegroundColor,
     "editor.selectionHighlightBackground": selectionOccurrenceBackgroundColor,
-    "editor.selectionHighlightBorder": `${palette.dimAqua}80`,
+    "editor.selectionHighlightBorder": `${selectionColor}80`,
     "editor.inactiveSelectionBackground": inactiveSelectionBackgroundColor,
     "editor.wordHighlightBackground":
       appearance === "dark" ? `${palette.bg4}58` : `${palette.bg4}48`,
@@ -362,7 +453,7 @@ export function createWorkbenchColors(palette: Palette, appearance: ThemeAppeara
     "editorOverviewRuler.border": `${palette.bg}00`,
     "editorOverviewRuler.findMatchForeground": `${palette.dimAqua}a0`,
     "editorOverviewRuler.rangeHighlightForeground": `${palette.dimAqua}a0`,
-    "editorOverviewRuler.selectionHighlightForeground": `${palette.dimAqua}a0`,
+    "editorOverviewRuler.selectionHighlightForeground": `${selectionColor}a0`,
     "editorOverviewRuler.wordHighlightForeground": `${palette.bg5}a0`,
     "editorOverviewRuler.wordHighlightStrongForeground": `${palette.bg5}a0`,
     "editorOverviewRuler.wordHighlightTextForeground": `${palette.bg5}a0`,
@@ -758,6 +849,7 @@ export function createWorkbenchColors(palette: Palette, appearance: ThemeAppeara
     "multiDiffEditor.background": palette.bg,
     "multiDiffEditor.border": palette.bg4,
   };
+  applyWorkbenchStyle(workbenchColors, palette, themePreferences);
   return workbenchColors;
 }
 

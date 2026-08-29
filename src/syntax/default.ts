@@ -6,7 +6,20 @@
 
 import { Palette } from "../interface";
 
-export function getDefaultSyntax(palette: Palette) {
+interface SyntaxStylePreferences {
+  italicKeywords: boolean;
+  italicComments: boolean;
+}
+
+const defaultSyntaxStylePreferences: SyntaxStylePreferences = {
+  italicKeywords: false,
+  italicComments: true,
+};
+
+export function getDefaultSyntax(
+  palette: Palette,
+  syntaxStylePreferences: SyntaxStylePreferences = defaultSyntaxStylePreferences
+) {
   const syntax = [
     // Syntax{{{
     {
@@ -2136,14 +2149,23 @@ export function getDefaultSyntax(palette: Palette) {
     },
     // }}}
   ];
-  syntax.push({
-    name: "Comment",
-    scope: "comment, string.comment, punctuation.definition.comment",
-    settings: {
-      foreground: palette.grey1,
-      fontStyle: "italic",
+  syntax.push(
+    {
+      name: "Configured keyword style",
+      scope: "keyword, storage.type, storage.modifier",
+      settings: {
+        fontStyle: syntaxStylePreferences.italicKeywords ? "italic" : "",
+      },
     },
-  });
+    {
+      name: "Comment",
+      scope: "comment, string.comment, punctuation.definition.comment",
+      settings: {
+        foreground: palette.grey1,
+        fontStyle: syntaxStylePreferences.italicComments ? "italic" : "",
+      },
+    }
+  );
   return syntax;
 }
 
