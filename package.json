@@ -108,10 +108,10 @@
   },
   "devDependencies": {
     "@release-it/conventional-changelog": "12.0.0",
-    "@types/node": "^24.13.3",
+    "@types/node": "^26.3.0",
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^3.9.2",
-    "conventional-changelog-conventionalcommits": "10.3.0",
+    "conventional-changelog-conventionalcommits": "10.4.0",
     "conventional-recommended-bump": "12.1.0",
     "jszip": "^3.10.1",
     "pngjs": "^7.0.0",
