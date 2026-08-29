@@ -11,6 +11,11 @@ icon = "tool"
 command = "bash .codex/environments/setup.sh"
 
 [[actions]]
+name = "Clean build output"
+icon = "tool"
+command = "bash .codex/environments/run-with-node-24.sh npm run clean"
+
+[[actions]]
 name = "Static checks"
 icon = "tool"
 command = "bash .codex/environments/run-with-node-24.sh npm run verify:static"
