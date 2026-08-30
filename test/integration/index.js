@@ -80,6 +80,69 @@ async function validateNativeConfigurationCommandCancellation() {
   }
 }
 
+async function acceptQuickPickSelection(nextSelectionCount = 0) {
+  await new Promise((resolveQuickPickDisplay) => setTimeout(resolveQuickPickDisplay, 150));
+  for (let selectionNumber = 0; selectionNumber < nextSelectionCount; selectionNumber += 1) {
+    await vscode.commands.executeCommand("workbench.action.quickOpenSelectNext");
+  }
+  await vscode.commands.executeCommand("workbench.action.acceptSelectedQuickOpenItem");
+}
+
+async function dismissConfigurationNotification() {
+  await new Promise((resolveNotificationDisplay) => setTimeout(resolveNotificationDisplay, 250));
+  await vscode.commands.executeCommand("notifications.clearAll");
+}
+
+async function validateSuccessfulNativeConfigurationCommands(extension) {
+  const guidedConfigurationCompletion = vscode.commands.executeCommand(
+    "everforestComplete.configureTheme"
+  );
+  await acceptQuickPickSelection();
+  await acceptQuickPickSelection();
+  await acceptQuickPickSelection();
+  await dismissConfigurationNotification();
+  await guidedConfigurationCompletion;
+
+  const advancedConfigurationCompletion = vscode.commands.executeCommand(
+    "everforestComplete.configureAdvancedControls"
+  );
+  await acceptQuickPickSelection(1);
+  await acceptQuickPickSelection(7);
+  await acceptQuickPickSelection();
+  await dismissConfigurationNotification();
+  await advancedConfigurationCompletion;
+
+  const premiumConfiguration = vscode.workspace.getConfiguration("everforestComplete");
+  assert.equal(premiumConfiguration.get("darkCursor"), "purple");
+  const regeneratedDarkTheme = JSON.parse(
+    await readFile(
+      join(extension.extensionPath, "themes/everforest-complete-dark-color-theme.json"),
+      "utf8"
+    )
+  );
+  assert.equal(regeneratedDarkTheme.colors["editorCursor.foreground"], "#d699b6");
+
+  const automaticSwitchingConfigurationCompletion = vscode.commands.executeCommand(
+    "everforestComplete.configureAutomaticSwitching"
+  );
+  await acceptQuickPickSelection(1);
+  await dismissConfigurationNotification();
+  await automaticSwitchingConfigurationCompletion;
+
+  assert.equal(vscode.workspace.getConfiguration("window").get("autoDetectColorScheme"), true);
+  assert.equal(
+    vscode.workspace.getConfiguration("workbench").get("preferredDarkColorTheme"),
+    "Everforest Complete Dark"
+  );
+  assert.equal(
+    vscode.workspace.getConfiguration("workbench").get("preferredLightColorTheme"),
+    "Everforest Complete Light"
+  );
+  await vscode.workspace
+    .getConfiguration("window")
+    .update("autoDetectColorScheme", false, vscode.ConfigurationTarget.Global);
+}
+
 function registeredThemeExtension() {
   const extension = vscode.extensions.getExtension(extensionIdentifier);
   assert.ok(extension, "Extension is registered");
@@ -700,6 +763,7 @@ async function run() {
   const originalTheme = workbenchConfiguration.get("colorTheme");
   try {
     await validateLanguageFixtures();
+    await validateSuccessfulNativeConfigurationCommands(extension);
     await validatePremiumThemeRegeneration(extension);
     for (const themeContribution of extension.packageJSON.contributes.themes) {
       const expectedThemeKind =

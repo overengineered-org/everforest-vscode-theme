@@ -23,10 +23,12 @@ const expectedReleaseArchiveFiles = [
   "extension/dist/extension-web.js",
   "extension/dist/extension.js",
   "extension/dist/palette/index.js",
+  "extension/dist/schedule-controller.js",
   "extension/dist/schedule.js",
   "extension/dist/semantic.js",
   "extension/dist/syntax/default.js",
   "extension/dist/theme.js",
+  "extension/dist/theme-regeneration.js",
   "extension/dist/workbench/documented-workbench-colors.json",
   "extension/dist/workbench/colors.js",
   "extension/media/icon.png",
@@ -60,6 +62,11 @@ test("creates the exact versioned VSIX and matching SHA-256 checksum", async () 
     const releasePackagingEnvironment = { ...process.env };
     delete releasePackagingEnvironment.NODE_TEST_CONTEXT;
     execFileSync(process.execPath, ["scripts/package-release.mjs", releaseVersion], {
+      cwd: repositoryDirectory,
+      encoding: "utf8",
+      env: releasePackagingEnvironment,
+    });
+    execFileSync(process.execPath, ["scripts/verify-release-package.mjs", releaseVersion], {
       cwd: repositoryDirectory,
       encoding: "utf8",
       env: releasePackagingEnvironment,

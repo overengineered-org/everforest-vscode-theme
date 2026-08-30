@@ -6,6 +6,7 @@ import {
   createAutomaticSwitchingConfigurationUpdates,
   createDailyThemeSchedule,
   createGuidedThemeConfigurationUpdates,
+  createPremiumConfigurationTransactionExecutor,
   darkThemeName,
   formatThemeSchedule,
   inferAppearanceBehavior,
@@ -246,6 +247,73 @@ test("applies only changed global configuration values", async () => {
 
   assert.equal(appliedConfigurationUpdateCount, 1);
   assert.deepEqual(writtenConfigurationValues, [transactionalConfigurationUpdates[1]]);
+});
+
+test("serializes configuration transactions and exposes their active state", async () => {
+  const writtenConfigurationKeys = [];
+  let releaseFirstConfigurationWrite;
+  const firstConfigurationWriteCanFinish = new Promise((resolveFirstConfigurationWrite) => {
+    releaseFirstConfigurationWrite = resolveFirstConfigurationWrite;
+  });
+  let reportFirstConfigurationWriteStarted;
+  const firstConfigurationWriteStarted = new Promise((resolveFirstConfigurationWriteStarted) => {
+    reportFirstConfigurationWriteStarted = resolveFirstConfigurationWriteStarted;
+  });
+  const configurationTransactionExecutor = createPremiumConfigurationTransactionExecutor({
+    readSnapshot() {
+      return { defaultValue: undefined, globalValue: undefined };
+    },
+    async updateGlobal(_configurationSection, configurationKey) {
+      writtenConfigurationKeys.push(configurationKey);
+      if (configurationKey !== "darkContrast") return;
+      reportFirstConfigurationWriteStarted();
+      await firstConfigurationWriteCanFinish;
+    },
+  });
+
+  const firstConfigurationTransaction = configurationTransactionExecutor.apply([
+    transactionalConfigurationUpdates[0],
+  ]);
+  await firstConfigurationWriteStarted;
+  const secondConfigurationTransaction = configurationTransactionExecutor.apply([
+    transactionalConfigurationUpdates[1],
+  ]);
+  await new Promise((resolveQueuedMicrotasks) => setImmediate(resolveQueuedMicrotasks));
+
+  assert.equal(configurationTransactionExecutor.transactionInProgress, true);
+  assert.deepEqual(writtenConfigurationKeys, ["darkContrast"]);
+
+  releaseFirstConfigurationWrite();
+  await Promise.all([firstConfigurationTransaction, secondConfigurationTransaction]);
+
+  assert.equal(configurationTransactionExecutor.transactionInProgress, false);
+  assert.deepEqual(writtenConfigurationKeys, ["darkContrast", "colorTheme"]);
+});
+
+test("continues queued configuration transactions after a failed transaction", async () => {
+  const writtenConfigurationKeys = [];
+  const configurationTransactionExecutor = createPremiumConfigurationTransactionExecutor({
+    readSnapshot() {
+      return { defaultValue: undefined, globalValue: undefined };
+    },
+    async updateGlobal(_configurationSection, configurationKey, configurationValue) {
+      if (configurationKey === "darkContrast" && configurationValue === "hard") {
+        throw new Error("first transaction failed");
+      }
+      writtenConfigurationKeys.push(configurationKey);
+    },
+  });
+
+  const failedConfigurationTransaction = configurationTransactionExecutor.apply([
+    transactionalConfigurationUpdates[0],
+  ]);
+  const successfulConfigurationTransaction = configurationTransactionExecutor.apply([
+    transactionalConfigurationUpdates[1],
+  ]);
+
+  await assert.rejects(failedConfigurationTransaction, /first transaction failed/);
+  assert.equal(await successfulConfigurationTransaction, 1);
+  assert.deepEqual(writtenConfigurationKeys, ["darkContrast", "colorTheme"]);
 });
 
 test("rolls back every attempted global write when a later write fails", async () => {

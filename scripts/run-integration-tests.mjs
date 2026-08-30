@@ -1,15 +1,20 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import { downloadAndUnzipVSCode, runTests, runVSCodeCommand } from "@vscode/test-electron";
 
 const repositoryDirectory = resolve(import.meta.dirname, "..");
-const packagedExtensionPath = resolve(repositoryDirectory, "dist", "everforest-complete.vsix");
-const vscodeVersion = process.env.EVERFOREST_VSCODE_VERSION ?? "stable";
-
-if (!existsSync(packagedExtensionPath)) {
-  throw new Error(`Packaged VSIX not found: ${packagedExtensionPath}`);
+const packagedExtensionDirectory = resolve(repositoryDirectory, "dist");
+const packagedExtensionFileNames = existsSync(packagedExtensionDirectory)
+  ? readdirSync(packagedExtensionDirectory).filter((fileName) => fileName.endsWith(".vsix"))
+  : [];
+if (packagedExtensionFileNames.length !== 1) {
+  throw new Error(
+    `Expected exactly one packaged VSIX in ${packagedExtensionDirectory}, found ${packagedExtensionFileNames.length}`
+  );
 }
+const packagedExtensionPath = resolve(packagedExtensionDirectory, packagedExtensionFileNames[0]);
+const vscodeVersion = process.env.EVERFOREST_VSCODE_VERSION ?? "stable";
 
 const temporaryFilesDirectory = process.platform === "darwin" ? "/tmp" : tmpdir();
 const vscodeTestStateDirectory = mkdtempSync(resolve(temporaryFilesDirectory, "evf-"));

@@ -147,6 +147,34 @@ export async function applyPremiumConfigurationUpdates(
   return attemptedConfigurationUpdates.length;
 }
 
+export function createPremiumConfigurationTransactionExecutor(
+  configurationStorage: PremiumConfigurationStorage
+) {
+  let transactionInProgress = false;
+  let queuedConfigurationTransaction: Promise<void> = Promise.resolve();
+
+  return {
+    get transactionInProgress() {
+      return transactionInProgress;
+    },
+    apply(configurationUpdates: readonly PremiumConfigurationUpdate[]) {
+      const configurationTransaction = queuedConfigurationTransaction.then(async () => {
+        transactionInProgress = true;
+        try {
+          return await applyPremiumConfigurationUpdates(configurationUpdates, configurationStorage);
+        } finally {
+          transactionInProgress = false;
+        }
+      });
+      queuedConfigurationTransaction = configurationTransaction.then(
+        () => undefined,
+        () => undefined
+      );
+      return configurationTransaction;
+    },
+  };
+}
+
 function automaticBehaviorUpdates(
   appearanceBehavior: AppearanceBehavior
 ): PremiumConfigurationUpdate[] {

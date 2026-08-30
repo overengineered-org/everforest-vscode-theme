@@ -2,7 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import * as vscode from "vscode";
 import {
-  applyPremiumConfigurationUpdates,
+  createPremiumConfigurationTransactionExecutor,
   createAdvancedThemeConfigurationUpdates,
   createAutomaticSwitchingConfigurationUpdates,
   createGuidedThemeConfigurationUpdates,
@@ -15,7 +15,6 @@ import type {
   AdvancedThemeConfiguration,
   AutomaticSwitchingMode,
   PremiumConfigurationStorage,
-  PremiumConfigurationUpdate,
 } from "./configuration";
 import {
   collectAdvancedThemeConfiguration,
@@ -32,10 +31,18 @@ import type {
   ThemeSelectionColor,
   ThemeWorkbenchStyle,
 } from "./interface";
-import { resolveScheduledTheme } from "./schedule";
+import { ThemeScheduleController } from "./schedule-controller";
 import { defaultThemePreferences, generatedThemeFileName, serializeTheme } from "./theme";
+import {
+  createThemeGenerationFingerprint,
+  reportAppliedThemeConfiguration,
+  synchronizeConfiguredThemesWithFeedback,
+  synchronizeThemeFiles,
+} from "./theme-regeneration";
+import type { ThemeConfigurationUserInterface } from "./theme-regeneration";
 
 const extensionConfigurationSection = "everforestComplete";
+const themeGenerationFingerprintStateKey = "everforestComplete.themeGenerationFingerprint";
 const themeConfigurationCompletedContextKey = "everforestComplete.themeConfigurationCompleted";
 const automaticSwitchingCompletedContextKey = "everforestComplete.automaticSwitchingCompleted";
 const themePreferenceConfigurationKeys = [
@@ -52,8 +59,6 @@ const themePreferenceConfigurationKeys = [
   "diagnosticTextBackgroundOpacity",
   "highContrast",
 ] as const;
-let nativeConfigurationTransactionInProgress = false;
-let queuedNativeConfigurationTransaction: Promise<void> = Promise.resolve();
 
 const vscodeGlobalConfigurationStorage: PremiumConfigurationStorage = {
   readSnapshot(configurationSection, configurationKey) {
@@ -74,6 +79,9 @@ const vscodeGlobalConfigurationStorage: PremiumConfigurationStorage = {
       .update(configurationKey, configurationValue, vscode.ConfigurationTarget.Global);
   },
 };
+const premiumConfigurationTransactionExecutor = createPremiumConfigurationTransactionExecutor(
+  vscodeGlobalConfigurationStorage
+);
 
 function readExtensionConfigurationValue<T>(configurationKey: string, fallbackValue: T): T {
   return (
@@ -187,27 +195,6 @@ function readGuidedThemeConfigurationSnapshot() {
   };
 }
 
-async function applyNativeConfigurationTransaction(
-  configurationUpdates: readonly PremiumConfigurationUpdate[]
-): Promise<number> {
-  const configurationTransaction = queuedNativeConfigurationTransaction.then(async () => {
-    nativeConfigurationTransactionInProgress = true;
-    try {
-      return await applyPremiumConfigurationUpdates(
-        configurationUpdates,
-        vscodeGlobalConfigurationStorage
-      );
-    } finally {
-      nativeConfigurationTransactionInProgress = false;
-    }
-  });
-  queuedNativeConfigurationTransaction = configurationTransaction.then(
-    () => undefined,
-    () => undefined
-  );
-  return configurationTransaction;
-}
-
 async function writeThemeWhenChanged(themePath: string, themeSource: string): Promise<boolean> {
   const installedThemeSource = await readFile(themePath, "utf8");
   if (installedThemeSource === themeSource) return false;
@@ -237,135 +224,19 @@ async function promptToReloadWindow(message: string): Promise<void> {
   }
 }
 
-async function applyConfiguredThemes(
-  extensionPath: string,
-  notifyWhenCurrent = false
-): Promise<void> {
-  try {
-    const themesChanged = await regenerateConfiguredThemes(extensionPath);
-    if (themesChanged) {
-      void promptToReloadWindow(
-        "Everforest Complete regenerated your Dark and Light themes. Reload once to apply them."
-      );
-    } else if (notifyWhenCurrent) {
-      void vscode.window.showInformationMessage("Everforest Complete themes are current.");
-    }
-  } catch (regenerationError) {
-    void vscode.window.showErrorMessage(
-      `Everforest Complete could not regenerate themes: ${String(regenerationError)}`
-    );
-  }
-}
-
-async function reportAppliedThemeConfiguration(
-  extensionPath: string,
-  configurationUpdateCount: number
-): Promise<void> {
-  let themesChanged: boolean;
-  try {
-    themesChanged = await regenerateConfiguredThemes(extensionPath);
-  } catch (themeRegenerationError) {
+const vscodeThemeConfigurationUserInterface: ThemeConfigurationUserInterface = {
+  promptToReload: promptToReloadWindow,
+  retryThemeRegeneration: async () => {
+    await vscode.commands.executeCommand("everforestComplete.regenerateThemes");
+  },
+  showInformation: async (message) => {
+    await vscode.window.showInformationMessage(message);
+  },
+  showRegenerationError: async (message) => {
     const retryAction = "Try Again";
-    const selectedAction = await vscode.window.showErrorMessage(
-      `Everforest Complete saved your choices but could not regenerate theme files: ${String(themeRegenerationError)}`,
-      retryAction
-    );
-    if (selectedAction === retryAction) {
-      await vscode.commands.executeCommand("everforestComplete.regenerateThemes");
-    }
-    return;
-  }
-
-  if (themesChanged) {
-    await promptToReloadWindow(
-      "Everforest Complete applied your choices. Reload once to use the regenerated themes."
-    );
-    return;
-  }
-
-  await vscode.window.showInformationMessage(
-    configurationUpdateCount === 0
-      ? "Everforest Complete already matches those choices."
-      : "Everforest Complete applied your choices."
-  );
-}
-
-class ThemeScheduleController implements vscode.Disposable {
-  private nextThemeSwitchTimeout: NodeJS.Timeout | undefined;
-  private queuedScheduleOperation: Promise<void> = Promise.resolve();
-  private scheduleConfigurationRevision = 0;
-
-  restartFromConfiguration(): Promise<void> {
-    const requestedScheduleRevision = ++this.scheduleConfigurationRevision;
-    this.clearNextThemeSwitch();
-    const scheduleOperation = this.queuedScheduleOperation.then(async () => {
-      this.clearNextThemeSwitch();
-      if (requestedScheduleRevision !== this.scheduleConfigurationRevision) return;
-      if (!readExtensionConfigurationValue("autoSwitch.enabled", false)) return;
-      if (vscode.workspace.getConfiguration("window").get("autoDetectColorScheme", false)) {
-        void vscode.window.showWarningMessage(
-          "Everforest Complete schedule is paused. Disable Window: Auto Detect Color Scheme first."
-        );
-        return;
-      }
-      await this.applyCurrentThemeAndScheduleNextSwitch(requestedScheduleRevision);
-    });
-    this.queuedScheduleOperation = scheduleOperation.catch(() => undefined);
-    return scheduleOperation;
-  }
-
-  dispose(): void {
-    this.scheduleConfigurationRevision += 1;
-    this.clearNextThemeSwitch();
-  }
-
-  private clearNextThemeSwitch(): void {
-    if (this.nextThemeSwitchTimeout) clearTimeout(this.nextThemeSwitchTimeout);
-    this.nextThemeSwitchTimeout = undefined;
-  }
-
-  private async applyCurrentThemeAndScheduleNextSwitch(
-    requestedScheduleRevision: number
-  ): Promise<void> {
-    const configuredSchedule = readExtensionConfigurationValue<ScheduledTheme[]>(
-      "autoSwitch.schedule",
-      defaultThemeSchedule
-    );
-    for (const scheduledTheme of configuredSchedule) {
-      if (!supportedThemeNames.has(scheduledTheme.theme)) {
-        throw new Error(`Unsupported scheduled theme: ${scheduledTheme.theme}`);
-      }
-    }
-
-    const resolvedSchedule = resolveScheduledTheme(configuredSchedule, new Date());
-    if (requestedScheduleRevision !== this.scheduleConfigurationRevision) return;
-    const workbenchConfiguration = vscode.workspace.getConfiguration("workbench");
-    if (workbenchConfiguration.get("colorTheme") !== resolvedSchedule.activeTheme) {
-      await workbenchConfiguration.update(
-        "colorTheme",
-        resolvedSchedule.activeTheme,
-        vscode.ConfigurationTarget.Global
-      );
-    }
-    if (requestedScheduleRevision !== this.scheduleConfigurationRevision) return;
-
-    this.nextThemeSwitchTimeout = setTimeout(
-      () => void this.continueThemeSchedule(),
-      resolvedSchedule.millisecondsUntilNextSwitch + 100
-    );
-  }
-
-  private async continueThemeSchedule(): Promise<void> {
-    try {
-      await this.restartFromConfiguration();
-    } catch (scheduleError) {
-      this.clearNextThemeSwitch();
-      await vscode.window.showErrorMessage(
-        `Everforest Complete could not apply the theme schedule: ${String(scheduleError)}`
-      );
-    }
-  }
-}
+    return (await vscode.window.showErrorMessage(message, retryAction)) === retryAction;
+  },
+};
 
 function restartThemeScheduleWithErrorReporting(
   themeScheduleController: ThemeScheduleController
@@ -378,8 +249,56 @@ function restartThemeScheduleWithErrorReporting(
 }
 
 export async function activate(extensionContext: vscode.ExtensionContext): Promise<void> {
-  const themeScheduleController = new ThemeScheduleController();
+  const themeScheduleController = new ThemeScheduleController({
+    currentDate: () => new Date(),
+    isScheduledThemeSupported: (themeName) => supportedThemeNames.has(themeName),
+    readActiveTheme: () => vscode.workspace.getConfiguration("workbench").get("colorTheme"),
+    readConfiguredSchedule: () => readConfiguredThemeSchedule(),
+    readScheduledSwitchingEnabled: () =>
+      readExtensionConfigurationValue("autoSwitch.enabled", false),
+    readSystemColorSchemeDetectionEnabled: () =>
+      vscode.workspace.getConfiguration("window").get("autoDetectColorScheme", false),
+    reportScheduleError: async (scheduleError) => {
+      await vscode.window.showErrorMessage(
+        `Everforest Complete could not apply the theme schedule: ${String(scheduleError)}`
+      );
+    },
+    reportSchedulePaused: async () => {
+      await vscode.window.showWarningMessage(
+        "Everforest Complete schedule is paused. Disable Window: Auto Detect Color Scheme first."
+      );
+    },
+    scheduleThemeSwitch: (continueThemeSchedule, millisecondsUntilNextSwitch) => {
+      const themeSwitchTimeout = setTimeout(continueThemeSchedule, millisecondsUntilNextSwitch);
+      return { cancel: () => clearTimeout(themeSwitchTimeout) };
+    },
+    updateActiveTheme: async (themeName) => {
+      await vscode.workspace
+        .getConfiguration("workbench")
+        .update("colorTheme", themeName, vscode.ConfigurationTarget.Global);
+    },
+  });
   let themeRegenerationDebounce: NodeJS.Timeout | undefined;
+  const synchronizeConfiguredThemeFiles = (forceRegeneration = false) =>
+    synchronizeThemeFiles(
+      {
+        readCurrentFingerprint: () =>
+          createThemeGenerationFingerprint(
+            extensionContext.extension.packageJSON.version,
+            readThemePreferences("dark"),
+            readThemePreferences("light")
+          ),
+        readStoredFingerprint: () =>
+          extensionContext.globalState.get<string>(themeGenerationFingerprintStateKey),
+        regenerateThemeFiles: () => regenerateConfiguredThemes(extensionContext.extensionPath),
+        storeCurrentFingerprint: async (themeGenerationFingerprint) =>
+          await extensionContext.globalState.update(
+            themeGenerationFingerprintStateKey,
+            themeGenerationFingerprint
+          ),
+      },
+      forceRegeneration
+    );
 
   extensionContext.subscriptions.push(
     themeScheduleController,
@@ -390,7 +309,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
       if (!guidedThemeSelections) return;
 
       try {
-        const configurationUpdateCount = await applyNativeConfigurationTransaction(
+        const configurationUpdateCount = await premiumConfigurationTransactionExecutor.apply(
           createGuidedThemeConfigurationUpdates(guidedThemeSelections)
         );
         await themeScheduleController.restartFromConfiguration();
@@ -400,7 +319,8 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
           true
         );
         await reportAppliedThemeConfiguration(
-          extensionContext.extensionPath,
+          synchronizeConfiguredThemeFiles,
+          vscodeThemeConfigurationUserInterface,
           configurationUpdateCount
         );
       } catch (configurationError) {
@@ -416,7 +336,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
       if (!advancedThemeConfiguration) return;
 
       try {
-        const configurationUpdateCount = await applyNativeConfigurationTransaction(
+        const configurationUpdateCount = await premiumConfigurationTransactionExecutor.apply(
           createAdvancedThemeConfigurationUpdates(advancedThemeConfiguration)
         );
         await vscode.commands.executeCommand(
@@ -425,7 +345,8 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
           true
         );
         await reportAppliedThemeConfiguration(
-          extensionContext.extensionPath,
+          synchronizeConfiguredThemeFiles,
+          vscodeThemeConfigurationUserInterface,
           configurationUpdateCount
         );
       } catch (configurationError) {
@@ -442,7 +363,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
       if (!automaticSwitchingSelection) return;
 
       try {
-        await applyNativeConfigurationTransaction(
+        await premiumConfigurationTransactionExecutor.apply(
           createAutomaticSwitchingConfigurationUpdates(automaticSwitchingSelection)
         );
         await themeScheduleController.restartFromConfiguration();
@@ -465,10 +386,14 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
       }
     }),
     vscode.commands.registerCommand("everforestComplete.regenerateThemes", () =>
-      applyConfiguredThemes(extensionContext.extensionPath, true)
+      synchronizeConfiguredThemesWithFeedback(
+        () => synchronizeConfiguredThemeFiles(true),
+        vscodeThemeConfigurationUserInterface,
+        true
+      )
     ),
     vscode.workspace.onDidChangeConfiguration((configurationChange) => {
-      if (nativeConfigurationTransactionInProgress) return;
+      if (premiumConfigurationTransactionExecutor.transactionInProgress) return;
 
       if (
         configurationChange.affectsConfiguration(`${extensionConfigurationSection}.autoSwitch`) ||
@@ -487,7 +412,10 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
       if (themeRegenerationDebounce) clearTimeout(themeRegenerationDebounce);
       themeRegenerationDebounce = setTimeout(() => {
         themeRegenerationDebounce = undefined;
-        void applyConfiguredThemes(extensionContext.extensionPath);
+        void synchronizeConfiguredThemesWithFeedback(
+          synchronizeConfiguredThemeFiles,
+          vscodeThemeConfigurationUserInterface
+        );
       }, 250);
     }),
     {
@@ -497,6 +425,9 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
     }
   );
 
-  await applyConfiguredThemes(extensionContext.extensionPath);
+  await synchronizeConfiguredThemesWithFeedback(
+    synchronizeConfiguredThemeFiles,
+    vscodeThemeConfigurationUserInterface
+  );
   restartThemeScheduleWithErrorReporting(themeScheduleController);
 }

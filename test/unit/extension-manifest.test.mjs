@@ -95,10 +95,12 @@ test("ships one local-only premium runtime with a minimal package allowlist", ()
     "dist/extension.js",
     "dist/extension-web.js",
     "dist/palette/index.js",
+    "dist/schedule-controller.js",
     "dist/schedule.js",
     "dist/semantic.js",
     "dist/syntax/default.js",
     "dist/theme.js",
+    "dist/theme-regeneration.js",
     "dist/workbench/colors.js",
     "dist/workbench/documented-workbench-colors.json",
     "media/icon.png",
@@ -190,7 +192,7 @@ test("groups and orders every advanced setting with human labels", () => {
   }
   assert.deepEqual(
     premiumSettings["everforestComplete.diagnosticTextBackgroundOpacity"].enumItemLabels,
-    ["Off", "Subtle — 12.5%", "Moderate — 25%", "Strong — 37.5%", "Maximum — 50%"]
+    ["Off", "Subtle, 12.5%", "Moderate, 25%", "Strong, 37.5%", "Maximum, 50%"]
   );
 });
 

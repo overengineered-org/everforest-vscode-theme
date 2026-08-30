@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { performance } from "node:perf_hooks";
 import { resolve } from "node:path";
 import test from "node:test";
+import { synchronizeThemeFiles } from "../../dist/theme-regeneration.js";
 import themeManifest from "../support/theme-manifest.cjs";
 
 const { expectedThemeContributions } = themeManifest;
@@ -13,6 +14,8 @@ const minimumThemeParsingMebibytesPerSecond = 50;
 const maximumGeneratedThemeBytes = 102 * 1_024;
 const maximumAllGeneratedThemesBytes = 816 * 1_024;
 const maximumColdGenerationCheckMilliseconds = 1_000;
+const currentFingerprintActivationIterations = 1_000;
+const maximumCurrentFingerprintActivationMilliseconds = 250;
 
 const generatedThemeArtifacts = expectedThemeContributions.map((themeContribution) => {
   const generatedThemePath = resolve(themeContribution.path.replace(/^\.\//, ""));
@@ -107,5 +110,38 @@ test("checks the complete production generator within a cold-start budget", (tes
   );
   testingContext.diagnostic(
     `slowest cold production generation check: ${slowestColdGenerationCheckMilliseconds.toFixed(0)}ms`
+  );
+});
+
+test("keeps current-fingerprint activation disk-free and fast", async (testingContext) => {
+  let regenerationCallCount = 0;
+  const activationFastPathStartedAt = performance.now();
+
+  for (
+    let activationNumber = 0;
+    activationNumber < currentFingerprintActivationIterations;
+    activationNumber += 1
+  ) {
+    await synchronizeThemeFiles({
+      readCurrentFingerprint: () => "current",
+      readStoredFingerprint: () => "current",
+      async regenerateThemeFiles() {
+        regenerationCallCount += 1;
+        return true;
+      },
+      async storeCurrentFingerprint() {
+        throw new Error("Current activation fingerprint must not be rewritten");
+      },
+    });
+  }
+
+  const activationFastPathDurationMilliseconds = performance.now() - activationFastPathStartedAt;
+  assert.equal(regenerationCallCount, 0);
+  assert.ok(
+    activationFastPathDurationMilliseconds <= maximumCurrentFingerprintActivationMilliseconds,
+    `${currentFingerprintActivationIterations} current-fingerprint activations took ${activationFastPathDurationMilliseconds.toFixed(1)}ms; maximum ${maximumCurrentFingerprintActivationMilliseconds}ms`
+  );
+  testingContext.diagnostic(
+    `${currentFingerprintActivationIterations} current-fingerprint activations: ${activationFastPathDurationMilliseconds.toFixed(1)}ms`
   );
 });
