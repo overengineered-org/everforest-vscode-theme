@@ -45,7 +45,7 @@ bash "$local_node_environment" npm run package:vsix
 bash "$local_node_environment" npm run package:verify
 bash "$local_node_environment" npm run test:integration:vsix
 bash "${project_worktree_root}/.codex/environments/secret-scan.sh"
-bash "$local_node_environment" npx --no-install release-it \
+bash "$local_node_environment" npx --no-install release-it patch \
   --release-version \
   --no-git.requireBranch \
   --no-git.requireCleanWorkingDir \

@@ -154,6 +154,11 @@ test("releases only the requested exact current main commit", () => {
   const releaseJob = workflowJobBlock(releaseWorkflow, "release");
 
   assert.ok(releaseWorkflow.includes("commit_sha:"));
+  assert.ok(releaseWorkflow.includes("release_increment:"));
+  assert.ok(releaseWorkflow.includes("type: choice"));
+  assert.ok(releaseWorkflow.includes("- patch"));
+  assert.ok(releaseWorkflow.includes("- minor"));
+  assert.ok(releaseWorkflow.includes("- major"));
   assert.ok(buildJob.includes('[[ ! "$RELEASE_COMMIT_SHA" =~ ^[0-9a-f]{40}$ ]]'));
   assert.ok(buildJob.includes("git fetch --no-tags origin main"));
   assert.ok(buildJob.includes("git rev-parse origin/main"));
@@ -162,7 +167,12 @@ test("releases only the requested exact current main commit", () => {
   assert.equal(releaseWorkflow.includes("ref: ${{ inputs.commit_sha }}"), false);
   assert.equal(releaseWorkflow.match(/ref: main/g)?.length, 5);
   assert.ok(releaseWorkflow.includes("Require unchanged release commit"));
-  assert.ok(buildJob.includes("Current main has no releasable conventional commits."));
+  assert.ok(
+    buildJob.includes(
+      'release-it "$RELEASE_INCREMENT" --release-version --no-git.push --no-github.release'
+    )
+  );
+  assert.ok(releaseJob.includes('npm run release -- "$RELEASE_VERSION"'));
   assert.ok(releaseJob.includes("- codeql"));
   assert.ok(releaseJob.includes("- integration"));
 });
