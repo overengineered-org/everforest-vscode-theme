@@ -10,7 +10,7 @@ module.exports = {
     releaseName: "v${version}",
   },
   hooks: {
-    "before:git:release": "node scripts/package-release.mjs ${version}",
+    "before:git:release": "node scripts/verify-release-package.mjs ${version}",
   },
   npm: false,
   plugins: {

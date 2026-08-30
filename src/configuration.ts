@@ -42,6 +42,11 @@ export interface PremiumConfigurationStorage {
   ): Promise<void>;
 }
 
+export interface PremiumConfigurationTransactionExecutor {
+  readonly transactionInProgress: boolean;
+  apply(configurationUpdates: readonly PremiumConfigurationUpdate[]): Promise<number>;
+}
+
 export interface GuidedThemeSelections {
   appearanceBehavior: AppearanceBehavior;
   contrast: ThemeContrast;
@@ -145,6 +150,34 @@ export async function applyPremiumConfigurationUpdates(
   }
 
   return attemptedConfigurationUpdates.length;
+}
+
+export function createPremiumConfigurationTransactionExecutor(
+  configurationStorage: PremiumConfigurationStorage
+): PremiumConfigurationTransactionExecutor {
+  let transactionInProgress = false;
+  let queuedConfigurationTransaction: Promise<void> = Promise.resolve();
+
+  return {
+    get transactionInProgress() {
+      return transactionInProgress;
+    },
+    apply(configurationUpdates) {
+      const configurationTransaction = queuedConfigurationTransaction.then(async () => {
+        transactionInProgress = true;
+        try {
+          return await applyPremiumConfigurationUpdates(configurationUpdates, configurationStorage);
+        } finally {
+          transactionInProgress = false;
+        }
+      });
+      queuedConfigurationTransaction = configurationTransaction.then(
+        () => undefined,
+        () => undefined
+      );
+      return configurationTransaction;
+    },
+  };
 }
 
 function automaticBehaviorUpdates(

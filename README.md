@@ -8,7 +8,7 @@
 
 **Requires VS Code 1.95.0 or later.**
 
-Everforest Light and Dark with Soft, Medium, and Hard contrast—plus premium customization, free.
+Everforest Light and Dark with Soft, Medium, and Hard contrast, plus premium customization, free.
 
 ![Everforest Complete Light and Dark workbenches](media/previews/everforest-complete-light-dark.webp)
 
@@ -125,7 +125,7 @@ another download.
 
 ![Everforest Complete workbench coverage](media/previews/everforest-complete-workbench.webp)
 
-- Every documented VS Code workbench color: 937/937.
+- All 910 documented VS Code workbench colors, plus 27 extension-specific colors: 937 total.
 - TextMate and semantic tokens for common programming and markup languages.
 - Terminal, Git, diffs, diagnostics, tests, notebooks, minimap, and chat.
 - GitLens, Error Lens, and GitHub Pull Requests and Issues colors.

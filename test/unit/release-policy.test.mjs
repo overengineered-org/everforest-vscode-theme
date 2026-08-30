@@ -61,7 +61,7 @@ test("publishes the versioned VSIX and checksum with conventional release notes"
   assert.equal(releaseConfiguration.github.releaseName, "v${version}");
   assert.equal(
     releaseConfiguration.hooks["before:git:release"],
-    "node scripts/package-release.mjs ${version}"
+    "node scripts/verify-release-package.mjs ${version}"
   );
   assert.deepEqual(releaseConfiguration.plugins["@release-it/conventional-changelog"], {
     infile: false,
@@ -84,7 +84,9 @@ test("publishes the exact GitHub release with the protected Marketplace PAT", ()
     readFileSync(resolve(repositoryDirectory, "package.json"), "utf8")
   );
   const releaseJob = workflowJobBlock(continuousIntegrationWorkflow, "release");
+  const staticJob = workflowJobBlock(continuousIntegrationWorkflow, "static");
   const marketplaceJob = workflowJobBlock(continuousIntegrationWorkflow, "marketplace");
+  const recoveryIntegrationJob = workflowJobBlock(releaseRecoveryWorkflow, "integration");
   const recoveryPublishJob = workflowJobBlock(releaseRecoveryWorkflow, "publish");
   const releaseSources = `${continuousIntegrationWorkflow}\n${releaseRecoveryWorkflow}`;
 
@@ -97,8 +99,24 @@ test("publishes the exact GitHub release with the protected Marketplace PAT", ()
   assert.ok(releaseJob.includes("- static"));
   assert.ok(releaseJob.includes("- tests-summary"));
   assert.ok(releaseJob.includes("contents: write"));
+  assert.ok(releaseJob.includes("actions: read"));
+  assert.ok(releaseJob.includes("needs.static.outputs.release-version != ''"));
+  assert.ok(releaseJob.includes("name: validated-vsix"));
+  assert.ok(releaseJob.includes("Download exact tested release package"));
+  assert.equal(releaseJob.includes("package-release.mjs"), false);
   assert.ok(releaseJob.includes("release-tag: ${{ steps.resolve-release.outputs.tag }}"));
   assert.ok(releaseJob.includes("git tag --points-at HEAD"));
+  assert.ok(
+    staticJob.includes("release-version: ${{ steps.resolve-release-version.outputs.version }}")
+  );
+  assert.ok(staticJob.includes("git switch --force-create main"));
+  assert.ok(staticJob.includes("git branch --set-upstream-to=origin/main main"));
+  assert.ok(staticJob.includes("release-it --release-version"));
+  assert.ok(staticJob.includes("npm run package:vsix"));
+  assert.ok(
+    staticJob.includes('node scripts/package-release.mjs "$RELEASE_VERSION" --replace-source')
+  );
+  assert.ok(staticJob.includes('node scripts/verify-release-package.mjs "$RELEASE_VERSION"'));
   assert.ok(marketplaceJob.includes("needs: release"));
   assert.ok(marketplaceJob.includes("environment: marketplace-production"));
   assert.ok(marketplaceJob.includes("contents: read"));
@@ -119,6 +137,10 @@ test("publishes the exact GitHub release with the protected Marketplace PAT", ()
   assert.match(readme, /protected\s+`VSCE_PAT`\s+secret/);
   assert.doesNotMatch(readme, /Microsoft Entra ID|Entra ID/);
   assert.ok(recoveryPublishJob.includes("GH_REPO: ${{ github.repository }}"));
+  assert.ok(recoveryPublishJob.includes("- integration"));
+  assert.ok(recoveryIntegrationJob.includes("name: recovered-release-assets"));
+  assert.ok(recoveryIntegrationJob.includes("npm run test:integration:vsix"));
+  assert.ok(recoveryIntegrationJob.includes("vscode-version: 1.95.3"));
   assert.match(releaseRecoveryWorkflow, /group: production-release/);
   assert.ok(recoveryPublishJob.includes("release_is_draft"));
   assert.ok(recoveryPublishJob.includes("Release $RELEASE_TAG is immutable"));
@@ -138,7 +160,7 @@ test("publishes the exact GitHub release with the protected Marketplace PAT", ()
   assert.equal(existsSync(resolve(repositoryDirectory, "docs/MARKETPLACE_PUBLISHING.md")), false);
 });
 
-test("reuses one validated VSIX across every integration matrix job", () => {
+test("reuses one candidate VSIX across integration and release", () => {
   const continuousIntegrationWorkflow = readFileSync(
     resolve(repositoryDirectory, ".github/workflows/ci.yml"),
     "utf8"
@@ -148,10 +170,16 @@ test("reuses one validated VSIX across every integration matrix job", () => {
   );
   const staticJob = workflowJobBlock(continuousIntegrationWorkflow, "static");
   const integrationJob = workflowJobBlock(continuousIntegrationWorkflow, "integration");
+  const releaseJob = workflowJobBlock(continuousIntegrationWorkflow, "release");
+  const integrationTestRunner = readFileSync(
+    resolve(repositoryDirectory, "scripts/run-integration-tests.mjs"),
+    "utf8"
+  );
 
   assert.ok(staticJob.includes("actions/upload-artifact@"));
   assert.ok(staticJob.includes("name: validated-vsix"));
-  assert.ok(staticJob.includes("path: dist/everforest-complete.vsix"));
+  assert.ok(staticJob.includes("dist/*.vsix"));
+  assert.ok(staticJob.includes("dist/*.vsix.sha256"));
   assert.ok(
     staticJob.indexOf("Upload validated VSIX") <
       staticJob.indexOf("Verify release package and checksum"),
@@ -164,6 +192,10 @@ test("reuses one validated VSIX across every integration matrix job", () => {
   assert.ok(integrationJob.includes("npm run test:integration:vsix"));
   assert.equal(integrationJob.includes("npm run package:vsix"), false);
   assert.equal(integrationJob.includes("npm run test:integration\n"), false);
+  assert.ok(releaseJob.includes("actions/download-artifact@"));
+  assert.ok(releaseJob.includes("name: validated-vsix"));
+  assert.equal(releaseJob.includes("npm run package:vsix"), false);
+  assert.match(integrationTestRunner, /Expected exactly one packaged VSIX/);
   assert.equal(
     extensionManifest.scripts["test:integration:vsix"],
     "node scripts/run-integration-tests.mjs"
@@ -187,12 +219,19 @@ test("installs lean dependencies only after the VSIX is built", () => {
   const releaseJob = workflowJobBlock(continuousIntegrationWorkflow, "release");
   const marketplaceJob = workflowJobBlock(continuousIntegrationWorkflow, "marketplace");
   const recoveryBuildJob = workflowJobBlock(releaseRecoveryWorkflow, "build");
+  const recoveryIntegrationJob = workflowJobBlock(releaseRecoveryWorkflow, "integration");
 
   assert.ok(integrationJob.includes(leanIntegrationInstallCommand));
+  assert.ok(recoveryIntegrationJob.includes(leanIntegrationInstallCommand));
   assert.equal(
     continuousIntegrationWorkflow.split(leanIntegrationInstallCommand).length - 1,
     1,
-    "only the integration matrix may omit build and release dependencies"
+    "only the primary integration matrix may omit build and release dependencies"
+  );
+  assert.equal(
+    releaseRecoveryWorkflow.split(leanIntegrationInstallCommand).length - 1,
+    1,
+    "only the recovery integration matrix may omit build and release dependencies"
   );
   for (const packagingOrReleaseJob of [
     staticJob,
@@ -235,6 +274,22 @@ test("compiles once during static validation", () => {
   );
   assert.match(extensionManifest.devDependencies["@types/node"], /^\^24\.\d+\.\d+$/);
   assert.equal(extensionScripts["vscode:prepublish"], "npm run verify:static");
+});
+
+test("runs static validation once during the full local workflow", () => {
+  const fullValidationWorkflow = readFileSync(
+    resolve(repositoryDirectory, ".codex/environments/full-validation.sh"),
+    "utf8"
+  );
+  const releasePackagingScript = readFileSync(
+    resolve(repositoryDirectory, "scripts/package-release.mjs"),
+    "utf8"
+  );
+
+  assert.equal(fullValidationWorkflow.includes("npm run verify:static"), false);
+  assert.equal(fullValidationWorkflow.split("npm test").length - 1, 1);
+  assert.equal(releasePackagingScript.includes("vsce"), false);
+  assert.equal(releasePackagingScript.includes("spawnSync"), false);
 });
 
 test("fails the test aggregate unless integration passes", () => {
