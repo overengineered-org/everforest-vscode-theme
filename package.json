@@ -522,6 +522,8 @@
     "test:integration:vsix": "node scripts/run-integration-tests.mjs",
     "test": "npm run test:integration && npm run package:verify && npm run test:release-package",
     "audit:production": "npm audit --omit=dev",
+    "verify:local": "./scripts/verify-local.sh",
+    "verify:local:report": "./scripts/verify-local.sh --report-status",
     "vscode:prepublish": "npm run verify:static",
     "package:vsix": "vsce package --no-dependencies --out dist/everforest-complete.vsix",
     "package:verify": "node scripts/validate-package-contents.mjs",

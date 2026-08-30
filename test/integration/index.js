@@ -51,6 +51,55 @@ const commandManagedConfigurationKeys = [
   ["workbench", "preferredDarkColorTheme"],
   ["workbench", "preferredLightColorTheme"],
 ];
+const quickPickDisplayDelayMilliseconds = process.platform === "linux" ? 750 : 250;
+const configurationCommandTimeoutMilliseconds = 15_000;
+
+async function waitForConfigurationCommand(configurationCommandCompletion, commandIdentifier) {
+  let configurationCommandTimeout;
+  try {
+    await Promise.race([
+      configurationCommandCompletion,
+      new Promise((_, rejectTimeout) => {
+        configurationCommandTimeout = setTimeout(
+          () => rejectTimeout(new Error(`${commandIdentifier} timed out`)),
+          configurationCommandTimeoutMilliseconds
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(configurationCommandTimeout);
+  }
+}
+
+async function completeConfigurationCommandAfterNotification(
+  configurationCommandCompletion,
+  commandIdentifier
+) {
+  const configurationCommandOutcome = configurationCommandCompletion.then(
+    () => ({ state: "completed" }),
+    (configurationCommandError) => ({
+      configurationCommandError,
+      state: "failed",
+    })
+  );
+  const configurationCommandDeadline = Date.now() + configurationCommandTimeoutMilliseconds;
+
+  while (Date.now() < configurationCommandDeadline) {
+    const configurationCommandState = await Promise.race([
+      configurationCommandOutcome,
+      new Promise((resolveNotificationWait) =>
+        setTimeout(() => resolveNotificationWait({ state: "pending" }), 250)
+      ),
+    ]);
+    if (configurationCommandState.state === "completed") return;
+    if (configurationCommandState.state === "failed") {
+      throw configurationCommandState.configurationCommandError;
+    }
+    await vscode.commands.executeCommand("notifications.clearAll");
+  }
+
+  throw new Error(`${commandIdentifier} timed out`);
+}
 
 function serializeCommandManagedGlobalConfiguration() {
   return JSON.stringify(
@@ -69,9 +118,14 @@ async function validateNativeConfigurationCommandCancellation() {
     const configurationCommandCompletion = vscode.commands.executeCommand(
       nativeConfigurationCommandIdentifier
     );
-    await new Promise((resolveQuickPickDisplay) => setTimeout(resolveQuickPickDisplay, 150));
+    await new Promise((resolveQuickPickDisplay) =>
+      setTimeout(resolveQuickPickDisplay, quickPickDisplayDelayMilliseconds)
+    );
     await vscode.commands.executeCommand("workbench.action.closeQuickOpen");
-    await configurationCommandCompletion;
+    await waitForConfigurationCommand(
+      configurationCommandCompletion,
+      nativeConfigurationCommandIdentifier
+    );
     assert.equal(
       serializeCommandManagedGlobalConfiguration(),
       configurationBeforeCancellation,
@@ -81,16 +135,13 @@ async function validateNativeConfigurationCommandCancellation() {
 }
 
 async function acceptQuickPickSelection(nextSelectionCount = 0) {
-  await new Promise((resolveQuickPickDisplay) => setTimeout(resolveQuickPickDisplay, 150));
+  await new Promise((resolveQuickPickDisplay) =>
+    setTimeout(resolveQuickPickDisplay, quickPickDisplayDelayMilliseconds)
+  );
   for (let selectionNumber = 0; selectionNumber < nextSelectionCount; selectionNumber += 1) {
     await vscode.commands.executeCommand("workbench.action.quickOpenSelectNext");
   }
   await vscode.commands.executeCommand("workbench.action.acceptSelectedQuickOpenItem");
-}
-
-async function dismissConfigurationNotification() {
-  await new Promise((resolveNotificationDisplay) => setTimeout(resolveNotificationDisplay, 250));
-  await vscode.commands.executeCommand("notifications.clearAll");
 }
 
 async function validateSuccessfulNativeConfigurationCommands(extension) {
@@ -100,8 +151,10 @@ async function validateSuccessfulNativeConfigurationCommands(extension) {
   await acceptQuickPickSelection();
   await acceptQuickPickSelection();
   await acceptQuickPickSelection();
-  await dismissConfigurationNotification();
-  await guidedConfigurationCompletion;
+  await completeConfigurationCommandAfterNotification(
+    guidedConfigurationCompletion,
+    "everforestComplete.configureTheme"
+  );
 
   const advancedConfigurationCompletion = vscode.commands.executeCommand(
     "everforestComplete.configureAdvancedControls"
@@ -109,8 +162,10 @@ async function validateSuccessfulNativeConfigurationCommands(extension) {
   await acceptQuickPickSelection(1);
   await acceptQuickPickSelection(7);
   await acceptQuickPickSelection();
-  await dismissConfigurationNotification();
-  await advancedConfigurationCompletion;
+  await completeConfigurationCommandAfterNotification(
+    advancedConfigurationCompletion,
+    "everforestComplete.configureAdvancedControls"
+  );
 
   const premiumConfiguration = vscode.workspace.getConfiguration("everforestComplete");
   assert.equal(premiumConfiguration.get("darkCursor"), "purple");
@@ -126,8 +181,10 @@ async function validateSuccessfulNativeConfigurationCommands(extension) {
     "everforestComplete.configureAutomaticSwitching"
   );
   await acceptQuickPickSelection(1);
-  await dismissConfigurationNotification();
-  await automaticSwitchingConfigurationCompletion;
+  await completeConfigurationCommandAfterNotification(
+    automaticSwitchingConfigurationCompletion,
+    "everforestComplete.configureAutomaticSwitching"
+  );
 
   assert.equal(vscode.workspace.getConfiguration("window").get("autoDetectColorScheme"), true);
   assert.equal(

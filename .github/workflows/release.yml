@@ -1,60 +1,85 @@
-name: CI and Release
+name: Release
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Exact 40-character SHA currently at main
+        required: true
+        type: string
 
 permissions:
   contents: read
 
-# Newer pull-request commits supersede all checks for that pull request. Main
-# runs are retained so a release can only follow the exact commit it validated.
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: production-release
+  cancel-in-progress: false
 
 jobs:
-  static:
-    name: Static validation and VSIX
+  build:
+    name: Build exact release candidate
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     outputs:
+      release-commit: ${{ steps.require-release-commit.outputs.sha }}
       release-version: ${{ steps.resolve-release-version.outputs.version }}
     steps:
-      - name: Check out repository
+      - name: Check out main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
+          ref: main
+      - name: Require exact current main commit
+        id: require-release-commit
+        env:
+          RELEASE_COMMIT_SHA: ${{ inputs.commit_sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_COMMIT_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Release commit must be one full lowercase SHA." >&2
+            exit 1
+          fi
+          git fetch --no-tags origin main
+          checked_out_commit_sha="$(git rev-parse HEAD)"
+          current_main_commit_sha="$(git rev-parse origin/main)"
+          if [[ "$checked_out_commit_sha" != "$RELEASE_COMMIT_SHA" ]]; then
+            echo "Checked out $checked_out_commit_sha, expected $RELEASE_COMMIT_SHA." >&2
+            exit 1
+          fi
+          if [[ "$checked_out_commit_sha" != "$current_main_commit_sha" ]]; then
+            echo "$checked_out_commit_sha is not current main $current_main_commit_sha." >&2
+            exit 1
+          fi
+          git switch --force-create main "$checked_out_commit_sha"
+          git branch --set-upstream-to=origin/main main
+          echo "sha=$checked_out_commit_sha" >> "$GITHUB_OUTPUT"
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           cache: npm
-          node-version: 24
+          node-version: 24.14.0
       - name: Install dependencies
         run: npm ci
       - name: Resolve release version
-        if: github.event_name == 'push'
         id: resolve-release-version
         run: |
-          git switch --force-create main
-          git branch --set-upstream-to=origin/main main
           release_version="$(npx --no-install release-it --release-version --no-git.push --no-github.release)"
+          if [[ -z "$release_version" ]]; then
+            echo "Current main has no releasable conventional commits." >&2
+            exit 1
+          fi
           echo "version=$release_version" >> "$GITHUB_OUTPUT"
-      - name: Package exact candidate VSIX
+      - name: Build exact versioned VSIX
         env:
           RELEASE_VERSION: ${{ steps.resolve-release-version.outputs.version }}
         run: |
           npm run package:vsix
-          if [[ -n "$RELEASE_VERSION" ]]; then
-            node scripts/package-release.mjs "$RELEASE_VERSION" --replace-source
-            node scripts/verify-release-package.mjs "$RELEASE_VERSION"
-          fi
-      - name: Verify VSIX contents
+          node scripts/package-release.mjs "$RELEASE_VERSION" --replace-source
+          node scripts/verify-release-package.mjs "$RELEASE_VERSION"
+      - name: Verify package contents
         run: npm run package:verify
-      - name: Upload validated VSIX
+      - name: Preserve exact release candidate
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           if-no-files-found: error
@@ -63,14 +88,57 @@ jobs:
             dist/*.vsix
             dist/*.vsix.sha256
           retention-days: 1
-      - name: Verify release package and checksum
+      - name: Verify release package contract
         run: npm run test:release-package
       - name: Audit production dependencies
         run: npm run audit:production
 
+  codeql:
+    name: CodeQL
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: main
+      - name: Require unchanged release commit
+        env:
+          EXPECTED_RELEASE_COMMIT_SHA: ${{ needs.build.outputs.release-commit }}
+        run: |
+          if [[ "$(git rev-parse HEAD)" != "$EXPECTED_RELEASE_COMMIT_SHA" ]]; then
+            echo "Main changed after release validation." >&2
+            exit 1
+          fi
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.14.0
+      - name: Install pinned CodeQL bundle
+        id: install-codeql
+        env:
+          CODEQL_INSTALLATION_ROOT: ${{ runner.tool_cache }}/everforest-codeql
+        run: scripts/install-codeql.sh
+      - name: Analyze actions and TypeScript
+        env:
+          CODEQL_ANALYSIS_DIRECTORY: ${{ runner.temp }}/everforest-codeql-analysis
+          CODEQL_BINARY_PATH: ${{ steps.install-codeql.outputs.binary_path }}
+          CODEQL_RESULTS_DIRECTORY: ${{ github.workspace }}/.codeql-results
+        run: scripts/run-codeql-analysis.sh
+      - name: Upload CodeQL results
+        if: ${{ always() }}
+        uses: github/codeql-action/upload-sarif@fddeee1a7ece751b577e409a89057319e3172939 # v4
+        with:
+          sarif_file: .codeql-results
+
   integration:
-    name: Extension Host (${{ matrix.operating-system }}, VS Code ${{ matrix.vscode-version }})
-    needs: static
+    name: VSIX (${{ matrix.operating-system }}, VS Code ${{ matrix.vscode-version }})
+    needs: build
     strategy:
       fail-fast: false
       matrix:
@@ -89,101 +157,49 @@ jobs:
       actions: read
       contents: read
     steps:
-      - name: Check out repository
+      - name: Check out main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          ref: main
+      - name: Require unchanged release commit
+        shell: bash
+        env:
+          EXPECTED_RELEASE_COMMIT_SHA: ${{ needs.build.outputs.release-commit }}
+        run: |
+          if [[ "$(git rev-parse HEAD)" != "$EXPECTED_RELEASE_COMMIT_SHA" ]]; then
+            echo "Main changed after release validation." >&2
+            exit 1
+          fi
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           cache: npm
-          node-version: 24
-      - name: Install dependencies
+          node-version: 24.14.0
+      - name: Install lean test dependencies
         run: npm ci --ignore-scripts --omit=optional --no-audit --no-fund
-      - name: Download validated VSIX
+      - name: Download exact release candidate
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: validated-vsix
           path: dist
-      - name: Test in VS Code on Linux
+      - name: Test exact package on Linux
         if: runner.os == 'Linux'
         env:
           EVERFOREST_VSCODE_VERSION: ${{ matrix.vscode-version }}
         run: xvfb-run --auto-servernum npm run test:integration:vsix
-      - name: Test in VS Code
+      - name: Test exact package
         if: runner.os != 'Linux'
         env:
           EVERFOREST_VSCODE_VERSION: ${{ matrix.vscode-version }}
         run: npm run test:integration:vsix
 
-  tests-summary:
-    name: Tests
-    if: always()
-    needs:
-      - integration
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions: {}
-    steps:
-      - name: Require all test jobs to pass
-        env:
-          INTEGRATION_RESULT: ${{ needs.integration.result }}
-        run: |
-          if [[ "$INTEGRATION_RESULT" != success ]]; then
-            echo "Tests failed: integration=$INTEGRATION_RESULT" >&2
-            exit 1
-          fi
-
-  pull-request-title:
-    name: Conventional PR title
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Validate title
-        env:
-          PULL_REQUEST_TITLE: ${{ github.event.pull_request.title }}
-        run: node scripts/validate-pull-request-title.mjs
-
-  release-dry-run:
-    name: Semantic release dry run
-    if: github.event_name == 'pull_request'
-    needs: static
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: Check out repository history
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          cache: npm
-          node-version: 24
-      - name: Install dependencies
-        run: npm ci
-      - name: Evaluate merged pull request without publishing
-        # Mirror the hypothetical merge on main. Dry-run mode disables tags,
-        # pushes, package creation, and GitHub publication.
-        run: |
-          git switch --force-create main
-          git branch --set-upstream-to=origin/main main
-          npm run release -- --dry-run --no-git.push --no-github.release
-
   release:
     name: GitHub Release
-    if: >-
-      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-      needs.static.outputs.release-version != ''
     needs:
-      - static
-      - tests-summary
+      - build
+      - codeql
+      - integration
     runs-on: ubuntu-latest
     timeout-minutes: 20
     outputs:
@@ -191,20 +207,28 @@ jobs:
     permissions:
       actions: read
       contents: write
-    concurrency:
-      group: production-release
-      cancel-in-progress: false
     steps:
-      - name: Check out repository history
+      - name: Check out main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: true
+          ref: main
+      - name: Require unchanged release commit
+        env:
+          EXPECTED_RELEASE_COMMIT_SHA: ${{ needs.build.outputs.release-commit }}
+        run: |
+          git fetch --no-tags origin main
+          if [[ "$(git rev-parse HEAD)" != "$EXPECTED_RELEASE_COMMIT_SHA" ]] || \
+            [[ "$(git rev-parse origin/main)" != "$EXPECTED_RELEASE_COMMIT_SHA" ]]; then
+            echo "Main changed after release validation." >&2
+            exit 1
+          fi
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           cache: npm
-          node-version: 24
+          node-version: 24.14.0
       - name: Install dependencies
         run: npm ci
       - name: Download exact tested release package
@@ -216,7 +240,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          git switch --force-create main
+          git switch --force-create main HEAD
           git branch --set-upstream-to=origin/main main
           git config user.name "Repository Maintainer"
           git config user.email "repository-maintainer@overengineered.invalid"
@@ -224,7 +248,7 @@ jobs:
       - name: Resolve released version
         id: resolve-release
         env:
-          EXPECTED_RELEASE_TAG: v${{ needs.static.outputs.release-version }}
+          EXPECTED_RELEASE_TAG: v${{ needs.build.outputs.release-version }}
         run: |
           git fetch --tags origin
           release_tag="$(git tag --points-at HEAD --list 'v*' --sort=-v:refname | head -n 1)"
@@ -236,28 +260,33 @@ jobs:
 
   marketplace:
     name: Visual Studio Marketplace
-    if: >-
-      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-      needs.release.outputs.release-tag != ''
-    needs: release
+    needs:
+      - build
+      - release
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: marketplace-production
     permissions:
       contents: read
-    concurrency:
-      group: marketplace-production
-      cancel-in-progress: false
     steps:
-      - name: Check out released source
+      - name: Check out main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          ref: main
+      - name: Require unchanged release commit
+        env:
+          EXPECTED_RELEASE_COMMIT_SHA: ${{ needs.build.outputs.release-commit }}
+        run: |
+          if [[ "$(git rev-parse HEAD)" != "$EXPECTED_RELEASE_COMMIT_SHA" ]]; then
+            echo "Main changed after release validation." >&2
+            exit 1
+          fi
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           cache: npm
-          node-version: 24
+          node-version: 24.14.0
       - name: Install dependencies
         run: npm ci
       - name: Download and verify GitHub Release package

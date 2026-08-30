@@ -64,7 +64,10 @@ npm run generate
 2. Static validation: generated files, schemas, 937 workbench colors, and formatting.
 3. Package validation: exact VSIX allowlist.
 4. Extension Host: install exact VSIX, activate runtime, regenerate a theme, and switch Light/Dark.
-5. CI: Linux, macOS, Windows, release asset, checksum, and Marketplace promotion through the
+5. Local gate: reusable digest-pinned ACT Linux container, native macOS, CodeQL, Gitleaks, audits,
+   release policy, and one external **Local validation** commit status.
+6. Manual release: exact current `main` SHA, one versioned VSIX across Linux, macOS, Windows, and VS
+   Code 1.95.3, CodeQL SARIF upload, release checksum, and Marketplace promotion through the
    protected `VSCE_PAT` secret.
 
 ## Primary references

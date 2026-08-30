@@ -29,6 +29,9 @@ function writeSystemThemeSettings(autoDetectColorScheme) {
     resolve(userSettingsDirectory, "settings.json"),
     `${JSON.stringify(
       {
+        "chat.disableAIFeatures": true,
+        "extensions.autoCheckUpdates": false,
+        "extensions.autoUpdate": false,
         "window.autoDetectColorScheme": autoDetectColorScheme,
         "workbench.colorTheme": "Everforest Complete Dark",
         "workbench.preferredDarkColorTheme": "Everforest Complete Dark",
