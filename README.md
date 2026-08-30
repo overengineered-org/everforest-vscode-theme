@@ -1,8 +1,5 @@
 # Everforest Complete
 
-[![CI](https://github.com/overengineered-org/everforest-vscode-theme/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/overengineered-org/everforest-vscode-theme/actions/workflows/ci.yml)
-[![Build](https://img.shields.io/github/check-runs/overengineered-org/everforest-vscode-theme/main?nameFilter=Static%20validation%20and%20VSIX&label=Build)](https://github.com/overengineered-org/everforest-vscode-theme/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/github/check-runs/overengineered-org/everforest-vscode-theme/main?nameFilter=Tests&label=Tests)](https://github.com/overengineered-org/everforest-vscode-theme/actions/workflows/ci.yml)
 [![Visual Studio Marketplace](https://vsmarketplacebadges.dev/version/overengineered-org.everforest-complete.svg?subject=Marketplace)](https://marketplace.visualstudio.com/items?itemName=overengineered-org.everforest-complete)
 [![VS Code 1.95.0+](https://img.shields.io/badge/VS_Code-1.95.0%2B-007ACC?logo=visualstudiocode&logoColor=white)](./package.json)
 
@@ -152,8 +149,16 @@ rules live in [DESIGN.md](DESIGN.md).
 - `feat!:` or `BREAKING CHANGE` → major.
 - Documentation and chore-only changes → no release.
 
-CI builds one validated VSIX. GitHub Releases receive those exact bytes and their SHA-256 checksum.
-Marketplace publishing verifies the release asset, then uses the protected `VSCE_PAT` secret.
+Pull requests are validated locally with `npm run verify:local`. The reusable ACT container runs
+Linux, CodeQL, package, compatibility, and audit checks. The macOS host runs the native VS Code
+integration test. `npm run verify:local:report` reports the exact pushed commit as **Local
+validation** after every check passes.
+
+GitHub Actions runs only when a maintainer explicitly dispatches a release or recovery. The release
+workflow requires the exact current `main` SHA, tests one versioned VSIX on Linux, macOS, Windows,
+and VS Code 1.95.3, uploads CodeQL SARIF, then publishes those exact bytes and their SHA-256
+checksum. Marketplace publishing verifies the GitHub Release asset before using the protected
+`VSCE_PAT` secret.
 
 ## Credits
 

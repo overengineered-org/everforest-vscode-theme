@@ -13,7 +13,8 @@ const themeParsingIterationsPerSample = 50;
 const minimumThemeParsingMebibytesPerSecond = 50;
 const maximumGeneratedThemeBytes = 102 * 1_024;
 const maximumAllGeneratedThemesBytes = 816 * 1_024;
-const maximumColdGenerationCheckMilliseconds = 1_000;
+const maximumColdGenerationCheckMilliseconds =
+  process.env.EVERFOREST_EMULATED_RUNNER === "1" ? 2_000 : 1_000;
 const currentFingerprintActivationIterations = 1_000;
 const maximumCurrentFingerprintActivationMilliseconds = 250;
 

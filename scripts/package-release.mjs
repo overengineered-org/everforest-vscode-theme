@@ -8,7 +8,6 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
 import { basename, resolve } from "node:path";
 import JSZip from "jszip";
 
@@ -66,7 +65,9 @@ const releasePackageBytes = await sourcePackageArchive.generateAsync({
   compression: "DEFLATE",
   compressionOptions: { level: 9 },
 });
-const releaseStagingDirectory = mkdtempSync(resolve(tmpdir(), "everforest-release-"));
+const releaseStagingDirectory = mkdtempSync(
+  resolve(releaseDistributionDirectory, ".everforest-release-")
+);
 const stagedReleasePackagePath = resolve(releaseStagingDirectory, releasePackageName);
 try {
   writeFileSync(stagedReleasePackagePath, releasePackageBytes);

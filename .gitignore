@@ -1,6 +1,7 @@
 dist/
 node_modules/
 .vscode-test/
+.codeql-results/
 *.vsix
 .DS_Store
 .env

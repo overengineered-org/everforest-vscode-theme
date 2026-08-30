@@ -20,18 +20,25 @@ Do not hand-edit `themes/*.json`.
 Run before opening a pull request:
 
 ```sh
-npm run verify:static
-npm run test:integration
-npm run package:verify
+npm run verify:local
 ```
 
-What each command proves:
+This one gate proves:
 
-| Command                    | Proof                                                  |
-| -------------------------- | ------------------------------------------------------ |
-| `npm run verify:static`    | Types, unit tests, themes, performance, and formatting |
-| `npm run test:integration` | Exact VSIX works in a clean VS Code Extension Host     |
-| `npm run package:verify`   | VSIX contains only approved Marketplace files          |
+- Static types, unit tests, themes, performance, formatting, and dependency audits pass.
+- The exact local VSIX works on Linux stable, Linux VS Code 1.95.3, and native macOS.
+- CodeQL scans GitHub Actions and JavaScript/TypeScript with the pinned official bundle.
+- Gitleaks scans history, tracked changes, staged changes, and untracked files.
+
+ACT uses one digest-pinned Ubuntu image and reuses its container. The pinned CodeQL bundle is cached
+in the `everforest-codeql-cache` Docker volume. Each run prunes dangling images only; it preserves
+the runner image, reusable container, named cache, and every unrelated tagged image.
+
+After pushing and opening the pull request, report the exact validated commit:
+
+```sh
+npm run verify:local:report
+```
 
 ## Runtime boundaries
 
@@ -65,8 +72,10 @@ Accepted types: `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`
 - `feat!:` or `BREAKING CHANGE` → major.
 - Documentation and chore-only changes → no release.
 
-CI creates one validated VSIX, a matching SHA-256 checksum, and the GitHub Release. Marketplace
-publishing verifies those exact bytes and uses the protected `VSCE_PAT` secret.
+GitHub Actions does not run automatically. A maintainer manually dispatches **Release** with the
+exact current `main` SHA. GitHub then provides the real Windows/macOS runners, CodeQL SARIF upload,
+GitHub Release permissions, and protected Marketplace secret. One validated VSIX and matching
+SHA-256 checksum move through every release job unchanged.
 
 ## Security
 
