@@ -70,7 +70,7 @@ test("fingerprints the extension version and complete Light and Dark preferences
 test("skips disk regeneration when the stored fingerprint is current", async () => {
   let regenerationCallCount = 0;
   let storedFingerprintUpdateCount = 0;
-  const themeFileSynchronization = await synchronizeThemeFiles({
+  const themeFilesChanged = await synchronizeThemeFiles({
     readCurrentFingerprint: () => "current",
     readStoredFingerprint: () => "current",
     async regenerateThemeFiles() {
@@ -82,17 +82,37 @@ test("skips disk regeneration when the stored fingerprint is current", async () 
     },
   });
 
-  assert.deepEqual(themeFileSynchronization, {
-    themeFilesChanged: false,
-    synchronizationSkipped: true,
-  });
+  assert.equal(themeFilesChanged, false);
   assert.equal(regenerationCallCount, 0);
   assert.equal(storedFingerprintUpdateCount, 0);
 });
 
+test("forces regeneration when the stored fingerprint is current", async () => {
+  let regenerationCallCount = 0;
+  const storedFingerprints = [];
+  const themeFilesChanged = await synchronizeThemeFiles(
+    {
+      readCurrentFingerprint: () => "current",
+      readStoredFingerprint: () => "current",
+      async regenerateThemeFiles() {
+        regenerationCallCount += 1;
+        return true;
+      },
+      async storeCurrentFingerprint(themeGenerationFingerprint) {
+        storedFingerprints.push(themeGenerationFingerprint);
+      },
+    },
+    true
+  );
+
+  assert.equal(themeFilesChanged, true);
+  assert.equal(regenerationCallCount, 1);
+  assert.deepEqual(storedFingerprints, ["current"]);
+});
+
 test("stores the fingerprint only after successful theme regeneration", async () => {
   const storedFingerprints = [];
-  const themeFileSynchronization = await synchronizeThemeFiles({
+  const themeFilesChanged = await synchronizeThemeFiles({
     readCurrentFingerprint: () => "new",
     readStoredFingerprint: () => "old",
     async regenerateThemeFiles() {
@@ -103,10 +123,7 @@ test("stores the fingerprint only after successful theme regeneration", async ()
     },
   });
 
-  assert.deepEqual(themeFileSynchronization, {
-    themeFilesChanged: true,
-    synchronizationSkipped: false,
-  });
+  assert.equal(themeFilesChanged, true);
   assert.deepEqual(storedFingerprints, ["new"]);
 
   await assert.rejects(
@@ -128,11 +145,7 @@ test("stores the fingerprint only after successful theme regeneration", async ()
 test("offers exactly one reload when configured theme files change", async () => {
   const { recordedInteractions, userInterface } = createRecordedThemeConfigurationUserInterface();
 
-  await reportAppliedThemeConfiguration(
-    async () => ({ themeFilesChanged: true, synchronizationSkipped: false }),
-    userInterface,
-    4
-  );
+  await reportAppliedThemeConfiguration(async () => true, userInterface, 4);
 
   assert.equal(recordedInteractions.length, 1);
   assert.equal(recordedInteractions[0][0], "reload");
@@ -141,11 +154,7 @@ test("offers exactly one reload when configured theme files change", async () =>
 test("reports current themes without a reload when no files change", async () => {
   const { recordedInteractions, userInterface } = createRecordedThemeConfigurationUserInterface();
 
-  await synchronizeConfiguredThemesWithFeedback(
-    async () => ({ themeFilesChanged: false, synchronizationSkipped: true }),
-    userInterface,
-    true
-  );
+  await synchronizeConfiguredThemesWithFeedback(async () => false, userInterface, true);
 
   assert.deepEqual(recordedInteractions, [
     ["information", "Everforest Complete themes are current."],

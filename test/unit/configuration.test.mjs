@@ -290,6 +290,32 @@ test("serializes configuration transactions and exposes their active state", asy
   assert.deepEqual(writtenConfigurationKeys, ["darkContrast", "colorTheme"]);
 });
 
+test("continues queued configuration transactions after a failed transaction", async () => {
+  const writtenConfigurationKeys = [];
+  const configurationTransactionExecutor = createPremiumConfigurationTransactionExecutor({
+    readSnapshot() {
+      return { defaultValue: undefined, globalValue: undefined };
+    },
+    async updateGlobal(_configurationSection, configurationKey, configurationValue) {
+      if (configurationKey === "darkContrast" && configurationValue === "hard") {
+        throw new Error("first transaction failed");
+      }
+      writtenConfigurationKeys.push(configurationKey);
+    },
+  });
+
+  const failedConfigurationTransaction = configurationTransactionExecutor.apply([
+    transactionalConfigurationUpdates[0],
+  ]);
+  const successfulConfigurationTransaction = configurationTransactionExecutor.apply([
+    transactionalConfigurationUpdates[1],
+  ]);
+
+  await assert.rejects(failedConfigurationTransaction, /first transaction failed/);
+  assert.equal(await successfulConfigurationTransaction, 1);
+  assert.deepEqual(writtenConfigurationKeys, ["darkContrast", "colorTheme"]);
+});
+
 test("rolls back every attempted global write when a later write fails", async () => {
   const writtenConfigurationValues = [];
   const configurationApplicationError = new Error("second write failed");

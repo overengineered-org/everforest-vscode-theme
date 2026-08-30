@@ -1,10 +1,5 @@
 import type { ThemePreferences } from "./interface";
 
-export interface ThemeFileSynchronization {
-  themeFilesChanged: boolean;
-  synchronizationSkipped: boolean;
-}
-
 export interface ThemeFileSynchronizationDependencies {
   readCurrentFingerprint(): string;
   readStoredFingerprint(): string | undefined;
@@ -34,28 +29,28 @@ export function createThemeGenerationFingerprint(
 export async function synchronizeThemeFiles(
   synchronizationDependencies: ThemeFileSynchronizationDependencies,
   forceRegeneration = false
-): Promise<ThemeFileSynchronization> {
+): Promise<boolean> {
   const currentThemeGenerationFingerprint = synchronizationDependencies.readCurrentFingerprint();
   if (
     !forceRegeneration &&
     synchronizationDependencies.readStoredFingerprint() === currentThemeGenerationFingerprint
   ) {
-    return { themeFilesChanged: false, synchronizationSkipped: true };
+    return false;
   }
 
   const themeFilesChanged = await synchronizationDependencies.regenerateThemeFiles();
   await synchronizationDependencies.storeCurrentFingerprint(currentThemeGenerationFingerprint);
-  return { themeFilesChanged, synchronizationSkipped: false };
+  return themeFilesChanged;
 }
 
 export async function synchronizeConfiguredThemesWithFeedback(
-  synchronizeConfiguredThemeFiles: () => Promise<ThemeFileSynchronization>,
+  synchronizeConfiguredThemeFiles: () => Promise<boolean>,
   themeConfigurationUserInterface: ThemeConfigurationUserInterface,
   notifyWhenCurrent = false
 ): Promise<void> {
   try {
-    const themeFileSynchronization = await synchronizeConfiguredThemeFiles();
-    if (themeFileSynchronization.themeFilesChanged) {
+    const themeFilesChanged = await synchronizeConfiguredThemeFiles();
+    if (themeFilesChanged) {
       await themeConfigurationUserInterface.promptToReload(
         "Everforest Complete regenerated your Dark and Light themes. Reload once to apply them."
       );
@@ -72,13 +67,13 @@ export async function synchronizeConfiguredThemesWithFeedback(
 }
 
 export async function reportAppliedThemeConfiguration(
-  synchronizeConfiguredThemeFiles: () => Promise<ThemeFileSynchronization>,
+  synchronizeConfiguredThemeFiles: () => Promise<boolean>,
   themeConfigurationUserInterface: ThemeConfigurationUserInterface,
   configurationUpdateCount: number
 ): Promise<void> {
-  let themeFileSynchronization: ThemeFileSynchronization;
+  let themeFilesChanged: boolean;
   try {
-    themeFileSynchronization = await synchronizeConfiguredThemeFiles();
+    themeFilesChanged = await synchronizeConfiguredThemeFiles();
   } catch (themeRegenerationError) {
     const retryThemeRegeneration = await themeConfigurationUserInterface.showRegenerationError(
       `Everforest Complete saved your choices but could not regenerate theme files: ${String(themeRegenerationError)}`
@@ -89,7 +84,7 @@ export async function reportAppliedThemeConfiguration(
     return;
   }
 
-  if (themeFileSynchronization.themeFilesChanged) {
+  if (themeFilesChanged) {
     await themeConfigurationUserInterface.promptToReload(
       "Everforest Complete applied your choices. Reload once to use the regenerated themes."
     );

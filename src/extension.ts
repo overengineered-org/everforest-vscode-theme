@@ -15,7 +15,6 @@ import type {
   AdvancedThemeConfiguration,
   AutomaticSwitchingMode,
   PremiumConfigurationStorage,
-  PremiumConfigurationUpdate,
 } from "./configuration";
 import {
   collectAdvancedThemeConfiguration,
@@ -196,12 +195,6 @@ function readGuidedThemeConfigurationSnapshot() {
   };
 }
 
-async function applyNativeConfigurationTransaction(
-  configurationUpdates: readonly PremiumConfigurationUpdate[]
-): Promise<number> {
-  return premiumConfigurationTransactionExecutor.apply(configurationUpdates);
-}
-
 async function writeThemeWhenChanged(themePath: string, themeSource: string): Promise<boolean> {
   const installedThemeSource = await readFile(themePath, "utf8");
   if (installedThemeSource === themeSource) return false;
@@ -316,7 +309,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
       if (!guidedThemeSelections) return;
 
       try {
-        const configurationUpdateCount = await applyNativeConfigurationTransaction(
+        const configurationUpdateCount = await premiumConfigurationTransactionExecutor.apply(
           createGuidedThemeConfigurationUpdates(guidedThemeSelections)
         );
         await themeScheduleController.restartFromConfiguration();
@@ -343,7 +336,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
       if (!advancedThemeConfiguration) return;
 
       try {
-        const configurationUpdateCount = await applyNativeConfigurationTransaction(
+        const configurationUpdateCount = await premiumConfigurationTransactionExecutor.apply(
           createAdvancedThemeConfigurationUpdates(advancedThemeConfiguration)
         );
         await vscode.commands.executeCommand(
@@ -370,7 +363,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
       if (!automaticSwitchingSelection) return;
 
       try {
-        await applyNativeConfigurationTransaction(
+        await premiumConfigurationTransactionExecutor.apply(
           createAutomaticSwitchingConfigurationUpdates(automaticSwitchingSelection)
         );
         await themeScheduleController.restartFromConfiguration();

@@ -101,6 +101,15 @@ test("cancels the active timer when scheduled switching is disabled", async () =
   assert.equal(themeScheduleControllerHarness.scheduledThemeSwitches.length, 1);
 });
 
+test("cancels the active timer when the extension is disposed", async () => {
+  const themeScheduleControllerHarness = createThemeScheduleControllerHarness();
+  await themeScheduleControllerHarness.themeScheduleController.restartFromConfiguration();
+
+  themeScheduleControllerHarness.themeScheduleController.dispose();
+
+  assert.equal(themeScheduleControllerHarness.scheduledThemeSwitches[0].cancelled, true);
+});
+
 test("reports a later schedule failure and leaves no active timer", async () => {
   const themeScheduleControllerHarness = createThemeScheduleControllerHarness();
   await themeScheduleControllerHarness.themeScheduleController.restartFromConfiguration();
