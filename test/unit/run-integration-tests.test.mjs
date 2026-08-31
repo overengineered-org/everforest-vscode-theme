@@ -31,6 +31,10 @@ import {
 const descendantHeartbeatFixturePath = fileURLToPath(
   new URL("../fixtures/descendant-heartbeat-process.mjs", import.meta.url)
 );
+const integrationRunnerSource = readFileSync(
+  new URL("../../scripts/run-integration-tests.mjs", import.meta.url),
+  "utf8"
+);
 
 function temporaryRunnerTestDirectory() {
   return mkdtempSync(join(tmpdir(), "everforest-integration-runner-"));
@@ -132,6 +136,7 @@ test("keeps extension-host paths as single arguments and quotes Windows paths", 
     quoteWindowsShellArgument("C:\\Users\\QA User\\App Data\\everforest.vsix"),
     '"C:\\Users\\QA User\\App Data\\everforest.vsix"'
   );
+  assert.match(integrationRunnerSource, /windowsVerbatimArguments: true/);
 });
 
 test("caps retained and mirrored child output with a UTF-8-safe marker", () => {

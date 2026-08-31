@@ -276,6 +276,7 @@ function spawnTrackedCommand(command, commandArguments, spawnOptions = {}) {
         ...spawnOptions,
         env: windowsShellInvocation.environment,
         shell: false,
+        windowsVerbatimArguments: true,
       }
     );
   }
