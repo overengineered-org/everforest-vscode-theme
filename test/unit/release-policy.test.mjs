@@ -194,7 +194,7 @@ test("uses the same pinned CodeQL scan locally and before release", () => {
     ).uses,
     "github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938"
   );
-  assert.match(releaseWorkflow, /gitleaks\/gitleaks-action@[0-9a-f]{40}/);
+  assert.equal(releaseWorkflow.includes("gitleaks/gitleaks-action@"), false);
 });
 
 test("releases only the requested exact current main commit", () => {
@@ -212,9 +212,20 @@ test("releases only the requested exact current main commit", () => {
     workflowStep(releaseWorkflowDocument, "release", "Check out main").with["persist-credentials"],
     false
   );
+  const installGitleaksStep = workflowStep(
+    releaseWorkflowDocument,
+    "gitleaks",
+    "Install pinned Gitleaks"
+  );
+  assert.equal(installGitleaksStep.env.GITLEAKS_VERSION, "8.30.1");
   assert.equal(
-    workflowStep(releaseWorkflowDocument, "gitleaks", "Scan release commit for secrets").uses,
-    "gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e"
+    installGitleaksStep.env.GITLEAKS_ARCHIVE_SHA256,
+    "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+  );
+  assert.ok(installGitleaksStep.run.includes("sha256sum --check"));
+  assert.equal(
+    workflowStep(releaseWorkflowDocument, "gitleaks", "Scan release commit for secrets").run,
+    "gitleaks git . --no-banner --redact --log-level error"
   );
   assert.ok(releaseWorkflow.includes("commit_sha:"));
   assert.ok(releaseWorkflow.includes("release_increment:"));
