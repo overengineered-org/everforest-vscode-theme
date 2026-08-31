@@ -11,6 +11,7 @@ import {
   ThemePaletteAccent,
   ThemePreferences,
 } from "../interface";
+import { getReadableTextPalette, ReadableTextPalette } from "../palette";
 import documentedWorkbenchColorContract from "./documented-workbench-colors.json";
 
 type SemanticStatusColorName = "red" | "yellow" | "green" | "blue";
@@ -33,15 +34,34 @@ const dimPaletteColorByAccent: Record<ThemePaletteAccent, keyof Palette> = {
   purple: "dimPurple",
 };
 
-function configuredCursorColor(palette: Palette, themePreferences: ThemePreferences): string {
-  if (themePreferences.cursorColor === "white") return "#fdf6e3";
-  if (themePreferences.cursorColor === "black") return "#2d353b";
-  return palette[themePreferences.cursorColor];
+function configuredCursorColor(
+  readableTextPalette: ReadableTextPalette,
+  themePreferences: ThemePreferences
+): string {
+  if (themePreferences.cursorColor === "white") {
+    return themePreferences.appearance === "dark"
+      ? readableTextPalette.invertedText
+      : readableTextPalette.fg;
+  }
+  if (themePreferences.cursorColor === "black") {
+    return themePreferences.appearance === "dark"
+      ? readableTextPalette.fg
+      : readableTextPalette.invertedText;
+  }
+  return readableTextPalette[themePreferences.cursorColor];
 }
 
 function configuredSelectionColor(palette: Palette, themePreferences: ThemePreferences): string {
   if (themePreferences.selectionColor === "grey") return palette.grey1;
   return palette[dimPaletteColorByAccent[themePreferences.selectionColor]];
+}
+
+function configuredReadableSelectionColor(
+  readableTextPalette: ReadableTextPalette,
+  themePreferences: ThemePreferences
+): string {
+  if (themePreferences.selectionColor === "grey") return readableTextPalette.grey1;
+  return readableTextPalette[themePreferences.selectionColor];
 }
 
 function semanticStatusColorNameForWorkbenchIdentifier(
@@ -86,10 +106,19 @@ function createDocumentedWorkbenchColorFallbacks(
     palette.aqua,
     palette.blue,
   ];
+  const readableTextPalette = getReadableTextPalette(appearance, palette);
+  const readableNumberedAccentColors = [
+    readableTextPalette.red,
+    readableTextPalette.orange,
+    readableTextPalette.yellow,
+    readableTextPalette.green,
+    readableTextPalette.aqua,
+    readableTextPalette.blue,
+  ];
   const transparentWorkbenchColor = `${palette.bg}00`;
   const { disabledWorkbenchForeground, primaryWorkbenchForeground, secondaryWorkbenchForeground } =
-    getWorkbenchForegroundColors(appearance, palette);
-  const readableWorkbenchAccentColors = getReadableWorkbenchAccentColors(appearance, palette);
+    getWorkbenchForegroundColors(appearance, readableTextPalette, palette);
+  const readableWorkbenchAccentColors = getReadableWorkbenchAccentColors(readableTextPalette);
   const documentedWorkbenchColorIdentifiers = new Set(documentedWorkbenchColorContract.identifiers);
 
   return Object.fromEntries(
@@ -128,10 +157,15 @@ function createDocumentedWorkbenchColorFallbacks(
         Number.isInteger(numberedColorIndex) &&
         /(scmgraph\.foreground|editorbracketpairguide)/.test(normalizedIdentifier)
       ) {
-        const numberedAccentColor = numberedAccentColors[numberedColorIndex - 1] ?? palette.fg;
+        const usesReadableBracketGuideColor =
+          normalizedIdentifier.includes("editorbracketpairguide");
+        const numberedAccentColor =
+          (usesReadableBracketGuideColor ? readableNumberedAccentColors : numberedAccentColors)[
+            numberedColorIndex - 1
+          ] ?? palette.fg;
         let numberedGuideOpacity = "ff";
         if (normalizedIdentifier.includes("background")) {
-          numberedGuideOpacity = normalizedIdentifier.includes("active") ? "70" : "30";
+          numberedGuideOpacity = normalizedIdentifier.includes("active") ? "d0" : "ff";
         }
         return [workbenchColorIdentifier, `${numberedAccentColor}${numberedGuideOpacity}`];
       }
@@ -181,41 +215,32 @@ function createDocumentedWorkbenchColorFallbacks(
   );
 }
 
-function getWorkbenchForegroundColors(appearance: ThemeAppearance, palette: Palette) {
+function getWorkbenchForegroundColors(
+  appearance: ThemeAppearance,
+  readableTextPalette: ReadableTextPalette,
+  rawPalette: Palette
+) {
   return {
-    activeWorkbenchForeground: appearance === "light" ? "#2d353b" : palette.fg,
-    disabledWorkbenchForeground: appearance === "light" ? palette.grey1 : palette.grey0,
-    primaryWorkbenchForeground: appearance === "light" ? "#59646c" : palette.fg,
-    secondaryWorkbenchForeground: appearance === "light" ? "#59646c" : palette.grey2,
+    activeWorkbenchForeground:
+      appearance === "light" ? readableTextPalette.invertedText : readableTextPalette.fg,
+    disabledWorkbenchForeground: appearance === "light" ? rawPalette.grey1 : rawPalette.grey0,
+    primaryWorkbenchForeground: readableTextPalette.fg,
+    secondaryWorkbenchForeground: readableTextPalette.grey2,
   };
 }
 
-function getReadableWorkbenchAccentColors(appearance: ThemeAppearance, palette: Palette) {
-  if (appearance === "dark") {
-    return {
-      black: palette.grey2,
-      brightBlack: palette.fg,
-      blue: palette.blue,
-      cyan: palette.aqua,
-      green: palette.green,
-      magenta: palette.purple,
-      orange: palette.orange,
-      red: palette.red,
-      white: palette.fg,
-      yellow: palette.yellow,
-    };
-  }
+function getReadableWorkbenchAccentColors(readableTextPalette: ReadableTextPalette) {
   return {
-    black: "#59646c",
-    brightBlack: "#59646c",
-    blue: "#2e5f94",
-    cyan: "#2f6a4d",
-    green: "#596600",
-    magenta: "#8a4b7c",
-    orange: "#984b00",
-    red: "#ad3d3d",
-    white: "#59646c",
-    yellow: "#7e5200",
+    black: readableTextPalette.grey2,
+    brightBlack: readableTextPalette.fg,
+    blue: readableTextPalette.blue,
+    cyan: readableTextPalette.aqua,
+    green: readableTextPalette.green,
+    magenta: readableTextPalette.purple,
+    orange: readableTextPalette.orange,
+    red: readableTextPalette.red,
+    white: readableTextPalette.fg,
+    yellow: readableTextPalette.yellow,
   };
 }
 
@@ -224,6 +249,7 @@ function applyWorkbenchStyle(
   palette: Palette,
   themePreferences: ThemePreferences
 ): void {
+  const readableTextPalette = getReadableTextPalette(themePreferences.appearance, palette);
   const flatSurfaceIdentifiers = [
     "activityBar.background",
     "sideBar.background",
@@ -239,26 +265,276 @@ function applyWorkbenchStyle(
     "commandCenter.background",
   ];
   const structuralBorderIdentifiers = [
+    "sash.hoverBorder",
+    "widget.border",
+    "window.activeBorder",
+    "window.inactiveBorder",
+    "textBlockQuote.border",
+    "textPreformat.border",
+    "toolbar.hoverOutline",
+    "button.border",
+    "button.separator",
+    "button.secondaryBorder",
+    "checkbox.selectBorder",
+    "radio.activeBorder",
+    "radio.inactiveBorder",
+    "list.focusOutline",
+    "list.focusAndSelectionOutline",
+    "list.inactiveFocusOutline",
+    "listFilterWidget.outline",
+    "listFilterWidget.noMatchesOutline",
+    "list.filterMatchBorder",
+    "tree.tableColumnsBorder",
+    "tree.indentGuidesStroke",
+    "tree.inactiveIndentGuidesStroke",
     "activityBar.border",
+    "activityBar.dropBorder",
+    "activityBar.activeBorder",
+    "activityBar.activeFocusBorder",
+    "activityBarTop.activeBorder",
+    "activityBarTop.dropBorder",
+    "profiles.sashBorder",
     "sideBar.border",
+    "sideBarSectionHeader.border",
+    "sideBarActivityBarTop.border",
+    "sideBarTitle.border",
+    "sideBarStickyScroll.border",
     "editorGroup.border",
+    "editorGroupHeader.tabsBorder",
+    "editorGroupHeader.border",
+    "editorGroup.focusedEmptyBorder",
+    "editorGroup.dropIntoPromptBorder",
     "panel.border",
+    "panel.dropBorder",
+    "panelTitle.activeBorder",
+    "panelTitle.border",
+    "panelStickyScroll.border",
     "statusBar.border",
+    "statusBar.debuggingBorder",
+    "statusBar.focusBorder",
     "statusBar.noFolderBorder",
+    "statusBarItem.focusBorder",
     "titleBar.border",
     "tab.border",
+    "tab.activeBorder",
+    "tab.selectedBorderTop",
+    "tab.dragAndDropBorder",
+    "tab.hoverBorder",
+    "tab.unfocusedActiveBorder",
+    "tab.activeBorderTop",
+    "tab.unfocusedActiveBorderTop",
+    "tab.lastPinnedBorder",
+    "tab.unfocusedHoverBorder",
+    "tab.activeModifiedBorder",
+    "tab.inactiveModifiedBorder",
+    "tab.unfocusedActiveModifiedBorder",
+    "tab.unfocusedInactiveModifiedBorder",
+    "sideBySideEditor.horizontalBorder",
+    "sideBySideEditor.verticalBorder",
+    "editor.compositionBorder",
+    "editor.selectionHighlightBorder",
+    "editor.wordHighlightBorder",
+    "editor.wordHighlightStrongBorder",
+    "editor.wordHighlightTextBorder",
+    "editor.findMatchBorder",
+    "editor.findMatchHighlightBorder",
+    "editor.findRangeHighlightBorder",
+    "searchEditor.findMatchBorder",
+    "searchEditor.textInputBorder",
+    "editor.lineHighlightBorder",
+    "editorUnicodeHighlight.border",
+    "editor.rangeHighlightBorder",
+    "editor.symbolHighlightBorder",
     "editorWidget.border",
+    "editorWidget.resizeBorder",
     "input.border",
+    "inputOption.activeBorder",
     "dropdown.border",
     "checkbox.border",
+    "inputValidation.errorBorder",
+    "inputValidation.infoBorder",
+    "inputValidation.warningBorder",
+    "editorBracketMatch.border",
+    "editorOverviewRuler.border",
+    "editorError.border",
+    "editorWarning.border",
+    "editorInfo.border",
+    "editorHint.border",
+    "editorUnnecessaryCode.border",
+    "editorCommentsWidget.resolvedBorder",
+    "editorCommentsWidget.unresolvedBorder",
+    "inlineEdit.gutterIndicator.primaryBorder",
+    "inlineEdit.gutterIndicator.secondaryBorder",
+    "inlineEdit.gutterIndicator.successfulBorder",
+    "inlineEdit.originalBorder",
+    "inlineEdit.modifiedBorder",
+    "inlineEdit.tabWillAcceptModifiedBorder",
+    "inlineEdit.tabWillAcceptOriginalBorder",
+    "diffEditor.insertedTextBorder",
+    "diffEditor.removedTextBorder",
+    "diffEditor.border",
+    "diffEditor.move.border",
+    "diffEditor.moveActive.border",
+    "merge.border",
+    "mergeEditor.conflict.unhandledUnfocused.border",
+    "mergeEditor.conflict.unhandledFocused.border",
+    "mergeEditor.conflict.handledUnfocused.border",
+    "mergeEditor.conflict.handledFocused.border",
+    "editorSuggestWidget.border",
+    "editorHoverWidget.border",
+    "editorGhostText.border",
+    "editorStickyScroll.border",
+    "peekView.border",
+    "peekViewEditor.matchHighlightBorder",
+    "terminal.border",
+    "terminal.findMatchBorder",
+    "terminal.findMatchHighlightBorder",
+    "terminal.tab.activeBorder",
+    "terminalStickyScroll.border",
+    "terminalOverviewRuler.border",
+    "debugToolBar.border",
+    "debugExceptionWidget.border",
+    "panelInput.border",
+    "panelSection.border",
+    "panelSectionHeader.border",
+    "settings.dropdownBorder",
+    "settings.textInputBorder",
+    "settings.numberInputBorder",
+    "settings.checkboxBorder",
+    "settings.focusedRowBorder",
+    "settings.headerBorder",
+    "settings.dropdownListBorder",
+    "settings.sashBorder",
+    "testing.peekBorder",
+    "testing.messagePeekBorder",
+    "testing.coveredBorder",
+    "testing.uncoveredBorder",
+    "testing.message.error.badgeBorder",
+    "welcomePage.tileBorder",
+    "simpleFindWidget.sashBorder",
+    "gauge.border",
+    "agentSessionSelectedBadge.border",
+    "agentSessionSelectedUnfocusedBadge.border",
+    "aiCustomizationManagement.sashBorder",
+    "inlineChat.border",
+    "inlineChatInput.border",
+    "inlineChatInput.focusBorder",
+    "interactive.activeCodeBorder",
+    "interactive.inactiveCodeBorder",
+    "multiDiffEditor.border",
+    "chat.requestBorder",
+    "chat.requestCodeBorder",
+    "chat.checkpointSeparator",
+    "chatManagement.sashBorder",
+    "notificationCenter.border",
+    "notificationToast.border",
+    "notifications.border",
+    "commandCenter.border",
+    "commandCenter.inactiveBorder",
+    "commandCenter.activeBorder",
+    "menubar.selectionBorder",
+    "menu.selectionBorder",
+    "menu.separatorBackground",
+    "menu.border",
+    "extensionButton.border",
+    "extensionButton.separator",
+    "pickerGroup.border",
+    "keybindingLabel.border",
+    "keybindingLabel.bottomBorder",
+    "editor.snippetTabstopHighlightBorder",
+    "editor.snippetFinalTabstopHighlightBorder",
+    "notebook.cellBorderColor",
+    "notebook.focusedCellBorder",
+    "notebook.focusedEditorBorder",
+    "notebook.inactiveFocusedCellBorder",
+    "notebook.inactiveSelectedCellBorder",
+    "notebook.outputContainerBorderColor",
+    "notebook.selectedCellBorder",
+    "notebook.cellToolbarSeparator",
   ];
+  const accentSurfaceBorderIdentifiers = new Set([
+    "button.border",
+    "button.separator",
+    "statusBar.debuggingBorder",
+    "testing.message.error.badgeBorder",
+    "extensionButton.border",
+    "extensionButton.separator",
+  ]);
+  const flatReadableBorderRoleByIdentifier: Record<string, string> = {
+    "list.focusOutline": readableTextPalette.strongBorder,
+    "list.focusAndSelectionOutline": readableTextPalette.strongBorder,
+    "list.inactiveFocusOutline": readableTextPalette.strongBorder,
+    "listFilterWidget.outline": readableTextPalette.strongBorder,
+    "listFilterWidget.noMatchesOutline": readableTextPalette.red,
+    "list.filterMatchBorder": readableTextPalette.yellow,
+    "toolbar.hoverOutline": readableTextPalette.strongBorder,
+    "sash.hoverBorder": readableTextPalette.strongBorder,
+    "checkbox.selectBorder": readableTextPalette.strongBorder,
+    "radio.activeBorder": readableTextPalette.strongBorder,
+    "radio.inactiveBorder": readableTextPalette.strongBorder,
+    "inlineChatInput.border": readableTextPalette.strongBorder,
+    "inlineChatInput.focusBorder": readableTextPalette.strongBorder,
+    "editor.selectionHighlightBorder": readableTextPalette.strongBorder,
+    "editor.findMatchBorder": readableTextPalette.strongBorder,
+    "editor.findMatchHighlightBorder": readableTextPalette.strongBorder,
+    "editor.findRangeHighlightBorder": readableTextPalette.strongBorder,
+    "terminal.findMatchBorder": readableTextPalette.strongBorder,
+    "terminal.findMatchHighlightBorder": readableTextPalette.strongBorder,
+    "terminalOverviewRuler.border": readableTextPalette.strongBorder,
+    "editorBracketMatch.border": readableTextPalette.strongBorderOnSubsurface,
+    "editorError.border": readableTextPalette.red,
+    "editorWarning.border": readableTextPalette.yellow,
+    "editorInfo.border": readableTextPalette.blue,
+    "editorHint.border": readableTextPalette.purple,
+    "inputValidation.errorBorder": readableTextPalette.red,
+    "inputValidation.infoBorder": readableTextPalette.blue,
+    "inputValidation.warningBorder": readableTextPalette.yellow,
+    "inputOption.activeBorder": readableTextPalette.strongBorder,
+    "activityBar.activeBorder": readableTextPalette.green,
+    "activityBar.activeFocusBorder": readableTextPalette.strongBorder,
+    "activityBar.dropBorder": readableTextPalette.strongBorder,
+    "activityBarTop.activeBorder": readableTextPalette.green,
+    "activityBarTop.dropBorder": readableTextPalette.strongBorder,
+    "commandCenter.activeBorder": readableTextPalette.strongBorder,
+    "interactive.activeCodeBorder": readableTextPalette.strongBorder,
+    "editor.snippetTabstopHighlightBorder": readableTextPalette.strongBorder,
+    "editor.snippetFinalTabstopHighlightBorder": readableTextPalette.strongBorder,
+    "panelTitle.activeBorder": readableTextPalette.green,
+    "tab.activeBorder": readableTextPalette.green,
+    "tab.activeBorderTop": readableTextPalette.green,
+    "tab.hoverBorder": readableTextPalette.strongBorder,
+    "tab.dragAndDropBorder": readableTextPalette.strongBorder,
+    "terminal.tab.activeBorder": readableTextPalette.green,
+    "testing.message.error.badgeBorder": readableTextPalette.strongBorderOnAccent,
+    "button.border": readableTextPalette.strongBorderOnAccent,
+    "button.separator": readableTextPalette.strongBorderOnAccent,
+    "statusBar.debuggingBorder": readableTextPalette.strongBorderOnAccent,
+    "extensionButton.border": readableTextPalette.strongBorderOnAccent,
+    "extensionButton.separator": readableTextPalette.strongBorderOnAccent,
+    "editorCommentsWidget.resolvedBorder": readableTextPalette.green,
+    "editorCommentsWidget.unresolvedBorder": readableTextPalette.red,
+    "editorGroup.dropIntoPromptBorder": readableTextPalette.strongBorder,
+    "panel.dropBorder": readableTextPalette.strongBorder,
+    "statusBar.focusBorder": readableTextPalette.strongBorder,
+    "statusBarItem.focusBorder": readableTextPalette.strongBorder,
+    "menu.selectionBorder": readableTextPalette.strongBorder,
+    "menubar.selectionBorder": readableTextPalette.strongBorder,
+    "editorUnicodeHighlight.border": readableTextPalette.strongBorder,
+    "editor.rangeHighlightBorder": readableTextPalette.strongBorder,
+    "editor.symbolHighlightBorder": readableTextPalette.strongBorder,
+    "notebook.focusedCellBorder": readableTextPalette.strongBorder,
+    "notebook.focusedEditorBorder": readableTextPalette.strongBorder,
+    "notebook.inactiveFocusedCellBorder": readableTextPalette.strongBorder,
+    "notebook.selectedCellBorder": readableTextPalette.strongBorder,
+  };
 
   if (themePreferences.workbenchStyle === "flat") {
     for (const surfaceIdentifier of flatSurfaceIdentifiers) {
       workbenchColors[surfaceIdentifier] = palette.bg;
     }
     for (const borderIdentifier of structuralBorderIdentifiers) {
-      workbenchColors[borderIdentifier] = `${palette.bg}00`;
+      workbenchColors[borderIdentifier] =
+        flatReadableBorderRoleByIdentifier[borderIdentifier] ?? `${palette.bg}00`;
     }
   }
 
@@ -266,40 +542,54 @@ function applyWorkbenchStyle(
     themePreferences.workbenchStyle === "high-contrast" || themePreferences.highContrast;
   if (!usesStrongBorders) return;
 
-  workbenchColors.contrastBorder = palette.grey1;
-  workbenchColors.contrastActiveBorder = palette.fg;
-  workbenchColors.focusBorder = palette.fg;
+  workbenchColors.contrastBorder = readableTextPalette.strongBorder;
+  workbenchColors.contrastActiveBorder = readableTextPalette.strongBorder;
+  workbenchColors.focusBorder = readableTextPalette.strongBorder;
   for (const borderIdentifier of structuralBorderIdentifiers) {
-    workbenchColors[borderIdentifier] = palette.grey1;
+    workbenchColors[borderIdentifier] =
+      borderIdentifier === "editorBracketMatch.border"
+        ? readableTextPalette.strongBorderOnSubsurface
+        : accentSurfaceBorderIdentifiers.has(borderIdentifier)
+          ? readableTextPalette.strongBorderOnAccent
+          : readableTextPalette.strongBorder;
   }
 }
 
 export function createWorkbenchColors(palette: Palette, themePreferences: ThemePreferences) {
   const { appearance } = themePreferences;
-  const accentForeground = appearance === "dark" ? palette.bg : "#2d353b";
+  const readableTextPalette = getReadableTextPalette(appearance, palette);
+  const accentForeground = readableTextPalette.accentForeground;
+  const hoverOverlayColor =
+    appearance === "dark" ? `${readableTextPalette.invertedText}20` : `${palette.bg}20`;
   const {
     activeWorkbenchForeground,
     disabledWorkbenchForeground,
     primaryWorkbenchForeground,
     secondaryWorkbenchForeground,
-  } = getWorkbenchForegroundColors(appearance, palette);
-  const readableWorkbenchAccentColors = getReadableWorkbenchAccentColors(appearance, palette);
+  } = getWorkbenchForegroundColors(appearance, readableTextPalette, palette);
+  const readableWorkbenchAccentColors = getReadableWorkbenchAccentColors(readableTextPalette);
   const accessibleAccentGreen = readableWorkbenchAccentColors.green;
   const accessibleBlueForeground = readableWorkbenchAccentColors.blue;
   const selectionColor = configuredSelectionColor(palette, themePreferences);
+  const readableSelectionColor = configuredReadableSelectionColor(
+    readableTextPalette,
+    themePreferences
+  );
   const activeSelectionBackgroundColor = `${selectionColor}${appearance === "dark" ? "80" : "a0"}`;
   const inactiveSelectionBackgroundColor = `${selectionColor}${appearance === "dark" ? "40" : "60"}`;
   const selectionOccurrenceBackgroundColor = `${selectionColor}${appearance === "dark" ? "20" : "30"}`;
-  const selectedTextForegroundColor = appearance === "dark" ? "#fdf6e3" : "#2d353b";
-  const resolvedCommentIndicator = appearance === "dark" ? palette.grey2 : "#59646c";
+  const minimapSelectionHighlightColor = `${readableSelectionColor}e0`;
+  const minimapSelectionOccurrenceHighlightColor = `${readableSelectionColor}d0`;
+  const selectedTextForegroundColor = readableTextPalette.invertedText;
+  const resolvedCommentIndicator = readableTextPalette.grey2;
   const unresolvedCommentIndicator = accessibleBlueForeground;
-  const cursorForeground = configuredCursorColor(palette, themePreferences);
+  const cursorForeground = configuredCursorColor(readableTextPalette, themePreferences);
   const diagnosticBackgroundOpacity =
     diagnosticOpacityAlpha[themePreferences.diagnosticTextBackgroundOpacity];
   const workbenchColors: Record<string, string> = {
     ...createDocumentedWorkbenchColorFallbacks(palette, appearance),
     foreground: primaryWorkbenchForeground,
-    focusBorder: palette.fg,
+    focusBorder: readableTextPalette.strongBorder,
     "widget.shadow": palette.shadow,
     "selection.background": `${palette.bg4}${appearance === "dark" ? "e0" : "c0"}`,
     disabledForeground: disabledWorkbenchForeground,
@@ -307,21 +597,23 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     errorForeground: readableWorkbenchAccentColors.red,
     "icon.foreground": primaryWorkbenchForeground,
     "textLink.foreground": accessibleAccentGreen,
-    "textLink.activeForeground": `${accessibleAccentGreen}c0`,
+    "textLink.activeForeground": accessibleAccentGreen,
     "textCodeBlock.background": palette.bg1,
     "textBlockQuote.background": palette.bg1,
     "textBlockQuote.border": palette.bg4,
     "textPreformat.foreground": readableWorkbenchAccentColors.yellow,
     "toolbar.hoverBackground": palette.bg2,
+    "toolbar.hoverOutline": readableTextPalette.strongBorder,
     "button.background": palette.badge,
-    "button.hoverBackground": `${palette.badge}d0`,
+    "button.hoverBackground": hoverOverlayColor,
     "button.foreground": accentForeground,
     "button.secondaryBackground": palette.bg3,
     "button.secondaryForeground": primaryWorkbenchForeground,
-    "button.secondaryHoverBackground": palette.bg4,
+    "button.secondaryHoverBackground": palette.bg2,
     "checkbox.background": palette.bg,
     "checkbox.foreground": readableWorkbenchAccentColors.orange,
     "checkbox.border": palette.bg5,
+    "radio.inactiveForeground": primaryWorkbenchForeground,
     "dropdown.border": palette.bg5,
     "dropdown.background": palette.bg,
     "dropdown.foreground": primaryWorkbenchForeground,
@@ -329,7 +621,7 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "input.background": `${palette.bg}00`,
     "input.foreground": primaryWorkbenchForeground,
     "input.placeholderForeground": secondaryWorkbenchForeground,
-    "inputOption.activeBorder": palette.fg,
+    "inputOption.activeBorder": readableTextPalette.strongBorder,
     "inputValidation.errorBorder": readableWorkbenchAccentColors.red,
     "inputValidation.errorBackground": palette.bg2,
     "inputValidation.errorForeground": primaryWorkbenchForeground,
@@ -348,15 +640,18 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "progressBar.background": palette.badge,
     "list.activeSelectionForeground": activeWorkbenchForeground,
     "list.activeSelectionBackground": `${palette.bg4}80`,
-    "list.inactiveSelectionForeground": secondaryWorkbenchForeground,
+    "list.inactiveSelectionForeground": primaryWorkbenchForeground,
     "list.inactiveSelectionBackground": `${palette.bg4}80`,
     "list.dropBackground": `${palette.bg2}80`,
     "list.focusForeground": activeWorkbenchForeground,
     "list.focusBackground": `${palette.bg4}80`,
+    "list.focusOutline": readableTextPalette.strongBorder,
+    "list.focusAndSelectionOutline": readableTextPalette.strongBorder,
+    "list.inactiveFocusOutline": readableTextPalette.strongBorder,
     "list.inactiveFocusBackground": `${palette.bg4}60`,
     "list.highlightForeground": accessibleAccentGreen,
     "list.hoverForeground": activeWorkbenchForeground,
-    "list.hoverBackground": `${palette.bg}00`,
+    "list.hoverBackground": palette.bg2,
     "list.invalidItemForeground": readableWorkbenchAccentColors.red,
     "list.errorForeground": readableWorkbenchAccentColors.red,
     "list.warningForeground": readableWorkbenchAccentColors.yellow,
@@ -366,7 +661,7 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "activityBar.foreground": activeWorkbenchForeground,
     "activityBar.inactiveForeground": secondaryWorkbenchForeground,
     "activityBar.activeBorder": `${accessibleAccentGreen}d0`,
-    "activityBar.activeFocusBorder": palette.fg,
+    "activityBar.activeFocusBorder": readableTextPalette.strongBorder,
     "activityBarBadge.background": palette.badge,
     "activityBarBadge.foreground": accentForeground,
     "sideBar.foreground": primaryWorkbenchForeground,
@@ -374,15 +669,16 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "sideBarSectionHeader.background": `${palette.bg}00`,
     "sideBarTitle.foreground": activeWorkbenchForeground,
     "sideBarSectionHeader.foreground": primaryWorkbenchForeground,
-    "minimap.findMatchHighlight": `${palette.dimAqua}60`,
-    "minimap.selectionHighlight": activeSelectionBackgroundColor,
-    "minimap.selectionOccurrenceHighlight": selectionOccurrenceBackgroundColor,
-    "minimap.chatEditHighlight": `${accessibleAccentGreen}${appearance === "dark" ? "99" : "80"}`,
-    "minimap.errorHighlight": `${palette.dimRed}80`,
-    "minimap.warningHighlight": `${palette.dimYellow}80`,
-    "minimapGutter.addedBackground": `${palette.dimGreen}a0`,
-    "minimapGutter.modifiedBackground": `${palette.dimBlue}a0`,
-    "minimapGutter.deletedBackground": `${palette.dimRed}a0`,
+    "minimap.foregroundOpacity": `${readableTextPalette.fg}d0`,
+    "minimap.findMatchHighlight": `${readableWorkbenchAccentColors.cyan}c0`,
+    "minimap.selectionHighlight": minimapSelectionHighlightColor,
+    "minimap.selectionOccurrenceHighlight": minimapSelectionOccurrenceHighlightColor,
+    "minimap.chatEditHighlight": `${accessibleAccentGreen}c0`,
+    "minimap.errorHighlight": readableWorkbenchAccentColors.red,
+    "minimap.warningHighlight": readableWorkbenchAccentColors.yellow,
+    "minimapGutter.addedBackground": readableWorkbenchAccentColors.green,
+    "minimapGutter.modifiedBackground": readableWorkbenchAccentColors.blue,
+    "minimapGutter.deletedBackground": readableWorkbenchAccentColors.red,
     "editorGroup.border": palette.bg4,
     "editorGroupHeader.tabsBackground": palette.bg1,
     "editorGroupHeader.noTabsBackground": palette.bg1,
@@ -401,14 +697,14 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "tab.unfocusedHoverForeground": activeWorkbenchForeground,
     "tab.lastPinnedBorder": `${palette.badge}d0`,
     "editor.background": palette.bg,
-    "editor.foreground": palette.fg,
-    "editorLineNumber.foreground": `${palette.grey0}a0`,
-    "editorLineNumber.activeForeground": `${palette.grey2}e0`,
+    "editor.foreground": readableTextPalette.fg,
+    "editorLineNumber.foreground": readableTextPalette.grey2,
+    "editorLineNumber.activeForeground": primaryWorkbenchForeground,
     "editorCursor.foreground": cursorForeground,
     "editor.selectionBackground": activeSelectionBackgroundColor,
     "editor.selectionForeground": selectedTextForegroundColor,
     "editor.selectionHighlightBackground": selectionOccurrenceBackgroundColor,
-    "editor.selectionHighlightBorder": `${selectionColor}80`,
+    "editor.selectionHighlightBorder": readableTextPalette.strongBorder,
     "editor.inactiveSelectionBackground": inactiveSelectionBackgroundColor,
     "editor.wordHighlightBackground":
       appearance === "dark" ? `${palette.bg4}58` : `${palette.bg4}48`,
@@ -419,7 +715,7 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "editor.hoverHighlightBackground":
       appearance === "dark" ? `${palette.bg4}b0` : `${palette.bg4}90`,
     "editor.findMatchBackground": `${palette.dimOrange}40`,
-    "editor.findMatchBorder": palette.fg,
+    "editor.findMatchBorder": readableTextPalette.strongBorder,
     "editor.findMatchHighlightBackground": `${palette.dimGreen}40`,
     "editor.findMatchHighlightBorder": accessibleAccentGreen,
     "editor.findRangeHighlightBackground": selectionOccurrenceBackgroundColor,
@@ -433,89 +729,110 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "editorIndentGuide.background": `${palette.grey2}20`,
     "editorIndentGuide.activeBackground": `${palette.grey2}50`,
     "editorInlayHint.background": `${palette.bg}00`,
-    "editorInlayHint.foreground": `${palette.grey0}a0`,
+    "editorInlayHint.foreground": readableTextPalette.grey2,
     "editorInlayHint.typeBackground": `${palette.bg}00`,
-    "editorInlayHint.typeForeground": `${palette.grey0}a0`,
+    "editorInlayHint.typeForeground": readableTextPalette.grey2,
     "editorInlayHint.parameterBackground": `${palette.bg}00`,
-    "editorInlayHint.parameterForeground": `${palette.grey0}a0`,
-    "editorRuler.foreground": `${palette.bg4}a0`,
-    "editorCodeLens.foreground": `${palette.grey0}a0`,
+    "editorInlayHint.parameterForeground": readableTextPalette.grey2,
+    "editorRuler.foreground": readableTextPalette.grey2,
+    "editorCodeLens.foreground": readableTextPalette.grey2,
     "editor.foldBackground": `${palette.bg5}80`,
-    "editorBracketMatch.border": palette.fg,
+    "editorBracketMatch.border": readableTextPalette.strongBorderOnSubsurface,
     "editorBracketMatch.background": palette.bg5,
-    "editorBracketHighlight.foreground1": palette.red,
-    "editorBracketHighlight.foreground2": palette.yellow,
-    "editorBracketHighlight.foreground3": palette.green,
-    "editorBracketHighlight.foreground4": palette.blue,
-    "editorBracketHighlight.foreground5": palette.orange,
-    "editorBracketHighlight.foreground6": palette.purple,
-    "editorBracketHighlight.unexpectedBracket.foreground": palette.grey1,
+    "editorBracketMatch.foreground": readableTextPalette.invertedText,
+    "editorBracketHighlight.foreground1": readableTextPalette.red,
+    "editorBracketHighlight.foreground2": readableTextPalette.yellow,
+    "editorBracketHighlight.foreground3": readableTextPalette.green,
+    "editorBracketHighlight.foreground4": readableTextPalette.blue,
+    "editorBracketHighlight.foreground5": readableTextPalette.orange,
+    "editorBracketHighlight.foreground6": readableTextPalette.purple,
+    "editorBracketHighlight.unexpectedBracket.foreground": readableTextPalette.grey2,
     "editorOverviewRuler.border": `${palette.bg}00`,
-    "editorOverviewRuler.findMatchForeground": `${palette.dimAqua}a0`,
-    "editorOverviewRuler.rangeHighlightForeground": `${palette.dimAqua}a0`,
-    "editorOverviewRuler.selectionHighlightForeground": `${selectionColor}a0`,
-    "editorOverviewRuler.wordHighlightForeground": `${palette.bg5}a0`,
-    "editorOverviewRuler.wordHighlightStrongForeground": `${palette.bg5}a0`,
-    "editorOverviewRuler.wordHighlightTextForeground": `${palette.bg5}a0`,
-    "editorOverviewRuler.modifiedForeground": `${palette.dimBlue}a0`,
-    "editorOverviewRuler.addedForeground": `${palette.dimGreen}a0`,
-    "editorOverviewRuler.deletedForeground": `${palette.dimRed}a0`,
-    "editorOverviewRuler.errorForeground": palette.red,
-    "editorOverviewRuler.warningForeground": palette.yellow,
-    "editorOverviewRuler.infoForeground": palette.purple,
-    "editorOverviewRuler.currentContentForeground": palette.dimBlue,
-    "editorOverviewRuler.incomingContentForeground": palette.dimAqua,
-    "editorOverviewRuler.commonContentForeground": palette.grey1,
+    "editorOverviewRuler.findMatchForeground": `${readableTextPalette.aqua}d0`,
+    "editorOverviewRuler.rangeHighlightForeground": `${readableTextPalette.aqua}d0`,
+    "editorOverviewRuler.selectionHighlightForeground": `${readableTextPalette.strongBorder}d0`,
+    "editorOverviewRuler.wordHighlightForeground": `${readableTextPalette.grey2}d0`,
+    "editorOverviewRuler.wordHighlightStrongForeground": `${readableTextPalette.grey2}d0`,
+    "editorOverviewRuler.wordHighlightTextForeground": `${readableTextPalette.grey2}d0`,
+    "editorOverviewRuler.modifiedForeground": readableWorkbenchAccentColors.blue,
+    "editorOverviewRuler.addedForeground": readableWorkbenchAccentColors.green,
+    "editorOverviewRuler.deletedForeground": readableWorkbenchAccentColors.red,
+    "editorOverviewRuler.errorForeground": readableWorkbenchAccentColors.red,
+    "editorOverviewRuler.warningForeground": readableWorkbenchAccentColors.yellow,
+    "editorOverviewRuler.infoForeground": readableWorkbenchAccentColors.magenta,
+    "editorOverviewRuler.currentContentForeground": readableWorkbenchAccentColors.blue,
+    "editorOverviewRuler.incomingContentForeground": readableWorkbenchAccentColors.cyan,
+    "editorOverviewRuler.commonContentForeground": readableTextPalette.grey2,
+    "editorOverviewRuler.bracketMatchForeground": readableTextPalette.strongBorder,
+    "editorOverviewRuler.commentForeground": readableTextPalette.grey2,
+    "editorOverviewRuler.commentUnresolvedForeground": readableTextPalette.red,
+    "editorOverviewRuler.commentDraftForeground": readableTextPalette.yellow,
+    "editorOverviewRuler.inlineChatInserted": readableWorkbenchAccentColors.green,
+    "editorOverviewRuler.inlineChatRemoved": readableWorkbenchAccentColors.red,
     "problemsErrorIcon.foreground": readableWorkbenchAccentColors.red,
     "problemsWarningIcon.foreground": readableWorkbenchAccentColors.yellow,
     "problemsInfoIcon.foreground": readableWorkbenchAccentColors.blue,
     "editorUnnecessaryCode.border": palette.bg,
     "editorUnnecessaryCode.opacity": `#00000080`,
-    "editorError.foreground": readableWorkbenchAccentColors.red,
-    "editorWarning.foreground": readableWorkbenchAccentColors.yellow,
-    "editorInfo.foreground": readableWorkbenchAccentColors.blue,
-    "editorHint.foreground": palette.dimPurple,
+    "editorError.border": readableWorkbenchAccentColors.red,
+    "editorWarning.border": readableWorkbenchAccentColors.yellow,
+    "editorInfo.border": readableWorkbenchAccentColors.blue,
+    "editorHint.border": readableWorkbenchAccentColors.magenta,
+    "editorError.foreground":
+      themePreferences.diagnosticTextBackgroundOpacity === "0%"
+        ? readableWorkbenchAccentColors.red
+        : readableTextPalette.invertedText,
+    "editorWarning.foreground":
+      themePreferences.diagnosticTextBackgroundOpacity === "0%"
+        ? readableWorkbenchAccentColors.yellow
+        : readableTextPalette.invertedText,
+    "editorInfo.foreground":
+      themePreferences.diagnosticTextBackgroundOpacity === "0%"
+        ? readableWorkbenchAccentColors.blue
+        : readableTextPalette.invertedText,
+    "editorHint.foreground": readableWorkbenchAccentColors.magenta,
     "editorError.background": `${palette.dimRed}${diagnosticBackgroundOpacity}`,
     "editorWarning.background": `${palette.dimYellow}${diagnosticBackgroundOpacity}`,
     "editorInfo.background": `${palette.dimBlue}${diagnosticBackgroundOpacity}`,
     "editorGutter.background": `${palette.bg}00`,
-    "editorGutter.modifiedBackground": `${palette.dimBlue}a0`,
-    "editorGutter.addedBackground": `${palette.dimGreen}a0`,
-    "editorGutter.deletedBackground": `${palette.dimRed}a0`,
-    "editorGutter.commentRangeForeground": palette.grey0,
+    "editorGutter.modifiedBackground": readableWorkbenchAccentColors.blue,
+    "editorGutter.addedBackground": readableWorkbenchAccentColors.green,
+    "editorGutter.deletedBackground": readableWorkbenchAccentColors.red,
+    "editorGutter.commentRangeForeground": readableTextPalette.grey2,
     "editorCommentsWidget.resolvedBorder": resolvedCommentIndicator,
     "editorCommentsWidget.unresolvedBorder": unresolvedCommentIndicator,
     "diffEditor.insertedTextBackground": `${palette.dimAqua}30`,
     "diffEditor.removedTextBackground": `${palette.dimRed}30`,
     "diffEditor.diagonalFill": palette.bg5,
     "editorSuggestWidget.background": palette.bg3,
-    "editorSuggestWidget.foreground": palette.fg,
+    "editorSuggestWidget.foreground": readableTextPalette.fg,
+    "editorSuggestWidget.selectedForeground": readableTextPalette.invertedText,
     "editorSuggestWidget.highlightForeground":
-      appearance === "light" ? accessibleAccentGreen : palette.fg,
+      appearance === "dark" ? readableTextPalette.fg : readableWorkbenchAccentColors.green,
     "editorSuggestWidget.selectedBackground": palette.bg4,
     "editorSuggestWidget.border": palette.bg3,
     "editorWidget.background": palette.bg,
-    "editorWidget.foreground": palette.fg,
+    "editorWidget.foreground": readableTextPalette.fg,
     "editorWidget.border": palette.bg5,
     "editorHoverWidget.background": palette.bg2,
     "editorHoverWidget.border": palette.bg4,
     "editorGhostText.background": `${palette.bg}00`,
-    "editorGhostText.foreground": `${palette.grey0}a0`,
+    "editorGhostText.foreground": readableTextPalette.grey2,
     "editorMarkerNavigation.background": palette.bg2,
-    "editorMarkerNavigationError.background": `${palette.dimRed}80`,
-    "editorMarkerNavigationWarning.background": `${palette.dimYellow}80`,
-    "editorMarkerNavigationInfo.background": `${palette.dimBlue}80`,
+    "editorMarkerNavigationError.background": readableWorkbenchAccentColors.red,
+    "editorMarkerNavigationWarning.background": readableWorkbenchAccentColors.yellow,
+    "editorMarkerNavigationInfo.background": readableWorkbenchAccentColors.blue,
     "peekView.border": palette.bg4,
     "peekViewEditor.background": palette.bg2,
     "peekViewEditor.matchHighlightBackground": `${palette.dimYellow}50`,
     "peekViewEditorGutter.background": palette.bg2,
-    "peekViewResult.fileForeground": palette.fg,
-    "peekViewResult.lineForeground": palette.grey2,
+    "peekViewResult.fileForeground": readableTextPalette.fg,
+    "peekViewResult.lineForeground": readableTextPalette.grey2,
     "peekViewResult.matchHighlightBackground": `${palette.dimYellow}50`,
     "peekViewResult.selectionBackground": `${palette.dimAqua}50`,
-    "peekViewResult.selectionForeground": palette.fg,
-    "peekViewTitleDescription.foreground": palette.fg,
-    "peekViewTitleLabel.foreground": palette.green,
+    "peekViewResult.selectionForeground": readableTextPalette.fg,
+    "peekViewTitleDescription.foreground": readableTextPalette.fg,
+    "peekViewTitleLabel.foreground": readableWorkbenchAccentColors.green,
     "peekViewResult.background": palette.bg2,
     "peekViewTitle.background": palette.bg4,
     "pickerGroup.border": `${palette.badge}1a`,
@@ -526,7 +843,7 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "terminal.selectionForeground": selectedTextForegroundColor,
     "terminal.inactiveSelectionBackground": inactiveSelectionBackgroundColor,
     "terminal.findMatchBackground": `${palette.dimOrange}60`,
-    "terminal.findMatchBorder": palette.fg,
+    "terminal.findMatchBorder": readableTextPalette.strongBorder,
     "terminal.findMatchHighlightBackground": `${palette.dimGreen}40`,
     "terminal.findMatchHighlightBorder": accessibleAccentGreen,
     "terminal.hoverHighlightBackground": `${palette.dimAqua}50`,
@@ -537,7 +854,9 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "terminalStickyScroll.background": palette.bg2,
     "terminalStickyScroll.border": palette.bg4,
     "terminalStickyScrollHover.background": palette.bg3,
-    "terminalOverviewRuler.border": palette.bg4,
+    "terminalOverviewRuler.border": readableTextPalette.strongBorder,
+    "terminalOverviewRuler.cursorForeground": readableTextPalette.strongBorder,
+    "terminalOverviewRuler.findMatchForeground": readableTextPalette.strongBorder,
     "terminalCursor.foreground": cursorForeground,
     "terminal.ansiBlack": readableWorkbenchAccentColors.black,
     "terminal.ansiBlue": readableWorkbenchAccentColors.blue,
@@ -556,12 +875,12 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "terminal.ansiWhite": readableWorkbenchAccentColors.white,
     "terminal.ansiYellow": readableWorkbenchAccentColors.yellow,
     "debugToolBar.background": palette.bg,
-    "debugTokenExpression.name": palette.blue,
-    "debugTokenExpression.value": palette.green,
-    "debugTokenExpression.string": palette.yellow,
-    "debugTokenExpression.boolean": palette.purple,
-    "debugTokenExpression.number": palette.purple,
-    "debugTokenExpression.error": palette.red,
+    "debugTokenExpression.name": readableWorkbenchAccentColors.blue,
+    "debugTokenExpression.value": readableWorkbenchAccentColors.green,
+    "debugTokenExpression.string": readableWorkbenchAccentColors.yellow,
+    "debugTokenExpression.boolean": readableWorkbenchAccentColors.magenta,
+    "debugTokenExpression.number": readableWorkbenchAccentColors.magenta,
+    "debugTokenExpression.error": readableWorkbenchAccentColors.red,
     "debugIcon.breakpointForeground": readableWorkbenchAccentColors.red,
     "debugIcon.breakpointDisabledForeground": palette.dimRed,
     "debugIcon.breakpointUnverifiedForeground": palette.grey2,
@@ -609,21 +928,24 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "statusBar.noFolderForeground": primaryWorkbenchForeground,
     "statusBar.noFolderBorder": palette.bg4,
     "statusBarItem.hoverBackground": `${palette.bg4}a0`,
+    "statusBarItem.hoverForeground":
+      appearance === "light" ? readableTextPalette.invertedText : readableTextPalette.fg,
     "statusBarItem.activeBackground": `${palette.bg4}70`,
     "statusBarItem.prominentForeground": accentForeground,
     "statusBarItem.prominentBackground": palette.badge,
-    "statusBarItem.prominentHoverBackground": `${palette.badge}d0`,
+    "statusBarItem.prominentHoverForeground": accentForeground,
+    "statusBarItem.prominentHoverBackground": hoverOverlayColor,
     "statusBarItem.remoteBackground": palette.blue,
     "statusBarItem.remoteForeground": brightAccentForeground,
-    "statusBarItem.remoteHoverBackground": `${palette.blue}d0`,
+    "statusBarItem.remoteHoverBackground": hoverOverlayColor,
     "statusBarItem.remoteHoverForeground": brightAccentForeground,
     "statusBarItem.errorBackground": palette.red,
     "statusBarItem.errorForeground": brightAccentForeground,
-    "statusBarItem.errorHoverBackground": `${palette.red}d0`,
+    "statusBarItem.errorHoverBackground": hoverOverlayColor,
     "statusBarItem.errorHoverForeground": brightAccentForeground,
     "statusBarItem.warningBackground": palette.yellow,
     "statusBarItem.warningForeground": brightAccentForeground,
-    "statusBarItem.warningHoverBackground": `${palette.yellow}d0`,
+    "statusBarItem.warningHoverBackground": hoverOverlayColor,
     "statusBarItem.warningHoverForeground": brightAccentForeground,
     "titleBar.activeBackground": palette.bg1,
     "titleBar.activeForeground": activeWorkbenchForeground,
@@ -641,10 +963,10 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "gitDecoration.modifiedResourceForeground": readableWorkbenchAccentColors.blue,
     "gitDecoration.deletedResourceForeground": readableWorkbenchAccentColors.red,
     "gitDecoration.untrackedResourceForeground": readableWorkbenchAccentColors.yellow,
-    "gitDecoration.ignoredResourceForeground": palette.bg5,
-    "gitDecoration.conflictingResourceForeground": readableWorkbenchAccentColors.magenta,
+    "gitDecoration.ignoredResourceForeground": readableTextPalette.grey2,
+    "gitDecoration.conflictingResourceForeground": readableWorkbenchAccentColors.yellow,
     "gitDecoration.submoduleResourceForeground": readableWorkbenchAccentColors.orange,
-    "gitDecoration.stageDeletedResourceForeground": readableWorkbenchAccentColors.cyan,
+    "gitDecoration.stageDeletedResourceForeground": readableWorkbenchAccentColors.red,
     "gitDecoration.stageModifiedResourceForeground": readableWorkbenchAccentColors.cyan,
     "gitDecoration.renamedResourceForeground": readableWorkbenchAccentColors.cyan,
     "scmGraph.historyItemRefColor": palette.blue,
@@ -663,10 +985,10 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "notificationsInfoIcon.foreground": readableWorkbenchAccentColors.blue,
     "extensionButton.foreground": accentForeground,
     "extensionButton.background": palette.badge,
-    "extensionButton.hoverBackground": `${palette.badge}d0`,
+    "extensionButton.hoverBackground": hoverOverlayColor,
     "extensionButton.prominentForeground": accentForeground,
     "extensionButton.prominentBackground": palette.badge,
-    "extensionButton.prominentHoverBackground": `${palette.badge}d0`,
+    "extensionButton.prominentHoverBackground": hoverOverlayColor,
     "extensionBadge.remoteBackground": palette.badge,
     "extensionBadge.remoteForeground": accentForeground,
     "extensionIcon.starForeground": readableWorkbenchAccentColors.cyan,
@@ -753,7 +1075,7 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "ports.iconRunningProcessForeground": readableWorkbenchAccentColors.orange,
     "commentsView.resolvedIcon": resolvedCommentIndicator,
     "commentsView.unresolvedIcon": unresolvedCommentIndicator,
-    "sash.hoverBorder": palette.fg,
+    "sash.hoverBorder": readableTextPalette.strongBorder,
     "notebook.cellBorderColor": palette.bg5,
     "notebook.cellStatusBarItemHoverBackground": palette.bg2,
     "notebook.focusedCellBackground": palette.bg,
@@ -762,55 +1084,56 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "notebookStatusSuccessIcon.foreground": readableWorkbenchAccentColors.green,
     "notebookStatusErrorIcon.foreground": readableWorkbenchAccentColors.red,
     "notebookStatusRunningIcon.foreground": readableWorkbenchAccentColors.blue,
-    "notebook.focusedCellBorder": palette.fg,
-    "notebook.focusedEditorBorder": palette.fg,
+    "notebookEditorOverviewRuler.runningCellForeground": readableWorkbenchAccentColors.blue,
+    "notebook.focusedCellBorder": readableTextPalette.strongBorder,
+    "notebook.focusedEditorBorder": readableTextPalette.strongBorder,
     "notebook.selectedCellBorder": palette.bg5,
-    "notebook.inactiveFocusedCellBorder": palette.fg,
+    "notebook.inactiveFocusedCellBorder": readableTextPalette.strongBorder,
     "notebook.cellToolbarSeparator": palette.bg5,
     "testing.iconFailed": readableWorkbenchAccentColors.red,
     "testing.iconErrored": readableWorkbenchAccentColors.red,
-    "testing.iconPassed": readableWorkbenchAccentColors.cyan,
+    "testing.iconPassed": readableWorkbenchAccentColors.green,
     "testing.runAction": readableWorkbenchAccentColors.cyan,
     "testing.iconQueued": readableWorkbenchAccentColors.blue,
     "testing.iconUnset": readableWorkbenchAccentColors.yellow,
     "testing.iconSkipped": readableWorkbenchAccentColors.magenta,
     // Extension-contributed colors: GitLens.
     "gitlens.gutterBackgroundColor": palette.bg,
-    "gitlens.gutterForegroundColor": palette.fg,
-    "gitlens.gutterUncommittedForegroundColor": palette.blue,
-    "gitlens.trailingLineForegroundColor": palette.grey1,
+    "gitlens.gutterForegroundColor": readableTextPalette.fg,
+    "gitlens.gutterUncommittedForegroundColor": readableWorkbenchAccentColors.blue,
+    "gitlens.trailingLineForegroundColor": readableTextPalette.grey2,
     "gitlens.lineHighlightBackgroundColor": palette.bg2,
     "gitlens.lineHighlightOverviewRulerColor": accessibleAccentGreen,
-    "gitlens.closedPullRequestIconColor": palette.red,
-    "gitlens.openPullRequestIconColor": palette.aqua,
-    "gitlens.mergedPullRequestIconColor": palette.purple,
-    "gitlens.unpublishedChangesIconColor": palette.blue,
-    "gitlens.unpublishedCommitIconColor": palette.yellow,
-    "gitlens.unpulledChangesIconColor": palette.orange,
-    "gitlens.decorations.addedForegroundColor": palette.green,
-    "gitlens.decorations.copiedForegroundColor": palette.purple,
-    "gitlens.decorations.deletedForegroundColor": palette.red,
-    "gitlens.decorations.ignoredForegroundColor": palette.grey2,
-    "gitlens.decorations.modifiedForegroundColor": palette.blue,
-    "gitlens.decorations.untrackedForegroundColor": palette.yellow,
-    "gitlens.decorations.renamedForegroundColor": palette.purple,
-    "gitlens.decorations.branchAheadForegroundColor": palette.aqua,
-    "gitlens.decorations.branchBehindForegroundColor": palette.orange,
-    "gitlens.decorations.branchDivergedForegroundColor": palette.yellow,
-    "gitlens.decorations.branchUpToDateForegroundColor": palette.fg,
-    "gitlens.decorations.branchUnpublishedForegroundColor": palette.blue,
-    "gitlens.decorations.branchMissingUpstreamForegroundColor": palette.red,
+    "gitlens.closedPullRequestIconColor": readableWorkbenchAccentColors.red,
+    "gitlens.openPullRequestIconColor": readableWorkbenchAccentColors.cyan,
+    "gitlens.mergedPullRequestIconColor": readableWorkbenchAccentColors.magenta,
+    "gitlens.unpublishedChangesIconColor": readableWorkbenchAccentColors.blue,
+    "gitlens.unpublishedCommitIconColor": readableWorkbenchAccentColors.yellow,
+    "gitlens.unpulledChangesIconColor": readableWorkbenchAccentColors.orange,
+    "gitlens.decorations.addedForegroundColor": readableWorkbenchAccentColors.green,
+    "gitlens.decorations.copiedForegroundColor": readableWorkbenchAccentColors.magenta,
+    "gitlens.decorations.deletedForegroundColor": readableWorkbenchAccentColors.red,
+    "gitlens.decorations.ignoredForegroundColor": readableTextPalette.grey2,
+    "gitlens.decorations.modifiedForegroundColor": readableWorkbenchAccentColors.blue,
+    "gitlens.decorations.untrackedForegroundColor": readableWorkbenchAccentColors.yellow,
+    "gitlens.decorations.renamedForegroundColor": readableWorkbenchAccentColors.magenta,
+    "gitlens.decorations.branchAheadForegroundColor": readableWorkbenchAccentColors.cyan,
+    "gitlens.decorations.branchBehindForegroundColor": readableWorkbenchAccentColors.orange,
+    "gitlens.decorations.branchDivergedForegroundColor": readableWorkbenchAccentColors.yellow,
+    "gitlens.decorations.branchUpToDateForegroundColor": readableTextPalette.fg,
+    "gitlens.decorations.branchUnpublishedForegroundColor": readableWorkbenchAccentColors.blue,
+    "gitlens.decorations.branchMissingUpstreamForegroundColor": readableWorkbenchAccentColors.red,
     // Extension-contributed colors: GitHub Pull Requests and Issues.
-    "issues.open": palette.aqua,
-    "issues.closed": palette.red,
+    "issues.open": readableWorkbenchAccentColors.cyan,
+    "issues.closed": readableWorkbenchAccentColors.red,
     "commandCenter.foreground": primaryWorkbenchForeground,
-    "commandCenter.activeForeground": palette.fg,
+    "commandCenter.activeForeground": readableTextPalette.invertedText,
     "commandCenter.background": palette.bg1,
     "commandCenter.activeBackground": palette.bg2,
     "commandCenter.border": palette.bg4,
     "commandCenter.inactiveForeground": secondaryWorkbenchForeground,
     "commandCenter.inactiveBorder": palette.bg3,
-    "commandCenter.activeBorder": palette.fg,
+    "commandCenter.activeBorder": readableTextPalette.strongBorder,
     "commandCenter.debuggingBackground": palette.dimOrange,
     "chat.requestBorder": palette.bg4,
     "chat.requestBackground": palette.bg1,
@@ -818,9 +1141,9 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "chat.slashCommandForeground": accessibleAccentGreen,
     "chat.avatarBackground": palette.badge,
     "chat.avatarForeground": accentForeground,
-    "chat.editedFileForeground": palette.aqua,
+    "chat.editedFileForeground": readableWorkbenchAccentColors.cyan,
     "chat.linesAddedForeground": accessibleAccentGreen,
-    "chat.linesRemovedForeground": palette.red,
+    "chat.linesRemovedForeground": readableWorkbenchAccentColors.red,
     "chat.requestCodeBorder": palette.bg4,
     "chat.requestBubbleBackground": palette.bg1,
     "chat.requestBubbleHoverBackground": palette.bg3,
@@ -833,16 +1156,16 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "agentStatusIndicator.background": palette.bg1,
     "aiCustomizationManagement.sashBorder": palette.bg4,
     "inlineChat.background": palette.bg1,
-    "inlineChat.foreground": palette.fg,
+    "inlineChat.foreground": readableTextPalette.fg,
     "inlineChat.border": palette.bg4,
     "inlineChat.shadow": palette.shadow,
     "inlineChatInput.border": palette.bg4,
-    "inlineChatInput.focusBorder": palette.fg,
-    "inlineChatInput.placeholderForeground": palette.grey1,
+    "inlineChatInput.focusBorder": readableTextPalette.strongBorder,
+    "inlineChatInput.placeholderForeground": readableTextPalette.grey2,
     "inlineChatInput.background": palette.bg,
     "inlineChatDiff.inserted": `${palette.dimGreen}40`,
     "inlineChatDiff.removed": `${palette.dimRed}40`,
-    "interactive.activeCodeBorder": palette.fg,
+    "interactive.activeCodeBorder": readableTextPalette.strongBorder,
     "interactive.inactiveCodeBorder": palette.bg4,
     "notebook.cellEditorBackground": palette.bg1,
     "multiDiffEditor.headerBackground": palette.bg1,

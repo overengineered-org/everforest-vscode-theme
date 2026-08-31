@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
 import pngjs from "pngjs";
+import { validateMarketplaceIcon } from "../../scripts/validate-marketplace-icon.mjs";
 
 const repositoryDirectory = resolve(import.meta.dirname, "../..");
 const marketplaceIconBytes = readFileSync(resolve(repositoryDirectory, "media/icon.png"));
@@ -12,6 +13,10 @@ const marketplaceIcon = PNG.sync.read(marketplaceIconBytes);
 const pngSignature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const expectedSquareBackground = [0x2d, 0x35, 0x3b, 0xff];
 const centralArtworkBounds = { left: 80, top: 60, right: 432, bottom: 450 };
+
+test("keeps the packaged raster owned by the editable SVG source", () => {
+  assert.doesNotThrow(() => validateMarketplaceIcon(repositoryDirectory));
+});
 
 test("ships a 512px opaque RGB Marketplace icon", () => {
   assert.deepEqual(marketplaceIconBytes.subarray(0, 8), pngSignature);

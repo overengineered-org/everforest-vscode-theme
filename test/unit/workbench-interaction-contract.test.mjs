@@ -40,3 +40,20 @@ test("ignores distinct hover backgrounds and identifiers without a base pair", (
 
   assert.deepEqual(findIndistinguishableHoverBackgroundPairs(workbenchColors), []);
 });
+
+test("compares rendered hover backgrounds after alpha compositing", () => {
+  const workbenchColors = {
+    "button.background": "#111111",
+    "button.hoverBackground": "#11111180",
+    "chat.requestBubbleBackground": "#222222",
+    "chat.requestBubbleHoverBackground": "#33333380",
+  };
+
+  assert.deepEqual(findIndistinguishableHoverBackgroundPairs(workbenchColors), [
+    {
+      baseBackgroundIdentifier: "button.background",
+      hoverBackgroundIdentifier: "button.hoverBackground",
+      sharedBackgroundColor: "#111111",
+    },
+  ]);
+});

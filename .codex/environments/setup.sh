@@ -35,7 +35,7 @@ if [[ "$(node -p 'process.versions.node')" != "$required_node_version" ]]; then
   exit 1
 fi
 
-for required_workflow_tool in npm git gh gitleaks; do
+for required_workflow_tool in act cmp awk docker git gh gitleaks npm shasum; do
   if ! command -v "$required_workflow_tool" >/dev/null 2>&1; then
     echo "error: required tool missing: $required_workflow_tool" >&2
     exit 1

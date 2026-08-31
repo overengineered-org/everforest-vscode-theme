@@ -1,6 +1,8 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
+
+const requiredCodeqlResultFileNames = ["actions.sarif", "javascript-typescript.sarif"];
 
 export function collectUnsuppressedCodeqlFindings(codeqlSarifDocuments) {
   return codeqlSarifDocuments.flatMap((codeqlSarifDocument) =>
@@ -19,14 +21,26 @@ export function collectUnsuppressedCodeqlFindings(codeqlSarifDocuments) {
 }
 
 function assertCodeqlResults(codeqlResultsDirectory) {
-  const codeqlResultFileNames = readdirSync(codeqlResultsDirectory)
-    .filter((codeqlResultFileName) => codeqlResultFileName.endsWith(".sarif"))
-    .sort();
-  if (codeqlResultFileNames.length === 0) {
-    throw new Error(`No CodeQL SARIF results found in ${codeqlResultsDirectory}`);
+  const missingCodeqlResultFileNames = requiredCodeqlResultFileNames.filter(
+    (codeqlResultFileName) => {
+      try {
+        readFileSync(resolve(codeqlResultsDirectory, codeqlResultFileName));
+        return false;
+      } catch (error) {
+        if (error.code === "ENOENT") {
+          return true;
+        }
+        throw error;
+      }
+    }
+  );
+  if (missingCodeqlResultFileNames.length > 0) {
+    throw new Error(
+      `Missing required CodeQL SARIF result file(s) in ${codeqlResultsDirectory}: ${missingCodeqlResultFileNames.join(", ")}`
+    );
   }
 
-  const codeqlSarifDocuments = codeqlResultFileNames.map((codeqlResultFileName) =>
+  const codeqlSarifDocuments = requiredCodeqlResultFileNames.map((codeqlResultFileName) =>
     JSON.parse(readFileSync(resolve(codeqlResultsDirectory, codeqlResultFileName), "utf8"))
   );
   const unsuppressedCodeqlFindings = collectUnsuppressedCodeqlFindings(codeqlSarifDocuments);
@@ -44,7 +58,9 @@ function assertCodeqlResults(codeqlResultsDirectory) {
     );
   }
 
-  console.log(`CodeQL passed across ${codeqlResultFileNames.length} SARIF result files.`);
+  console.log(
+    `CodeQL passed across ${requiredCodeqlResultFileNames.length} required SARIF result files.`
+  );
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {

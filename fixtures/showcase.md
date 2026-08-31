@@ -1,8 +1,10 @@
 # Everforest Complete
 
-> A warm, readable theme for focused work.
+> A complete, warm, readable theme system for focused work.
 
-- **Six variants**
+- **Eight themes**
+- Six fixed Soft, Medium, and Hard presets
+- Two configurable Light/Dark themes
 - Native `Light/Dark` switching
 - [Canonical palette](https://github.com/sainnhe/everforest)
 

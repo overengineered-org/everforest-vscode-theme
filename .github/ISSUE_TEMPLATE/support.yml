@@ -1,0 +1,48 @@
+name: Configuration or browser support
+description: Ask for help with setup, settings, automatic switching, or browser limitations.
+title: "support: "
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Use this form for general support. Remove source code, workspace names, home paths,
+        usernames, tokens, and other private data before posting.
+  - type: textarea
+    id: question
+    attributes:
+      label: What do you need help with?
+      description: Describe the expected result, current result, and smallest steps already tried.
+    validations:
+      required: true
+  - type: input
+    id: extension-version
+    attributes:
+      label: Everforest Complete version
+      description: Give the exact installed extension version.
+      placeholder: "X.Y.Z"
+    validations:
+      required: true
+  - type: input
+    id: vscode-version
+    attributes:
+      label: VS Code version
+      placeholder: "X.Y.Z"
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - Desktop
+        - Remote window
+        - Browser-hosted VS Code
+    validations:
+      required: true
+  - type: textarea
+    id: everforest-settings
+    attributes:
+      label: Relevant configuration
+      description: >-
+        Paste only changed application-scoped/global `everforestComplete.*` settings. Optionally add
+        sanitised native `window.*`/`workbench.*` settings or workspace/folder override context.

@@ -1,8 +1,9 @@
 {
   "name": "everforest-complete",
   "displayName": "Everforest Complete",
-  "description": "Everforest presets plus configurable Light and Dark themes, scheduled switching, and accessibility controls.",
+  "description": "Eight Everforest themes for VS Code: six fixed presets, two configurable themes, accessible syntax, 14 app-wide controls, and automatic Light/Dark switching.",
   "version": "0.0.0-development",
+  "packageManager": "npm@11.9.0",
   "publisher": "overengineered-org",
   "author": {
     "name": "Overengineered Org"
@@ -18,10 +19,18 @@
   },
   "keywords": [
     "everforest",
+    "vscode",
+    "vscode theme",
+    "visual studio code",
     "color theme",
     "dark theme",
     "light theme",
-    "contrast",
+    "editor theme",
+    "syntax highlighting",
+    "accessibility",
+    "workbench",
+    "terminal colors",
+    "auto theme",
     "customizable"
   ],
   "icon": "media/icon.png",
@@ -439,6 +448,8 @@
           "everforestComplete.autoSwitch.schedule": {
             "type": "array",
             "scope": "application",
+            "minItems": 2,
+            "maxItems": 2,
             "order": 20,
             "default": [
               {
@@ -473,37 +484,76 @@
                   "description": "Theme activated at this time."
                 }
               }
-            }
+            },
+            "allOf": [
+              {
+                "contains": {
+                  "required": [
+                    "theme"
+                  ],
+                  "properties": {
+                    "theme": {
+                      "const": "Everforest Complete Light"
+                    }
+                  }
+                }
+              },
+              {
+                "contains": {
+                  "required": [
+                    "theme"
+                  ],
+                  "properties": {
+                    "theme": {
+                      "const": "Everforest Complete Dark"
+                    }
+                  }
+                }
+              }
+            ]
           }
         }
       }
     ]
   },
   "files": [
-    "themes/*.json",
-    "dist/configuration.js",
+    "CHANGELOG.md",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "SUPPORT.md",
     "dist/configuration-ui.js",
-    "dist/extension.js",
+    "dist/configuration.js",
     "dist/extension-web.js",
+    "dist/extension.js",
     "dist/palette/index.js",
     "dist/schedule-controller.js",
     "dist/schedule.js",
     "dist/semantic.js",
     "dist/syntax/default.js",
-    "dist/theme.js",
+    "dist/theme-file-lock.js",
+    "dist/theme-file-transaction.js",
     "dist/theme-regeneration.js",
+    "dist/theme.js",
     "dist/workbench/colors.js",
     "dist/workbench/documented-workbench-colors.json",
     "media/icon.png",
+    "media/previews/everforest-complete-automation.webp",
+    "media/previews/everforest-complete-customization.webp",
     "media/previews/everforest-complete-light-dark.webp",
     "media/previews/everforest-complete-workbench.webp",
-    "media/previews/everforest-complete-customization.webp",
-    "media/walkthrough/*.svg",
-    "README.md",
-    "CHANGELOG.md",
-    "SUPPORT.md",
-    "LICENSE",
-    "NOTICE"
+    "media/walkthrough/automate-appearance.svg",
+    "media/walkthrough/choose-theme.svg",
+    "media/walkthrough/configure-feel.svg",
+    "package.json",
+    "themes/everforest-complete-dark-color-theme.json",
+    "themes/everforest-complete-dark-hard-color-theme.json",
+    "themes/everforest-complete-dark-medium-color-theme.json",
+    "themes/everforest-complete-dark-soft-color-theme.json",
+    "themes/everforest-complete-light-color-theme.json",
+    "themes/everforest-complete-light-hard-color-theme.json",
+    "themes/everforest-complete-light-medium-color-theme.json",
+    "themes/everforest-complete-light-soft-color-theme.json"
   ],
   "scripts": {
     "clean": "node scripts/clean.mjs",
@@ -513,7 +563,7 @@
     "validate": "node scripts/validate-themes.mjs",
     "check:format": "prettier --check .",
     "test:unit": "npm run compile && npm run test:unit:compiled",
-    "test:unit:compiled": "node --test --experimental-test-coverage --test-coverage-include=dist/**/*.js --test-coverage-include=scripts/color-contrast.mjs --test-coverage-include=scripts/documented-workbench-color-contract.mjs --test-coverage-include=scripts/workbench-interaction-contract.mjs --test-coverage-lines=95 --test-coverage-branches=95 --test-coverage-functions=95 test/unit/*.test.mjs",
+    "test:unit:compiled": "node --test --experimental-test-coverage --test-coverage-include=dist/**/*.js --test-coverage-exclude=dist/extension.js --test-coverage-include=scripts/color-contrast.mjs --test-coverage-include=scripts/documented-workbench-color-contract.mjs --test-coverage-include=scripts/workbench-interaction-contract.mjs --test-coverage-lines=95 --test-coverage-branches=95 --test-coverage-functions=95 test/unit/*.test.mjs",
     "test:performance": "npm run compile && npm run test:performance:compiled",
     "test:performance:compiled": "node --test test/performance/*.test.mjs",
     "test:release-package": "node --test test/release-package.test.mjs",
@@ -525,7 +575,7 @@
     "verify:local": "./scripts/verify-local.sh",
     "verify:local:report": "./scripts/verify-local.sh --report-status",
     "vscode:prepublish": "npm run verify:static",
-    "package:vsix": "vsce package --no-dependencies --out dist/everforest-complete.vsix",
+    "package:vsix": "vsce package --no-dependencies --out dist/everforest-complete.vsix && node scripts/package-checksum.mjs dist/everforest-complete.vsix",
     "package:verify": "node scripts/validate-package-contents.mjs",
     "release": "release-it --ci"
   },
@@ -537,6 +587,7 @@
     "@vscode/vsce": "^3.9.2",
     "conventional-changelog-conventionalcommits": "10.4.0",
     "conventional-recommended-bump": "12.1.0",
+    "js-yaml": "4.3.1",
     "jszip": "^3.10.1",
     "pngjs": "^7.0.0",
     "prettier": "^3.9.6",

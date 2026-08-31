@@ -34,6 +34,12 @@
           "#fffbef"
         ]
       },
+      "light-text": {
+        "role": "text",
+        "displayName": "Light Text",
+        "canonical": "#59646c",
+        "tonalRamp": ["#2d353b", "#59646c", "#5c6a72"]
+      },
       "dark-green": {
         "role": "primary",
         "displayName": "Canopy Green",
@@ -89,7 +95,7 @@
       "Restrained forest neutrals with semantic accent color.",
       "Tonal depth before shadow.",
       "Complete interaction-state coverage.",
-      "Stable presets plus configurable themes."
+      "Eight shipped themes: six fixed Soft, Medium, and Hard presets plus two configurable Light and Dark themes."
     ],
     "rules": [
       {
@@ -110,7 +116,7 @@
     ],
     "dos": [
       "Do compile every theme through src/theme.ts.",
-      "Do preserve the six fixed theme labels and paths during upgrades.",
+      "Do preserve all eight shipped theme labels and paths during upgrades.",
       "Do keep premium controls application-scoped, local, and reversible."
     ],
     "donts": [

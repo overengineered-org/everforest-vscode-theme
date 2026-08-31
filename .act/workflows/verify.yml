@@ -10,6 +10,9 @@ jobs:
   linux-validation:
     name: Linux, CodeQL, and package validation
     runs-on: ubuntu-latest
+    container:
+      options: >-
+        -v=everforest-codeql-cache:/opt/codeql-cache -v=/github/workspace/node_modules
     timeout-minutes: 45
     steps:
       - name: Set up Node.js

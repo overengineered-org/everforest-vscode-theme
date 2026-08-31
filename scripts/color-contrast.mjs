@@ -1,4 +1,7 @@
 function rgbaChannelsFromHexColor(hexColor) {
+  if (typeof hexColor !== "string") {
+    throw new Error(`Invalid color: ${String(hexColor)}`);
+  }
   const hexColorMatch = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(hexColor);
   if (!hexColorMatch) throw new Error(`Invalid color: ${hexColor}`);
   const rgbHexadecimalDigits = hexColorMatch[1];
@@ -8,6 +11,12 @@ function rgbaChannelsFromHexColor(hexColor) {
       Number.parseInt(rgbHexadecimalDigits.slice(channelOffset, channelOffset + 2), 16)
     ),
   };
+}
+
+function opaqueHexColor(hexColor, surfaceColor) {
+  const colorChannels = rgbaChannelsFromHexColor(hexColor);
+  if (colorChannels.alpha === 1) return hexColor.slice(0, 7);
+  return compositeHexColor(hexColor, surfaceColor);
 }
 
 function relativeLuminance(hexColor) {
@@ -40,12 +49,17 @@ export function compositeHexColor(overlayColor, surfaceColor) {
 }
 
 export function contrastRatio(foregroundColor, backgroundColor) {
+  const backgroundChannels = rgbaChannelsFromHexColor(backgroundColor);
+  if (backgroundChannels.alpha !== 1) {
+    throw new Error(`Background color must be opaque: ${backgroundColor}`);
+  }
+  const compositedForegroundColor = opaqueHexColor(foregroundColor, backgroundColor);
   const lighterLuminance = Math.max(
-    relativeLuminance(foregroundColor),
+    relativeLuminance(compositedForegroundColor),
     relativeLuminance(backgroundColor)
   );
   const darkerLuminance = Math.min(
-    relativeLuminance(foregroundColor),
+    relativeLuminance(compositedForegroundColor),
     relativeLuminance(backgroundColor)
   );
   return (lighterLuminance + 0.05) / (darkerLuminance + 0.05);

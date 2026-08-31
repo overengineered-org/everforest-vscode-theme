@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import test from "node:test";
 import themeManifest from "../support/theme-manifest.cjs";
+import { expectedPackagedFiles } from "../../scripts/package-contract.mjs";
 
 const repositoryDirectory = resolve(import.meta.dirname, "../..");
 const extensionManifest = JSON.parse(
@@ -24,9 +25,49 @@ const marketplaceItemUrl =
 const marketplaceVersionBadgeImageUrl =
   "https://vsmarketplacebadges.dev/version/overengineered-org.everforest-complete.svg?subject=Marketplace";
 const marketplaceImagePaths = [
+  "media/previews/everforest-complete-automation.webp",
   "media/previews/everforest-complete-light-dark.webp",
   "media/previews/everforest-complete-workbench.webp",
   "media/previews/everforest-complete-customization.webp",
+];
+const criticalPackagedFilesOracle = [
+  "CHANGELOG.md",
+  "LICENSE",
+  "NOTICE",
+  "README.md",
+  "SUPPORT.md",
+  "dist/configuration-ui.js",
+  "dist/configuration.js",
+  "dist/extension-web.js",
+  "dist/extension.js",
+  "dist/palette/index.js",
+  "dist/schedule-controller.js",
+  "dist/schedule.js",
+  "dist/semantic.js",
+  "dist/syntax/default.js",
+  "dist/theme-file-lock.js",
+  "dist/theme-file-transaction.js",
+  "dist/theme-regeneration.js",
+  "dist/theme.js",
+  "dist/workbench/colors.js",
+  "dist/workbench/documented-workbench-colors.json",
+  "media/icon.png",
+  "media/previews/everforest-complete-automation.webp",
+  "media/previews/everforest-complete-customization.webp",
+  "media/previews/everforest-complete-light-dark.webp",
+  "media/previews/everforest-complete-workbench.webp",
+  "media/walkthrough/automate-appearance.svg",
+  "media/walkthrough/choose-theme.svg",
+  "media/walkthrough/configure-feel.svg",
+  "package.json",
+  "themes/everforest-complete-dark-color-theme.json",
+  "themes/everforest-complete-dark-hard-color-theme.json",
+  "themes/everforest-complete-dark-medium-color-theme.json",
+  "themes/everforest-complete-dark-soft-color-theme.json",
+  "themes/everforest-complete-light-color-theme.json",
+  "themes/everforest-complete-light-hard-color-theme.json",
+  "themes/everforest-complete-light-medium-color-theme.json",
+  "themes/everforest-complete-light-soft-color-theme.json",
 ];
 
 function readMarketplaceImageDimensions(marketplaceImagePath) {
@@ -42,20 +83,40 @@ function readMarketplaceImageDimensions(marketplaceImagePath) {
 }
 
 test("requires VS Code 1.95 and preserves presets beside configurable themes", () => {
+  assert.equal(readFileSync(resolve(repositoryDirectory, ".node-version"), "utf8"), "24.14.0\n");
+  assert.equal(extensionManifest.packageManager, "npm@11.9.0");
   assert.equal(extensionManifest.engines.vscode, "^1.95.0");
   assert.equal(integrationHarnessManifest.engines.vscode, "^1.95.0");
+  assert.equal(extensionManifest.contributes.themes.length, 8);
   assert.deepEqual(extensionManifest.contributes.themes, expectedThemeContributions);
 });
 
-test("uses truthful premium imagery for Marketplace discovery", () => {
+test("uses accurate Marketplace discovery metadata", () => {
+  assert.match(
+    extensionManifest.description,
+    /eight everforest themes.*six fixed presets.*two configurable themes.*accessible syntax.*14 app-wide controls.*automatic light\/dark switching/i
+  );
   assert.deepEqual(extensionManifest.keywords, [
     "everforest",
+    "vscode",
+    "vscode theme",
+    "visual studio code",
     "color theme",
     "dark theme",
     "light theme",
-    "contrast",
+    "editor theme",
+    "syntax highlighting",
+    "accessibility",
+    "workbench",
+    "terminal colors",
+    "auto theme",
     "customizable",
   ]);
+  assert.equal(new Set(extensionManifest.keywords).size, extensionManifest.keywords.length);
+  assert.doesNotMatch(
+    extensionManifest.keywords.join(" "),
+    /\b(?:atom|dracula|monokai|sublime|textmate)\b/i
+  );
   assert.ok(
     readme.includes(
       `[Install Everforest Complete from the Visual Studio Marketplace](${marketplaceItemUrl})`
@@ -88,32 +149,6 @@ test("ships one local-only premium runtime with a minimal package allowlist", ()
   assert.deepEqual(extensionManifest.activationEvents, ["onStartupFinished"]);
   assert.deepEqual(extensionManifest.extensionKind, ["ui"]);
   assert.equal(extensionManifest.dependencies, undefined);
-  assert.deepEqual(extensionManifest.files, [
-    "themes/*.json",
-    "dist/configuration.js",
-    "dist/configuration-ui.js",
-    "dist/extension.js",
-    "dist/extension-web.js",
-    "dist/palette/index.js",
-    "dist/schedule-controller.js",
-    "dist/schedule.js",
-    "dist/semantic.js",
-    "dist/syntax/default.js",
-    "dist/theme.js",
-    "dist/theme-regeneration.js",
-    "dist/workbench/colors.js",
-    "dist/workbench/documented-workbench-colors.json",
-    "media/icon.png",
-    "media/previews/everforest-complete-light-dark.webp",
-    "media/previews/everforest-complete-workbench.webp",
-    "media/previews/everforest-complete-customization.webp",
-    "media/walkthrough/*.svg",
-    "README.md",
-    "CHANGELOG.md",
-    "SUPPORT.md",
-    "LICENSE",
-    "NOTICE",
-  ]);
   assert.deepEqual(extensionManifest.capabilities, {
     untrustedWorkspaces: { supported: true },
     virtualWorkspaces: true,
@@ -135,10 +170,34 @@ test("ships one local-only premium runtime with a minimal package allowlist", ()
   );
 });
 
+test("keeps package.json files aligned with the exact release contract", () => {
+  assert.deepEqual(extensionManifest.files, expectedPackagedFiles);
+});
+
+test("keeps critical runtime and Marketplace assets in the release contract", () => {
+  assert.equal(
+    new Set(criticalPackagedFilesOracle).size,
+    criticalPackagedFilesOracle.length,
+    "critical package oracle must not contain duplicate paths"
+  );
+  for (const criticalPackagedFile of criticalPackagedFilesOracle) {
+    assert.ok(
+      expectedPackagedFiles.includes(criticalPackagedFile),
+      `shared release contract omits critical file ${criticalPackagedFile}`
+    );
+  }
+});
+
 test("onboards through one completion-aware native walkthrough", () => {
   const [premiumWalkthrough] = extensionManifest.contributes.walkthroughs;
   assert.equal(premiumWalkthrough.id, "everforestComplete.gettingStarted");
   assert.equal(premiumWalkthrough.when, "!isWeb");
+  assert.match(readme, /## VS Code Desktop/);
+  assert.match(readme, /## Browser-hosted VS Code/);
+  assert.match(
+    readme,
+    /browser fallback does not regenerate theme files or run automatic scheduling/i
+  );
   assert.match(premiumWalkthrough.description, /under two minutes/i);
   assert.deepEqual(
     premiumWalkthrough.steps.map(({ id }) => id),
@@ -162,11 +221,16 @@ test("onboards through one completion-aware native walkthrough", () => {
       existsSync(resolve(repositoryDirectory, walkthroughStep.media.image)),
       walkthroughStep.media.image
     );
-    assert.ok(extensionManifest.files.includes("media/walkthrough/*.svg"));
+    assert.ok(extensionManifest.files.includes(walkthroughStep.media.image));
   }
 });
 
 test("groups and orders every advanced setting with human labels", () => {
+  assert.equal(Object.keys(premiumSettings).length, 14);
+  assert.equal(
+    Object.values(premiumSettings).filter(({ scope }) => scope === "application").length,
+    14
+  );
   assert.deepEqual(
     premiumConfigurationCategories.map(({ title, order }) => ({ title, order })),
     [
@@ -197,6 +261,14 @@ test("groups and orders every advanced setting with human labels", () => {
 });
 
 test("preserves the proven premium configuration defaults behind native commands", () => {
+  const defaultSchedule = premiumSettings["everforestComplete.autoSwitch.schedule"];
+  assert.equal(defaultSchedule.minItems, 2);
+  assert.equal(defaultSchedule.maxItems, 2);
+  assert.equal(defaultSchedule.default.length, 2);
+  assert.deepEqual(defaultSchedule.default.map(({ theme }) => theme).sort(), [
+    "Everforest Complete Dark",
+    "Everforest Complete Light",
+  ]);
   assert.deepEqual(
     Object.fromEntries(
       Object.entries(premiumSettings).map(([configurationKey, configurationSchema]) => [

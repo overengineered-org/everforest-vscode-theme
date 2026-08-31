@@ -47,6 +47,7 @@ export function getSemantic(palette: Palette) {
     "macro:rust": palette.aqua,
     "namespace:rust": palette.purple,
     "selfKeyword:rust": palette.purple,
+    "selfTypeKeyword:rust": palette.purple,
     // }}}
   };
 }

@@ -17,6 +17,9 @@ test("uses the WCAG contrast ratio and rejects invalid theme colors", () => {
   assert.doesNotThrow(() => validateHexColor("#a7c080"));
   assert.doesNotThrow(() => validateHexColor("#a7c08080"));
   assert.throws(() => validateHexColor("#fff"), /Invalid color/);
+  assert.throws(() => validateHexColor(["#a7c080"]), /Invalid color/);
+  assert.throws(() => validateHexColor({ toString: () => "#a7c080" }), /Invalid color/);
+  assert.throws(() => validateHexColor(Symbol("color")), /Invalid color/);
   assert.throws(() => contrastRatio("transparent", "#ffffff"), /Invalid color/);
   assert.equal(compositeHexColor("#00000080", "#ffffff"), "#7f7f7f");
   assert.equal(compositeHexColor("#a7c080", "#ffffff"), "#a7c080");

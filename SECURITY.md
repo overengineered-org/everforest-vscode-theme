@@ -1,10 +1,16 @@
 # Security
 
-Report vulnerabilities through
-[GitHub Security Advisories](https://github.com/overengineered-org/everforest-vscode-theme/security/advisories/new).
+Report a suspected vulnerability through the repository's private
+[GitHub Security Advisory](https://github.com/overengineered-org/everforest-vscode-theme/security/advisories/new)
+intake. This is the only verified private reporting channel and is for security vulnerabilities, not
+general support or conduct concerns.
 
-1. Describe the impact.
-2. Add the smallest reproduction.
-3. Remove secrets, tokens, private repositories, and account information.
+Include:
 
-Do not open a public issue for a vulnerability.
+1. Impact and affected versions.
+2. The smallest reproduction.
+3. Sanitised logs or screenshots, with secrets, tokens, private repositories, and account
+   information removed.
+
+Do not open a public issue for a vulnerability. For non-security problems, use the
+[support issue form](https://github.com/overengineered-org/everforest-vscode-theme/issues/new/choose).
