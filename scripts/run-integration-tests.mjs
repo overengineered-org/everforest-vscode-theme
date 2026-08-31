@@ -262,6 +262,10 @@ export function prepareWindowsShellInvocation(command, commandArguments, environ
   };
 }
 
+export function buildWindowsCommandShellArguments(commandLine) {
+  return ["/d", "/s", "/c", `"${commandLine}"`];
+}
+
 function spawnTrackedCommand(command, commandArguments, spawnOptions = {}) {
   if (process.platform === "win32" && /\.(?:cmd|bat)$/i.test(command)) {
     const windowsShellInvocation = prepareWindowsShellInvocation(
@@ -271,7 +275,7 @@ function spawnTrackedCommand(command, commandArguments, spawnOptions = {}) {
     );
     return spawn(
       process.env.ComSpec ?? "cmd.exe",
-      ["/d", "/s", "/c", windowsShellInvocation.commandLine],
+      buildWindowsCommandShellArguments(windowsShellInvocation.commandLine),
       {
         ...spawnOptions,
         env: windowsShellInvocation.environment,

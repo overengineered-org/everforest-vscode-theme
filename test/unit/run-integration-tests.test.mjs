@@ -16,6 +16,7 @@ import test from "node:test";
 import JSZip from "jszip";
 import {
   assertInstalledExtensionIdentity,
+  buildWindowsCommandShellArguments,
   buildExtensionHostArguments,
   createBoundedOutputCollector,
   createImmutablePackagedExtensionSnapshot,
@@ -137,6 +138,12 @@ test("keeps extension-host paths as single arguments and quotes Windows paths", 
     '"C:\\Users\\QA User\\App Data\\everforest.vsix"'
   );
   assert.match(integrationRunnerSource, /windowsVerbatimArguments: true/);
+  assert.deepEqual(
+    buildWindowsCommandShellArguments(
+      '"C:\\Program Files\\Microsoft VS Code\\bin\\code.cmd" "--version"'
+    ),
+    ["/d", "/s", "/c", '""C:\\Program Files\\Microsoft VS Code\\bin\\code.cmd" "--version""']
+  );
 });
 
 test("caps retained and mirrored child output with a UTF-8-safe marker", () => {
