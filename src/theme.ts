@@ -1,5 +1,5 @@
 import { Palette, ThemeAppearance, ThemePreferences } from "./interface";
-import { getPalette } from "./palette";
+import { getPalette, getReadableTextPalette } from "./palette";
 import { getSemantic } from "./semantic";
 import { getDefaultSyntax } from "./syntax/default";
 import { createWorkbenchColors } from "./workbench/colors";
@@ -54,6 +54,7 @@ function createSemanticTokenColors(
     parameter: palette.fg,
     variable: palette.fg,
     property: palette.fg,
+    member: palette.fg,
     enumMember: palette.purple,
     event: palette.purple,
     function: palette.green,
@@ -64,6 +65,7 @@ function createSemanticTokenColors(
       foreground: palette.red,
       fontStyle: themePreferences.italicKeywords ? "italic" : "",
     },
+    modifier: palette.red,
     comment: {
       foreground: palette.grey1,
       fontStyle: themePreferences.italicComments ? "italic" : "",
@@ -93,16 +95,17 @@ export function createTheme(
   themePreferences: ThemePreferences,
   themeName = configurableThemeName(themePreferences.appearance)
 ): GeneratedTheme {
-  const palette = getPalette(themePreferences.appearance, themePreferences.contrast);
+  const rawPalette = getPalette(themePreferences.appearance, themePreferences.contrast);
+  const readableTextPalette = getReadableTextPalette(themePreferences.appearance, rawPalette);
 
   return {
     $schema: "vscode://schemas/color-theme",
     name: themeName,
     type: themePreferences.appearance,
     semanticHighlighting: true,
-    semanticTokenColors: createSemanticTokenColors(palette, themePreferences),
-    colors: createWorkbenchColors(palette, themePreferences),
-    tokenColors: getDefaultSyntax(palette, themePreferences),
+    semanticTokenColors: createSemanticTokenColors(readableTextPalette, themePreferences),
+    colors: createWorkbenchColors(rawPalette, themePreferences),
+    tokenColors: getDefaultSyntax(readableTextPalette, themePreferences),
   };
 }
 

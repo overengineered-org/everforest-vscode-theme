@@ -8,7 +8,7 @@ colors:
   dark-border: "#475258"
   light-canvas: "#fdf6e3"
   light-panel: "#f4f0d9"
-  light-text: "#5c6a72"
+  light-text: "#59646c"
   light-border: "#e6e2cc"
   dark-red: "#e67e80"
   dark-orange: "#e69875"
@@ -51,32 +51,29 @@ Premium quality comes from completeness, restraint, and exact interaction-state 
 - Restrained forest neutrals with semantic accent color.
 - Tonal depth before shadow.
 - Complete default, hover, focus, active, disabled, error, warning, and success states.
-- Stable Soft, Medium, and Hard presets plus configurable Light and Dark themes.
+- Eight shipped theme contributions: six fixed Soft, Medium, and Hard presets plus two configurable
+  Light and Dark themes.
 
 ## Colors
 
 The palette uses muted forest neutrals for sustained focus and keeps saturated color functional.
 
-### Primary
+### Semantic roles
 
-- **Canopy Green:** the primary action, progress, success, and active-indicator role.
-- **Forest Canvas:** the default editor surface; panels move one tonal step away.
-
-### Secondary
-
-- **Rainwashed Aqua:** links, information, remote state, and secondary active indicators.
-- **Moss Blue:** types, references, changed state, and structural information.
-
-### Tertiary
-
-- **Ember Red:** errors, deletion, and destructive state only.
-- **Amber Yellow:** warnings, attention, and numeric emphasis.
-- **Wildflower Purple:** enums, special values, and distinct tertiary state.
+- **Canopy Green:** primary actions, links, progress, active indicators, and success/added/passed
+  states.
+- **Moss Blue:** informational, modified, and remote states; references, variables, and SCM
+  structure.
+- **Rainwashed Aqua:** secondary Git, debugger, testing, and extension accents.
+- **Ember Red:** errors, failed, deleted/removed, invalid, and destructive states.
+- **Amber Yellow:** warnings, conflicts, untracked and attention states, plus numeric emphasis.
+- **Wildflower Purple:** enums, special values, and distinct tertiary states.
 
 ### Neutral
 
+- **Forest Canvas:** the default editor surface; panels move one tonal step away.
 - **Dark Text:** warm, low-glare foreground on Dark surfaces.
-- **Light Text:** cool forest-grey foreground on Light surfaces.
+- **Light Text:** `#59646c`, the readable cool forest-grey foreground on Light surfaces.
 - **Structural Borders:** visible only where hierarchy, focus, or accessibility requires them.
 
 ### Named Rules
@@ -143,9 +140,16 @@ Everforest Complete styles native VS Code components. It does not invent custom 
 
 - First install uses one three-step native walkthrough.
 - Primary configuration asks Appearance, Contrast, then Workbench.
+- The 14 settings are application-scoped and grouped as Appearance, Editor, Accessibility, and
+  Automation.
 - Advanced changes remain staged until Apply; Escape changes nothing.
-- Automatic Light/Dark coordinates system and schedule modes instead of exposing JSON.
-- A completed configuration flow regenerates once and offers at most one reload.
+- Automatic Light/Dark coordinates system and schedule modes through global extension settings and
+  native `window.autoDetectColorScheme`/`workbench` theme settings without requiring users to edit
+  JSON. A workspace or folder override blocks the global write until removed.
+- Guided configuration applies three choices; Advanced Controls apply staged changes. Each flow runs
+  one configurable-theme regeneration check and offers at most one reload when those files change.
+- Automatic Light/Dark is configured separately; its command changes switching mode and schedule
+  without regenerating theme files.
 
 **The Three-Step Rule.** Keep primary setup to three consequential choices. Move optional detail to
 Advanced Controls.
@@ -153,7 +157,8 @@ Advanced Controls.
 ### Diagnostics and Extensions
 
 - Diagnostic foregrounds remain readable at every supported background opacity.
-- GitLens, Error Lens, and GitHub Pull Requests use the same semantic vocabulary as VS Code.
+- Git and pull-request extensions use the same semantic vocabulary as VS Code where those extensions
+  contribute supported color keys.
 
 ## Do's and Don'ts
 
@@ -161,7 +166,7 @@ Advanced Controls.
 
 - **Do** compile every theme through `src/theme.ts`.
 - **Do** verify text at 4.5:1 and meaningful non-text states at 3:1 where applicable.
-- **Do** preserve the six fixed theme labels and paths during upgrades.
+- **Do** preserve all eight shipped theme labels and paths during upgrades.
 - **Do** keep premium controls application-scoped, local, and reversible.
 - **Do** explain user actions as numbered steps with an observable completion state.
 - **Do** use native Quick Picks, Input Boxes, Settings, and Walkthroughs.

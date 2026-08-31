@@ -1,3 +1,5 @@
+import { compositeHexColor } from "./color-contrast.mjs";
+
 function baseBackgroundIdentifierForHoverBackground(hoverBackgroundIdentifier, workbenchColors) {
   const baseBackgroundIdentifierCandidates = [
     hoverBackgroundIdentifier.replace(/\.hoverBackground$/, ".background"),
@@ -12,6 +14,25 @@ function baseBackgroundIdentifierForHoverBackground(hoverBackgroundIdentifier, w
   );
 }
 
+function alphaChannelFromHexColor(hexColor) {
+  const hexColorMatch = /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.exec(hexColor);
+  if (!hexColorMatch) return undefined;
+  return hexColorMatch[1] === undefined ? 255 : Number.parseInt(hexColorMatch[1], 16);
+}
+
+function renderedHoverBackgroundColor(hoverBackgroundColor, baseBackgroundColor) {
+  const hoverBackgroundAlphaChannel = alphaChannelFromHexColor(hoverBackgroundColor);
+  const baseBackgroundAlphaChannel = alphaChannelFromHexColor(baseBackgroundColor);
+  if (
+    hoverBackgroundAlphaChannel === undefined ||
+    hoverBackgroundAlphaChannel === 255 ||
+    baseBackgroundAlphaChannel !== 255
+  ) {
+    return hoverBackgroundColor;
+  }
+  return compositeHexColor(hoverBackgroundColor, baseBackgroundColor);
+}
+
 export function findIndistinguishableHoverBackgroundPairs(workbenchColors) {
   return Object.entries(workbenchColors).flatMap(
     ([hoverBackgroundIdentifier, hoverBackgroundColor]) => {
@@ -21,18 +42,22 @@ export function findIndistinguishableHoverBackgroundPairs(workbenchColors) {
         hoverBackgroundIdentifier,
         workbenchColors
       );
-      if (
-        !baseBackgroundIdentifier ||
-        workbenchColors[baseBackgroundIdentifier] !== hoverBackgroundColor
-      ) {
+      if (!baseBackgroundIdentifier) {
         return [];
       }
+      const baseBackgroundColor = workbenchColors[baseBackgroundIdentifier];
+      const renderedHoverBackground = renderedHoverBackgroundColor(
+        hoverBackgroundColor,
+        baseBackgroundColor
+      );
+      const renderedBaseBackground = baseBackgroundColor;
+      if (renderedBaseBackground !== renderedHoverBackground) return [];
 
       return [
         {
           baseBackgroundIdentifier,
           hoverBackgroundIdentifier,
-          sharedBackgroundColor: hoverBackgroundColor,
+          sharedBackgroundColor: renderedHoverBackground,
         },
       ];
     }

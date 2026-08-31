@@ -4,4 +4,4 @@
 --workflows=.act/workflows/verify.yml
 --bind
 --pull=false
---reuse
+--rm

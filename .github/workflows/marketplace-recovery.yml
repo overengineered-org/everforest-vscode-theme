@@ -1,0 +1,216 @@
+name: Marketplace recovery
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published GitHub Release tag to republish, for example v1.2.3
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: marketplace-production
+  cancel-in-progress: false
+
+jobs:
+  validate-source:
+    name: Validate immutable release source
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      source_commit: ${{ steps.validate-source.outputs.source_commit }}
+    permissions:
+      contents: read
+    steps:
+      - name: Validate tag and protected source history
+        id: validate-source
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "Invalid release tag: $RELEASE_TAG" >&2
+            exit 1
+          fi
+
+          resolve_remote_tag_commit_sha() {
+            local remote_tag_object_json remote_tag_object_type remote_tag_object_sha
+            local remote_tag_ref_json remote_tag_peel_depth=0
+            remote_tag_ref_json="$(gh api "repos/${GH_REPO}/git/ref/tags/${RELEASE_TAG}")"
+            remote_tag_object_type="$(jq -r '.object.type' <<<"$remote_tag_ref_json")"
+            remote_tag_object_sha="$(jq -r '.object.sha' <<<"$remote_tag_ref_json")"
+            while [[ "$remote_tag_object_type" == "tag" ]]; do
+              remote_tag_peel_depth=$((remote_tag_peel_depth + 1))
+              if (( remote_tag_peel_depth > 10 )); then
+                echo "${RELEASE_TAG} has too many nested annotated tags." >&2
+                return 1
+              fi
+              remote_tag_object_json="$(gh api "repos/${GH_REPO}/git/tags/${remote_tag_object_sha}")"
+              remote_tag_object_type="$(jq -r '.object.type' <<<"$remote_tag_object_json")"
+              remote_tag_object_sha="$(jq -r '.object.sha' <<<"$remote_tag_object_json")"
+            done
+            if [[ "$remote_tag_object_type" != "commit" ]] || \
+              [[ ! "$remote_tag_object_sha" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "${RELEASE_TAG} does not resolve to a commit." >&2
+              return 1
+            fi
+            printf '%s\n' "$remote_tag_object_sha"
+          }
+
+          source_commit_sha="$(resolve_remote_tag_commit_sha)"
+          main_branch_json="$(gh api "repos/${GH_REPO}/branches/main")"
+          main_branch_is_protected="$(jq -r '.protected' <<<"$main_branch_json")"
+          main_branch_commit_sha="$(jq -r '.commit.sha' <<<"$main_branch_json")"
+          if [[ "$main_branch_is_protected" != true ]] || [[ ! "$main_branch_commit_sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Protected main branch state could not be trusted." >&2
+            exit 1
+          fi
+          source_history_status="$(gh api "repos/${GH_REPO}/compare/${source_commit_sha}...main" --jq '.status')"
+          if [[ "$source_history_status" != "ahead" ]] && [[ "$source_history_status" != "identical" ]]; then
+            echo "${source_commit_sha} is not in current protected main history." >&2
+            exit 1
+          fi
+          echo "source_commit=$source_commit_sha" >> "$GITHUB_OUTPUT"
+
+  publish:
+    name: Recover Visual Studio Marketplace publication
+    needs: validate-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: marketplace-production
+    permissions:
+      contents: read
+    steps:
+      - name: Check out validated source commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          ref: ${{ needs.validate-source.outputs.source_commit }}
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          cache: npm
+          node-version: 24.14.0
+      - name: Install package verification dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Download and verify immutable GitHub Release assets
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          release_version="${RELEASE_TAG#v}"
+          release_package_name="everforest-complete-${release_version}.vsix"
+          release_checksum_name="${release_package_name}.sha256"
+          release_api_path="repos/${GH_REPO}/releases/tags/${RELEASE_TAG}"
+          release_json="$(gh api "$release_api_path")"
+          if ! jq -e --arg release_tag "$RELEASE_TAG" \
+            '.tag_name == $release_tag and .draft == false and .prerelease == false and .immutable == true and (.assets | length) == 2' \
+            <<<"$release_json" >/dev/null; then
+            echo "${RELEASE_TAG} is not an immutable two-asset published release." >&2
+            exit 1
+          fi
+          release_asset_names="$(jq -r '.assets[].name' <<<"$release_json")"
+          if ! grep -Fxq "$release_package_name" <<<"$release_asset_names" || \
+            ! grep -Fxq "$release_checksum_name" <<<"$release_asset_names"; then
+            echo "${RELEASE_TAG} does not contain the exact VSIX and checksum assets." >&2
+            exit 1
+          fi
+
+          mkdir -p dist
+          gh release download "$RELEASE_TAG" \
+            --dir dist \
+            --pattern "$release_package_name" \
+            --pattern "$release_checksum_name"
+          (cd dist && sha256sum --check "$release_checksum_name")
+          node scripts/verify-release-package.mjs "$release_version"
+      - name: Revalidate protected source before PAT publish
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SOURCE_COMMIT_SHA: ${{ needs.validate-source.outputs.source_commit }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          checked_out_source_commit_sha="$(git rev-parse HEAD)"
+          if [[ "$checked_out_source_commit_sha" != "$EXPECTED_SOURCE_COMMIT_SHA" ]]; then
+            echo "Checked out $checked_out_source_commit_sha, expected $EXPECTED_SOURCE_COMMIT_SHA." >&2
+            exit 1
+          fi
+          remote_tag_ref_json="$(gh api "repos/${GH_REPO}/git/ref/tags/${RELEASE_TAG}")"
+          remote_tag_object_type="$(jq -r '.object.type' <<<"$remote_tag_ref_json")"
+          remote_tag_object_sha="$(jq -r '.object.sha' <<<"$remote_tag_ref_json")"
+          remote_tag_peel_depth=0
+          while [[ "$remote_tag_object_type" == "tag" ]]; do
+            remote_tag_peel_depth=$((remote_tag_peel_depth + 1))
+            if (( remote_tag_peel_depth > 10 )); then
+              echo "${RELEASE_TAG} has too many nested annotated tags." >&2
+              exit 1
+            fi
+            remote_tag_object_json="$(gh api "repos/${GH_REPO}/git/tags/${remote_tag_object_sha}")"
+            remote_tag_object_type="$(jq -r '.object.type' <<<"$remote_tag_object_json")"
+            remote_tag_object_sha="$(jq -r '.object.sha' <<<"$remote_tag_object_json")"
+          done
+          if [[ "$remote_tag_object_type" != "commit" ]] || \
+            [[ "$remote_tag_object_sha" != "$EXPECTED_SOURCE_COMMIT_SHA" ]]; then
+            echo "${RELEASE_TAG} does not resolve to expected source ${EXPECTED_SOURCE_COMMIT_SHA}." >&2
+            exit 1
+          fi
+          main_branch_json="$(gh api "repos/${GH_REPO}/branches/main")"
+          if [[ "$(jq -r '.protected' <<<"$main_branch_json")" != true ]]; then
+            echo "Protected main branch state could not be trusted." >&2
+            exit 1
+          fi
+          source_history_status="$(gh api "repos/${GH_REPO}/compare/${EXPECTED_SOURCE_COMMIT_SHA}...main" --jq '.status')"
+          if [[ "$source_history_status" != "ahead" ]] && [[ "$source_history_status" != "identical" ]]; then
+            echo "${EXPECTED_SOURCE_COMMIT_SHA} is not in current protected main history." >&2
+            exit 1
+          fi
+      - name: Publish exact GitHub Release VSIX
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          set -euo pipefail
+          release_version="${RELEASE_TAG#v}"
+          npx --no-install vsce publish \
+            --packagePath "dist/everforest-complete-${release_version}.vsix" \
+            --skip-duplicate
+      - name: Read back published Marketplace package
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_SOURCE_COMMIT_SHA: ${{ needs.validate-source.outputs.source_commit }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          release_version="${RELEASE_TAG#v}"
+          remote_tag_ref_json="$(gh api "repos/${GH_REPO}/git/ref/tags/${RELEASE_TAG}")"
+          remote_tag_object_type="$(jq -r '.object.type' <<<"$remote_tag_ref_json")"
+          remote_tag_object_sha="$(jq -r '.object.sha' <<<"$remote_tag_ref_json")"
+          remote_tag_peel_depth=0
+          while [[ "$remote_tag_object_type" == "tag" ]]; do
+            remote_tag_peel_depth=$((remote_tag_peel_depth + 1))
+            if (( remote_tag_peel_depth > 10 )); then
+              echo "${RELEASE_TAG} has too many nested annotated tags." >&2
+              exit 1
+            fi
+            remote_tag_object_json="$(gh api "repos/${GH_REPO}/git/tags/${remote_tag_object_sha}")"
+            remote_tag_object_type="$(jq -r '.object.type' <<<"$remote_tag_object_json")"
+            remote_tag_object_sha="$(jq -r '.object.sha' <<<"$remote_tag_object_json")"
+          done
+          if [[ "$remote_tag_object_type" != "commit" ]] || \
+            [[ "$remote_tag_object_sha" != "$EXPECTED_SOURCE_COMMIT_SHA" ]]; then
+            echo "${RELEASE_TAG} does not resolve to expected source ${EXPECTED_SOURCE_COMMIT_SHA}." >&2
+            exit 1
+          fi
+          bash scripts/verify-marketplace-publication.sh \
+            "$release_version" \
+            "dist/everforest-complete-${release_version}.vsix"

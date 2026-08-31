@@ -6,6 +6,14 @@
 
 import { Palette, ThemeAppearance, ThemeContrast } from "../interface";
 
+export interface ReadableTextPalette extends Palette {
+  accentForeground: string;
+  invertedText: string;
+  strongBorder: string;
+  strongBorderOnAccent: string;
+  strongBorderOnSubsurface: string;
+}
+
 type PaletteBackground = Pick<
   Palette,
   "bg0" | "bg1" | "bg" | "bg2" | "bg3" | "bg4" | "bg5" | "grey0" | "grey1" | "grey2" | "shadow"
@@ -140,6 +148,49 @@ export function getPalette(appearance: ThemeAppearance, contrast: ThemeContrast)
   return {
     ...paletteBackgrounds[appearance][contrast],
     ...paletteForegrounds[appearance],
+  };
+}
+
+/**
+ * Stable foreground roles used wherever a colour carries readable text or a
+ * high-salience state. Surface and fill colours deliberately stay raw.
+ */
+export function getReadableTextPalette(
+  appearance: ThemeAppearance,
+  rawPalette: Palette
+): ReadableTextPalette {
+  if (appearance === "dark") {
+    return {
+      ...rawPalette,
+      fg: "#d3c6aa",
+      grey1: "#9ba89e",
+      grey2: "#9ba89e",
+      red: "#f8a0a0",
+      accentForeground: rawPalette.bg0,
+      invertedText: "#fdf6e3",
+      strongBorder: "#9ba89e",
+      strongBorderOnAccent: rawPalette.bg0,
+      strongBorderOnSubsurface: "#fdf6e3",
+    };
+  }
+
+  return {
+    ...rawPalette,
+    fg: "#59646c",
+    grey1: "#59646c",
+    grey2: "#59646c",
+    red: "#ad3d3d",
+    orange: "#984b00",
+    yellow: "#7e5200",
+    green: "#596600",
+    aqua: "#2f6a4d",
+    blue: "#2e5f94",
+    purple: "#8a4b7c",
+    accentForeground: "#2d353b",
+    invertedText: "#2d353b",
+    strongBorder: "#59646c",
+    strongBorderOnAccent: "#2d353b",
+    strongBorderOnSubsurface: "#2d353b",
   };
 }
 

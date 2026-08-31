@@ -1,7 +1,13 @@
 const assert = require("node:assert/strict");
+const { readdirSync } = require("node:fs");
 const { readFile } = require("node:fs/promises");
 const { join, resolve } = require("node:path");
 const vscode = require("vscode");
+const extensionPackageManifest = require("../../package.json");
+const {
+  findChangedThemeSourcePaths,
+  resolveExpectedInstalledExtensionVersion,
+} = require("../support/integration-contract.cjs");
 const {
   expectedThemeContributions,
   requiredSemanticTokenIdentifiers,
@@ -9,6 +15,14 @@ const {
 } = require("../support/theme-manifest.cjs");
 
 const extensionIdentifier = "overengineered-org.everforest-complete";
+const packagedExtensionDirectory = resolve(__dirname, "../../dist");
+const expectedInstalledExtensionVersion = resolveExpectedInstalledExtensionVersion({
+  packagedExtensionFileNames: readdirSync(packagedExtensionDirectory).filter((fileName) =>
+    fileName.endsWith(".vsix")
+  ),
+  sourcePackageVersion: extensionPackageManifest.version,
+  extensionPackageName: extensionPackageManifest.name,
+});
 const documentedWorkbenchColorContract = require(
   resolve(__dirname, "../../src/workbench/documented-workbench-colors.json")
 );
@@ -51,6 +65,61 @@ const commandManagedConfigurationKeys = [
   ["workbench", "preferredDarkColorTheme"],
   ["workbench", "preferredLightColorTheme"],
 ];
+const expectedPremiumConfigurationContracts = {
+  "everforestComplete.darkContrast": { scope: "application", default: "medium" },
+  "everforestComplete.lightContrast": { scope: "application", default: "medium" },
+  "everforestComplete.darkWorkbench": { scope: "application", default: "material" },
+  "everforestComplete.lightWorkbench": { scope: "application", default: "material" },
+  "everforestComplete.darkCursor": { scope: "application", default: "white" },
+  "everforestComplete.lightCursor": { scope: "application", default: "black" },
+  "everforestComplete.darkSelection": { scope: "application", default: "grey" },
+  "everforestComplete.lightSelection": { scope: "application", default: "grey" },
+  "everforestComplete.italicKeywords": { scope: "application", default: false },
+  "everforestComplete.italicComments": { scope: "application", default: true },
+  "everforestComplete.diagnosticTextBackgroundOpacity": {
+    scope: "application",
+    default: "0%",
+  },
+  "everforestComplete.highContrast": { scope: "application", default: false },
+  "everforestComplete.autoSwitch.enabled": { scope: "application", default: false },
+  "everforestComplete.autoSwitch.schedule": {
+    scope: "application",
+    default: [
+      { time: "07:00", theme: "Everforest Complete Light" },
+      { time: "19:00", theme: "Everforest Complete Dark" },
+    ],
+  },
+};
+const expectedSemanticWorkbenchStateColorsByThemeType = {
+  dark: {
+    "minimap.selectionOccurrenceHighlight": "#9ba89ed0",
+    "minimap.chatEditHighlight": "#a7c080c0",
+    "chart.line": "#7fbbb3",
+    "chart.axis": "#d3c6aa66",
+    "chart.guide": "#d3c6aa33",
+    "gitDecoration.renamedResourceForeground": "#83c092",
+    "debugView.valueChangedHighlight": "#7fbbb3",
+    "settings.modifiedItemIndicator": "#7fbbb3",
+    "commentsView.resolvedIcon": "#9ba89e",
+    "commentsView.unresolvedIcon": "#7fbbb3",
+    "editorCommentsWidget.resolvedBorder": "#9ba89e",
+    "editorCommentsWidget.unresolvedBorder": "#7fbbb3",
+  },
+  light: {
+    "minimap.selectionOccurrenceHighlight": "#59646cd0",
+    "minimap.chatEditHighlight": "#596600c0",
+    "chart.line": "#2e5f94",
+    "chart.axis": "#59646c99",
+    "chart.guide": "#59646c33",
+    "gitDecoration.renamedResourceForeground": "#2f6a4d",
+    "debugView.valueChangedHighlight": "#2e5f94",
+    "settings.modifiedItemIndicator": "#2e5f94",
+    "commentsView.resolvedIcon": "#59646c",
+    "commentsView.unresolvedIcon": "#2e5f94",
+    "editorCommentsWidget.resolvedBorder": "#59646c",
+    "editorCommentsWidget.unresolvedBorder": "#2e5f94",
+  },
+};
 const quickPickDisplayDelayMilliseconds = process.platform === "linux" ? 750 : 250;
 const configurationCommandTimeoutMilliseconds = 15_000;
 
@@ -103,13 +172,31 @@ async function completeConfigurationCommandAfterNotification(
 
 function serializeCommandManagedGlobalConfiguration() {
   return JSON.stringify(
-    commandManagedConfigurationKeys.map(([configurationSection, configurationKey]) => [
-      configurationSection,
-      configurationKey,
-      vscode.workspace.getConfiguration(configurationSection).inspect(configurationKey)
-        ?.globalValue,
-    ])
+    captureCommandManagedGlobalConfiguration().map(
+      ({ configurationSection, configurationKey, globalValue }) => [
+        configurationSection,
+        configurationKey,
+        globalValue,
+      ]
+    )
   );
+}
+
+function captureCommandManagedGlobalConfiguration() {
+  return commandManagedConfigurationKeys.map(([configurationSection, configurationKey]) => ({
+    configurationSection,
+    configurationKey,
+    globalValue: vscode.workspace.getConfiguration(configurationSection).inspect(configurationKey)
+      ?.globalValue,
+  }));
+}
+
+async function restoreCommandManagedGlobalConfiguration(configurationSnapshot) {
+  for (const { configurationSection, configurationKey, globalValue } of configurationSnapshot) {
+    await vscode.workspace
+      .getConfiguration(configurationSection)
+      .update(configurationKey, globalValue, vscode.ConfigurationTarget.Global);
+  }
 }
 
 async function validateNativeConfigurationCommandCancellation() {
@@ -195,6 +282,7 @@ async function validateSuccessfulNativeConfigurationCommands(extension) {
     vscode.workspace.getConfiguration("workbench").get("preferredLightColorTheme"),
     "Everforest Complete Light"
   );
+  // Disable automatic switching before the explicit preset activation pass.
   await vscode.workspace
     .getConfiguration("window")
     .update("autoDetectColorScheme", false, vscode.ConfigurationTarget.Global);
@@ -206,20 +294,124 @@ function registeredThemeExtension() {
   return extension;
 }
 
+function validateInstalledPremiumConfiguration(extension) {
+  const installedPremiumSettings = Object.assign(
+    {},
+    ...extension.packageJSON.contributes.configuration.map(
+      (configurationCategory) => configurationCategory.properties
+    )
+  );
+  const expectedPremiumSettingIdentifiers = Object.keys(expectedPremiumConfigurationContracts);
+  assert.equal(
+    expectedPremiumSettingIdentifiers.length,
+    14,
+    "The integration contract must cover all 14 premium settings"
+  );
+  assert.equal(
+    Object.keys(installedPremiumSettings).length,
+    expectedPremiumSettingIdentifiers.length,
+    "The installed VSIX must expose exactly 14 premium settings"
+  );
+  assert.deepEqual(
+    Object.keys(installedPremiumSettings).sort(),
+    [...expectedPremiumSettingIdentifiers].sort(),
+    "The installed VSIX must expose the expected premium setting identifiers"
+  );
+  for (const [premiumSettingIdentifier, expectedPremiumSettingContract] of Object.entries(
+    expectedPremiumConfigurationContracts
+  )) {
+    const installedPremiumSetting = installedPremiumSettings[premiumSettingIdentifier];
+    assert.equal(
+      installedPremiumSetting.scope,
+      expectedPremiumSettingContract.scope,
+      `${premiumSettingIdentifier} must remain application-scoped in the installed VSIX`
+    );
+    assert.deepEqual(
+      installedPremiumSetting.default,
+      expectedPremiumSettingContract.default,
+      `${premiumSettingIdentifier} must preserve its default in the installed VSIX`
+    );
+  }
+}
+
+async function captureInstalledThemeSources(extension) {
+  const themeSourcesByContributionPath = new Map();
+  for (const themeContribution of expectedThemeContributions) {
+    themeSourcesByContributionPath.set(
+      themeContribution.path,
+      await readFile(join(extension.extensionPath, themeContribution.path), "utf8")
+    );
+  }
+  return themeSourcesByContributionPath;
+}
+
+async function waitForInstalledThemeSources(extension, expectedThemeSourcesByContributionPath) {
+  const maximumThemeSourceReadAttempts = 40;
+  for (
+    let themeSourceReadAttempt = 0;
+    themeSourceReadAttempt < maximumThemeSourceReadAttempts;
+    themeSourceReadAttempt += 1
+  ) {
+    const currentThemeSourcesByContributionPath = await captureInstalledThemeSources(extension);
+    const changedThemeSourcePaths = findChangedThemeSourcePaths(
+      expectedThemeSourcesByContributionPath,
+      currentThemeSourcesByContributionPath
+    );
+    if (changedThemeSourcePaths.length === 0) return currentThemeSourcesByContributionPath;
+    await new Promise((resolveThemeSourceReadDelay) => setTimeout(resolveThemeSourceReadDelay, 50));
+  }
+  assert.deepEqual(
+    findChangedThemeSourcePaths(
+      expectedThemeSourcesByContributionPath,
+      await captureInstalledThemeSources(extension)
+    ),
+    [],
+    "Installed theme files must settle to the expected source state"
+  );
+}
+
+async function waitForGeneratedThemeColor(themePath, colorIdentifier, expectedColor) {
+  const maximumThemeReadAttempts = 40;
+  for (
+    let themeReadAttempt = 0;
+    themeReadAttempt < maximumThemeReadAttempts;
+    themeReadAttempt += 1
+  ) {
+    const generatedTheme = JSON.parse(await readFile(themePath, "utf8"));
+    if (generatedTheme.colors[colorIdentifier] === expectedColor) return generatedTheme;
+    await new Promise((resolveThemeReadDelay) => setTimeout(resolveThemeReadDelay, 50));
+  }
+  const generatedTheme = JSON.parse(await readFile(themePath, "utf8"));
+  assert.equal(
+    generatedTheme.colors[colorIdentifier],
+    expectedColor,
+    `Generated theme must apply ${colorIdentifier}`
+  );
+  return generatedTheme;
+}
+
 function waitForThemeActivation(expectedThemeKind, expectedThemeLabel) {
+  const hasExpectedActiveTheme = () =>
+    vscode.window.activeColorTheme.kind === expectedThemeKind &&
+    vscode.workspace.getConfiguration("workbench").get("colorTheme") === expectedThemeLabel;
+  if (hasExpectedActiveTheme()) return Promise.resolve();
+
   return new Promise((resolveActivation, rejectActivation) => {
     const activationTimeout = setTimeout(() => {
       themeChangeSubscription.dispose();
       rejectActivation(new Error(`Theme activation timed out: ${expectedThemeLabel}`));
     }, 2_000);
     const themeChangeSubscription = vscode.window.onDidChangeActiveColorTheme((activatedTheme) => {
-      const configuredTheme = vscode.workspace.getConfiguration("workbench").get("colorTheme");
-      if (activatedTheme.kind !== expectedThemeKind || configuredTheme !== expectedThemeLabel)
-        return;
+      if (activatedTheme.kind !== expectedThemeKind) return;
       clearTimeout(activationTimeout);
       themeChangeSubscription.dispose();
       resolveActivation();
     });
+    if (hasExpectedActiveTheme()) {
+      clearTimeout(activationTimeout);
+      themeChangeSubscription.dispose();
+      resolveActivation();
+    }
   });
 }
 
@@ -238,23 +430,52 @@ async function waitForConfiguredTheme(expectedThemeLabel) {
 
 async function validatePremiumThemeRegeneration(extension) {
   const premiumConfiguration = vscode.workspace.getConfiguration("everforestComplete");
-  await premiumConfiguration.update("darkCursor", "purple", vscode.ConfigurationTarget.Global);
+  const themeSourcesBeforeRegeneration = await captureInstalledThemeSources(extension);
+  const configurableDarkThemePath = "./themes/everforest-complete-dark-color-theme.json";
+  await premiumConfiguration.update("darkCursor", "red", vscode.ConfigurationTarget.Global);
   const darkThemePath = join(
     extension.extensionPath,
     "themes/everforest-complete-dark-color-theme.json"
   );
+  const regeneratedDarkTheme = await waitForGeneratedThemeColor(
+    darkThemePath,
+    "editorCursor.foreground",
+    "#f8a0a0"
+  );
+  assert.equal(regeneratedDarkTheme.colors["terminalCursor.foreground"], "#f8a0a0");
 
-  for (let attemptNumber = 0; attemptNumber < 40; attemptNumber += 1) {
-    const regeneratedDarkTheme = JSON.parse(await readFile(darkThemePath, "utf8"));
-    if (regeneratedDarkTheme.colors["editorCursor.foreground"] === "#d699b6") return;
-    await new Promise((resolveDelay) => setTimeout(resolveDelay, 50));
+  const themeSourcesAfterRegeneration = await captureInstalledThemeSources(extension);
+  assert.deepEqual(
+    findChangedThemeSourcePaths(themeSourcesBeforeRegeneration, themeSourcesAfterRegeneration),
+    [configurableDarkThemePath],
+    "Dynamic regeneration must change only the configurable Dark theme"
+  );
+  for (const themeContribution of expectedThemeContributions) {
+    if (themeContribution.path === configurableDarkThemePath) continue;
+    assert.equal(
+      themeSourcesAfterRegeneration.get(themeContribution.path),
+      themeSourcesBeforeRegeneration.get(themeContribution.path),
+      `${themeContribution.label} must remain stable during Dark regeneration`
+    );
   }
 
-  const regeneratedDarkTheme = JSON.parse(await readFile(darkThemePath, "utf8"));
+  const configurationBeforeManualRegeneration = serializeCommandManagedGlobalConfiguration();
+  const manualRegenerationCompletion = vscode.commands.executeCommand(
+    "everforestComplete.regenerateThemes"
+  );
+  await completeConfigurationCommandAfterNotification(
+    manualRegenerationCompletion,
+    "everforestComplete.regenerateThemes"
+  );
   assert.equal(
-    regeneratedDarkTheme.colors["editorCursor.foreground"],
-    "#d699b6",
-    "Configuration changes regenerate the installed Dark theme"
+    serializeCommandManagedGlobalConfiguration(),
+    configurationBeforeManualRegeneration,
+    "Manual theme regeneration must not change configuration"
+  );
+  assert.deepEqual(
+    await captureInstalledThemeSources(extension),
+    themeSourcesAfterRegeneration,
+    "Manual regeneration must not change the generated theme sources"
   );
 }
 
@@ -275,7 +496,6 @@ function validateNativeSystemThemePreferences() {
 async function openThemeDocumentAfterLanguageService(themePath) {
   const themeDocument = await vscode.workspace.openTextDocument(themePath);
   await vscode.commands.executeCommand("vscode.executeDocumentSymbolProvider", themeDocument.uri);
-  await new Promise((resolveDelay) => setTimeout(resolveDelay, 250));
   return themeDocument;
 }
 
@@ -379,21 +599,9 @@ function validateInstalledSourceControlGraphColors(theme, themeLabel, contrastRa
 }
 
 function validateInstalledSemanticWorkbenchStateColors(theme, themeLabel, contrastRatio) {
-  const expectedResolvedCommentIndicator = theme.type === "dark" ? "#9aa79d" : "#59646c";
-  const expectedInstalledSemanticWorkbenchStateColors = {
-    "minimap.selectionOccurrenceHighlight": theme.colors["editor.selectionHighlightBackground"],
-    "minimap.chatEditHighlight": theme.type === "dark" ? "#a7c08099" : "#59660080",
-    "chart.line": theme.colors["terminal.ansiBlue"],
-    "chart.axis": `${theme.colors["terminal.foreground"]}${theme.type === "dark" ? "66" : "99"}`,
-    "chart.guide": `${theme.colors["terminal.foreground"]}33`,
-    "gitDecoration.renamedResourceForeground": theme.colors["terminal.ansiCyan"],
-    "debugView.valueChangedHighlight": theme.colors["terminal.ansiBlue"],
-    "settings.modifiedItemIndicator": theme.colors["terminal.ansiBlue"],
-    "commentsView.resolvedIcon": expectedResolvedCommentIndicator,
-    "commentsView.unresolvedIcon": theme.colors["terminal.ansiBlue"],
-    "editorCommentsWidget.resolvedBorder": expectedResolvedCommentIndicator,
-    "editorCommentsWidget.unresolvedBorder": theme.colors["terminal.ansiBlue"],
-  };
+  const expectedInstalledSemanticWorkbenchStateColors =
+    expectedSemanticWorkbenchStateColorsByThemeType[theme.type];
+  assert.ok(expectedInstalledSemanticWorkbenchStateColors, `Unsupported theme type: ${theme.type}`);
 
   for (const [
     semanticWorkbenchColorIdentifier,
@@ -463,12 +671,13 @@ function validateInstalledSemanticWorkbenchStateColors(theme, themeLabel, contra
 
 function validateInstalledSelectionColors(theme, themeLabel, compositeHexColor, contrastRatio) {
   const selectionAccent = theme.type === "dark" ? "#859289" : "#939f91";
+  const readableSelectionBorder = theme.type === "dark" ? "#9ba89e" : "#59646c";
   const expectedSelectionColors = {
     "editor.selectionBackground": `${selectionAccent}${theme.type === "dark" ? "80" : "a0"}`,
     "editor.selectionForeground": theme.type === "dark" ? "#fdf6e3" : "#2d353b",
     "editor.inactiveSelectionBackground": `${selectionAccent}${theme.type === "dark" ? "40" : "60"}`,
     "editor.selectionHighlightBackground": `${selectionAccent}${theme.type === "dark" ? "20" : "30"}`,
-    "editor.selectionHighlightBorder": `${selectionAccent}80`,
+    "editor.selectionHighlightBorder": readableSelectionBorder,
   };
 
   for (const [selectionColorIdentifier, expectedSelectionColor] of Object.entries(
@@ -500,10 +709,16 @@ function validateInstalledSelectionColors(theme, themeLabel, compositeHexColor, 
     theme.colors["editor.selectionBackground"],
     `${themeLabel} editor and terminal active selections must match`
   );
-  assert.equal(
-    theme.colors["minimap.selectionHighlight"],
-    theme.colors["editor.selectionBackground"],
-    `${themeLabel} editor and minimap active selections must match`
+  assert.equal(theme.colors["minimap.selectionHighlight"], `${readableSelectionBorder}e0`);
+  assert.ok(
+    contrastRatio(
+      compositeHexColor(
+        theme.colors["minimap.selectionHighlight"],
+        theme.colors["editor.background"]
+      ),
+      theme.colors["editor.background"]
+    ) >= 3,
+    `${themeLabel} minimap selection must meet 3:1 contrast`
   );
   assert.equal(
     theme.colors["terminal.inactiveSelectionBackground"],
@@ -520,6 +735,7 @@ function validateInstalledSelectionColors(theme, themeLabel, compositeHexColor, 
 function validateInstalledDesktopWorkbenchColors(
   theme,
   themeLabel,
+  compositeHexColor,
   contrastRatio,
   findIndistinguishableHoverBackgroundPairs
 ) {
@@ -621,12 +837,34 @@ function validateInstalledDesktopWorkbenchColors(
     ["statusBarItem.warningHoverForeground", "statusBarItem.warningHoverBackground"],
     ["statusBarItem.prominentForeground", "statusBarItem.prominentBackground"],
   ]) {
+    const renderedStatusBackground = statusBackgroundIdentifier.includes("Hover")
+      ? compositeHexColor(
+          theme.colors[statusBackgroundIdentifier],
+          theme.colors[statusBackgroundIdentifier.replace("Hover", "")]
+        )
+      : theme.colors[statusBackgroundIdentifier];
     assert.ok(
-      contrastRatio(
-        theme.colors[statusForegroundIdentifier],
-        theme.colors[statusBackgroundIdentifier]
-      ) >= 4.5,
+      contrastRatio(theme.colors[statusForegroundIdentifier], renderedStatusBackground) >= 4.5,
       `${themeLabel} installed ${statusForegroundIdentifier} must meet 4.5:1 contrast against ${statusBackgroundIdentifier}`
+    );
+  }
+
+  for (const [hoverBackgroundIdentifier, baseBackgroundIdentifier] of [
+    ["button.hoverBackground", "button.background"],
+    ["statusBarItem.prominentHoverBackground", "statusBarItem.prominentBackground"],
+    ["statusBarItem.remoteHoverBackground", "statusBarItem.remoteBackground"],
+    ["statusBarItem.errorHoverBackground", "statusBarItem.errorBackground"],
+    ["statusBarItem.warningHoverBackground", "statusBarItem.warningBackground"],
+    ["extensionButton.hoverBackground", "extensionButton.background"],
+    ["extensionButton.prominentHoverBackground", "extensionButton.prominentBackground"],
+  ]) {
+    const renderedHoverBackground = compositeHexColor(
+      theme.colors[hoverBackgroundIdentifier],
+      theme.colors[baseBackgroundIdentifier]
+    );
+    assert.ok(
+      contrastRatio(renderedHoverBackground, theme.colors[baseBackgroundIdentifier]) >= 1.05,
+      `${themeLabel} installed ${hoverBackgroundIdentifier} must meet 1.05:1 rendered contrast against ${baseBackgroundIdentifier}`
     );
   }
 
@@ -635,6 +873,64 @@ function validateInstalledDesktopWorkbenchColors(
     [],
     `${themeLabel} must install visibly interactive hover backgrounds`
   );
+}
+
+async function restoreIntegrationState(
+  extension,
+  originalConfigurationSnapshot,
+  originalThemeSourcesByContributionPath
+) {
+  await restoreCommandManagedGlobalConfiguration(originalConfigurationSnapshot);
+
+  // A forced regeneration stores the matching fingerprint in extension global state and restores
+  // both configurable files from the restored settings. Fixed preset files remain untouched.
+  const regenerationCompletion = vscode.commands.executeCommand(
+    "everforestComplete.regenerateThemes"
+  );
+  await completeConfigurationCommandAfterNotification(
+    regenerationCompletion,
+    "everforestComplete.regenerateThemes cleanup"
+  );
+  assert.deepEqual(
+    captureCommandManagedGlobalConfiguration(),
+    originalConfigurationSnapshot,
+    "Integration cleanup must restore every managed global setting"
+  );
+  await waitForInstalledThemeSources(extension, originalThemeSourcesByContributionPath);
+}
+
+async function runWithIntegrationStateRestored(extension, integrationOperation) {
+  const originalConfigurationSnapshot = captureCommandManagedGlobalConfiguration();
+  const originalThemeSourcesByContributionPath = await captureInstalledThemeSources(extension);
+  let integrationOperationError;
+  const cleanupErrors = [];
+
+  try {
+    await integrationOperation();
+  } catch (operationError) {
+    integrationOperationError = operationError;
+  }
+
+  try {
+    await restoreIntegrationState(
+      extension,
+      originalConfigurationSnapshot,
+      originalThemeSourcesByContributionPath
+    );
+  } catch (cleanupError) {
+    cleanupErrors.push(cleanupError);
+  }
+
+  if (integrationOperationError && cleanupErrors.length > 0) {
+    throw new AggregateError(
+      [integrationOperationError, ...cleanupErrors],
+      "Integration validation and state cleanup failed"
+    );
+  }
+  if (integrationOperationError) throw integrationOperationError;
+  if (cleanupErrors.length > 0) {
+    throw new AggregateError(cleanupErrors, "Integration state cleanup failed");
+  }
 }
 
 async function run() {
@@ -650,11 +946,26 @@ async function run() {
     `Unexpected integration test mode: ${integrationTestMode}`
   );
   const extension = registeredThemeExtension();
-  assert.match(extension.extensionPath, /extensions/i, "Extension was loaded from clean install");
+  assert.match(
+    extension.extensionPath,
+    /[/\\]extensions[/\\]overengineered-org\.everforest-complete-[^/\\]+$/i,
+    "Extension was loaded from an installed VSIX directory"
+  );
+  assert.equal(
+    extension.packageJSON.version,
+    expectedInstalledExtensionVersion,
+    "Installed VSIX version must match the exact packaged artifact"
+  );
   assert.equal(extension.packageJSON.main, "./dist/extension.js");
   assert.equal(extension.packageJSON.browser, "./dist/extension-web.js");
   assert.deepEqual(extension.packageJSON.activationEvents, ["onStartupFinished"]);
   assert.deepEqual(extension.packageJSON.contributes.themes, expectedThemeContributions);
+  validateInstalledPremiumConfiguration(extension);
+  assert.equal(
+    extension.isActive,
+    true,
+    "Premium runtime is already active from onStartupFinished before manual activation"
+  );
   await extension.activate();
   assert.equal(extension.isActive, true, "Premium runtime activates in VS Code Desktop");
   const registeredCommandIdentifiers = new Set(await vscode.commands.getCommands(true));
@@ -769,6 +1080,7 @@ async function run() {
     validateInstalledDesktopWorkbenchColors(
       theme,
       themeContribution.label,
+      compositeHexColor,
       contrastRatio,
       findIndistinguishableHoverBackgroundPairs
     );
@@ -816,9 +1128,8 @@ async function run() {
     return;
   }
 
-  const workbenchConfiguration = vscode.workspace.getConfiguration("workbench");
-  const originalTheme = workbenchConfiguration.get("colorTheme");
-  try {
+  await runWithIntegrationStateRestored(extension, async () => {
+    const workbenchConfiguration = vscode.workspace.getConfiguration("workbench");
     await validateLanguageFixtures();
     await validateSuccessfulNativeConfigurationCommands(extension);
     await validatePremiumThemeRegeneration(extension);
@@ -836,13 +1147,7 @@ async function run() {
       await themeActivation;
       await waitForConfiguredTheme(themeContribution.label);
     }
-  } finally {
-    await workbenchConfiguration.update(
-      "colorTheme",
-      originalTheme,
-      vscode.ConfigurationTarget.Global
-    );
-  }
+  });
 
   console.log("Validated six presets and two configurable themes inside VS Code Extension Host.");
 }

@@ -1,13 +1,19 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { performance } from "node:perf_hooks";
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
 import test from "node:test";
-import { synchronizeThemeFiles } from "../../dist/theme-regeneration.js";
+import {
+  createThemeGenerationSnapshot,
+  synchronizeThemeFiles,
+} from "../../dist/theme-regeneration.js";
 import themeManifest from "../support/theme-manifest.cjs";
 
 const { expectedThemeContributions } = themeManifest;
+const expectedDocumentedWorkbenchColorCount = 910;
+const expectedGeneratedThemeColorCount = 937;
 const performanceSampleCount = 5;
 const themeParsingIterationsPerSample = 50;
 const minimumThemeParsingMebibytesPerSecond = 50;
@@ -16,7 +22,31 @@ const maximumAllGeneratedThemesBytes = 816 * 1_024;
 const maximumColdGenerationCheckMilliseconds =
   process.env.EVERFOREST_EMULATED_RUNNER === "1" ? 2_000 : 1_000;
 const currentFingerprintActivationIterations = 1_000;
-const maximumCurrentFingerprintActivationMilliseconds = 250;
+const currentThemeGenerationSnapshot = createThemeGenerationSnapshot(
+  "1.5.0",
+  {
+    appearance: "dark",
+    contrast: "medium",
+    workbenchStyle: "material",
+    cursorColor: "white",
+    selectionColor: "grey",
+    italicKeywords: false,
+    italicComments: true,
+    diagnosticTextBackgroundOpacity: "0%",
+    highContrast: false,
+  },
+  {
+    appearance: "light",
+    contrast: "medium",
+    workbenchStyle: "material",
+    cursorColor: "black",
+    selectionColor: "grey",
+    italicKeywords: false,
+    italicComments: true,
+    diagnosticTextBackgroundOpacity: "0%",
+    highContrast: false,
+  }
+);
 
 const generatedThemeArtifacts = expectedThemeContributions.map((themeContribution) => {
   const generatedThemePath = resolve(themeContribution.path.replace(/^\.\//, ""));
@@ -37,6 +67,14 @@ function median(measurements) {
 
 test("keeps shipped theme payloads lean and fast to parse", (testingContext) => {
   assert.equal(generatedThemeArtifacts.length, 8, "benchmark must cover every shipped theme");
+  const documentedWorkbenchColorContract = JSON.parse(
+    readFileSync(resolve("dist/workbench/documented-workbench-colors.json"), "utf8")
+  );
+  assert.equal(
+    documentedWorkbenchColorContract.identifiers.length,
+    expectedDocumentedWorkbenchColorCount,
+    `documented workbench contract must contain exactly ${expectedDocumentedWorkbenchColorCount} colors`
+  );
 
   const allGeneratedThemesBytes = generatedThemeArtifacts.reduce(
     (generatedThemeByteTotal, { generatedThemeBytes, generatedThemeJson, generatedThemePath }) => {
@@ -45,9 +83,10 @@ test("keeps shipped theme payloads lean and fast to parse", (testingContext) => 
         `${generatedThemePath} is ${generatedThemeBytes} bytes; maximum ${maximumGeneratedThemeBytes}`
       );
       const parsedGeneratedTheme = JSON.parse(generatedThemeJson);
-      assert.ok(
-        Object.keys(parsedGeneratedTheme.colors).length >= 900,
-        `${generatedThemePath} must contain a complete workbench color map`
+      assert.equal(
+        Object.keys(parsedGeneratedTheme.colors).length,
+        expectedGeneratedThemeColorCount,
+        `${generatedThemePath} must contain exactly ${expectedGeneratedThemeColorCount} colors`
       );
       return generatedThemeByteTotal + generatedThemeBytes;
     },
@@ -95,13 +134,44 @@ test("keeps shipped theme payloads lean and fast to parse", (testingContext) => 
 test("checks the complete production generator within a cold-start budget", (testingContext) => {
   const generationCheckDurationsMilliseconds = [];
   for (let sampleNumber = 0; sampleNumber < performanceSampleCount; sampleNumber += 1) {
-    const generationCheckStartedAt = performance.now();
-    const generationCheck = spawnSync(process.execPath, [resolve("dist/generate-themes.js")], {
-      encoding: "utf8",
-      env: { ...process.env, VERIFY_GENERATED_THEMES: "1" },
-    });
-    generationCheckDurationsMilliseconds.push(performance.now() - generationCheckStartedAt);
-    assert.equal(generationCheck.status, 0, generationCheck.stderr || generationCheck.stdout);
+    const themeGenerationSnapshotDirectory = mkdtempSync(
+      join(tmpdir(), "everforest-theme-generation-")
+    );
+    try {
+      const snapshotDistDirectory = join(themeGenerationSnapshotDirectory, "dist");
+      const snapshotThemesDirectory = join(themeGenerationSnapshotDirectory, "themes");
+      cpSync(resolve("dist"), snapshotDistDirectory, { recursive: true });
+      cpSync(resolve("themes"), snapshotThemesDirectory, { recursive: true });
+      for (const { generatedThemePath } of generatedThemeArtifacts) {
+        writeFileSync(
+          generatedThemePath.replace(resolve("themes"), snapshotThemesDirectory),
+          "stale\n"
+        );
+      }
+
+      const generationCheckStartedAt = performance.now();
+      const generationCheckEnvironment = { ...process.env };
+      delete generationCheckEnvironment.VERIFY_GENERATED_THEMES;
+      const generationCheck = spawnSync(
+        process.execPath,
+        [join(snapshotDistDirectory, "generate-themes.js")],
+        { encoding: "utf8", env: generationCheckEnvironment }
+      );
+      generationCheckDurationsMilliseconds.push(performance.now() - generationCheckStartedAt);
+      assert.equal(generationCheck.status, 0, generationCheck.stderr || generationCheck.stdout);
+      for (const { generatedThemeJson, generatedThemePath } of generatedThemeArtifacts) {
+        assert.equal(
+          readFileSync(
+            generatedThemePath.replace(resolve("themes"), snapshotThemesDirectory),
+            "utf8"
+          ),
+          generatedThemeJson,
+          `${generatedThemePath} must be regenerated by an unflagged write`
+        );
+      }
+    } finally {
+      rmSync(themeGenerationSnapshotDirectory, { force: true, recursive: true });
+    }
   }
 
   const slowestColdGenerationCheckMilliseconds = Math.max(...generationCheckDurationsMilliseconds);
@@ -114,8 +184,12 @@ test("checks the complete production generator within a cold-start budget", (tes
   );
 });
 
-test("keeps current-fingerprint activation disk-free and fast", async (testingContext) => {
+test("keeps repeated activation regeneration idempotent with lock recovery", async (testingContext) => {
   let regenerationCallCount = 0;
+  let storedFingerprintCallCount = 0;
+  let lockAcquireCallCount = 0;
+  let lockReleaseCallCount = 0;
+  let recoveryCallCount = 0;
   const activationFastPathStartedAt = performance.now();
 
   for (
@@ -124,25 +198,38 @@ test("keeps current-fingerprint activation disk-free and fast", async (testingCo
     activationNumber += 1
   ) {
     await synchronizeThemeFiles({
-      readCurrentFingerprint: () => "current",
-      readStoredFingerprint: () => "current",
+      isLifecycleActive: () => true,
+      async acquireThemeFileLock() {
+        lockAcquireCallCount += 1;
+        return {
+          ownerToken: "benchmark-lock-owner",
+          async release() {
+            lockReleaseCallCount += 1;
+          },
+        };
+      },
+      async recoverThemeFiles() {
+        recoveryCallCount += 1;
+      },
+      readCurrentSnapshot: () => currentThemeGenerationSnapshot,
+      readStoredFingerprint: () => currentThemeGenerationSnapshot.fingerprint,
       async regenerateThemeFiles() {
         regenerationCallCount += 1;
         return true;
       },
       async storeCurrentFingerprint() {
-        throw new Error("Current activation fingerprint must not be rewritten");
+        storedFingerprintCallCount += 1;
       },
     });
   }
 
   const activationFastPathDurationMilliseconds = performance.now() - activationFastPathStartedAt;
   assert.equal(regenerationCallCount, 0);
-  assert.ok(
-    activationFastPathDurationMilliseconds <= maximumCurrentFingerprintActivationMilliseconds,
-    `${currentFingerprintActivationIterations} current-fingerprint activations took ${activationFastPathDurationMilliseconds.toFixed(1)}ms; maximum ${maximumCurrentFingerprintActivationMilliseconds}ms`
-  );
+  assert.equal(storedFingerprintCallCount, 0);
+  assert.equal(lockAcquireCallCount, currentFingerprintActivationIterations);
+  assert.equal(lockReleaseCallCount, currentFingerprintActivationIterations);
+  assert.equal(recoveryCallCount, currentFingerprintActivationIterations);
   testingContext.diagnostic(
-    `${currentFingerprintActivationIterations} current-fingerprint activations: ${activationFastPathDurationMilliseconds.toFixed(1)}ms`
+    `${currentFingerprintActivationIterations} current-fingerprint activations: ${activationFastPathDurationMilliseconds.toFixed(1)}ms; lock/recovery calls: ${lockAcquireCallCount}/${recoveryCallCount}`
   );
 });

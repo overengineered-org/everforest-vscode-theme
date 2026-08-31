@@ -16,8 +16,22 @@ body:
     attributes:
       label: Theme variant
       options:
-        - Dark
-        - Light
+        - Everforest Complete Dark Soft
+        - Everforest Complete Dark Medium
+        - Everforest Complete Dark Hard
+        - Everforest Complete Light Soft
+        - Everforest Complete Light Medium
+        - Everforest Complete Light Hard
+        - Everforest Complete Dark
+        - Everforest Complete Light
+    validations:
+      required: true
+  - type: input
+    id: extension-version
+    attributes:
+      label: Everforest Complete version
+      description: Give the exact installed extension version.
+      placeholder: "X.Y.Z"
     validations:
       required: true
   - type: input
@@ -31,11 +45,16 @@ body:
     id: everforest-settings
     attributes:
       label: Everforest settings
-      description: Paste only changed `everforestComplete.*` settings. Remove private data.
+      description:
+        Paste only changed `everforestComplete.*` settings (application-scoped/global). Optionally
+        add sanitised native `window.*`/`workbench.*` settings or workspace/folder override context.
+        Remove private data.
   - type: textarea
     id: evidence
     attributes:
       label: Screenshot and context
-      description: Attach a screenshot and include the language mode or extension name.
+      description:
+        Attach a sanitised screenshot and include the language mode or extension name. Remove source
+        code, paths, usernames, tokens, and other private data first.
     validations:
       required: true

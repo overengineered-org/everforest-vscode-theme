@@ -38,21 +38,23 @@ and will take appropriate and fair corrective action in response to any behavior
 inappropriate, threatening, offensive, or harmful.
 
 Community leaders have the right and responsibility to remove, edit, or reject comments, commits,
-code, wiki edits, issues, and other contributions that are not aligned to this Code of Conduct, and
-will communicate reasons for moderation decisions when appropriate.
+code, issues, pull requests, and other contributions in this GitHub project that are not aligned to
+this Code of Conduct, and will communicate reasons for moderation decisions when appropriate.
 
 ## Scope
 
-This Code of Conduct applies within all community spaces, and also applies when an individual is
-officially representing the community in public spaces. Examples of representing our community
-include using an official e-mail address, posting via an official social media account, or acting as
-an appointed representative at an online or offline event.
+This Code of Conduct applies to this project's GitHub-hosted community spaces, including issues,
+pull requests, comments, commits, and code reviews. No off-platform project community space or
+private conduct-reporting inbox is currently operated.
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported privately
-through
-[GitHub Security Advisories](https://github.com/overengineered-org/everforest-vscode-theme/security/advisories/new).
+For conduct concerns about project content, use the project's
+[GitHub issue forms](https://github.com/overengineered-org/everforest-vscode-theme/issues/new/choose)
+when a public report is appropriate. To report abusive GitHub content or account behaviour, use
+GitHub's [Report Abuse form](https://github.com/contact/report-abuse). We do not publish a
+conduct-specific email or private inbox.
+
 All complaints will be reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the reporter of any

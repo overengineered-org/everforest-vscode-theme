@@ -1,3 +1,4 @@
+import { validateThemeSchedule } from "./configuration";
 import type { ScheduledTheme } from "./interface";
 
 interface ParsedScheduledTheme extends ScheduledTheme {
@@ -10,16 +11,13 @@ export interface ResolvedScheduledTheme {
 }
 
 function parseScheduleTime(scheduleTime: string): number {
-  const parsedTime = /^([0-1][0-9]|2[0-3]):([0-5][0-9])$/.exec(scheduleTime);
-  if (!parsedTime) throw new Error(`Invalid schedule time: ${scheduleTime}`);
-
-  return Number(parsedTime[1]) * 60 + Number(parsedTime[2]);
+  return Number(scheduleTime.slice(0, 2)) * 60 + Number(scheduleTime.slice(3, 5));
 }
 
 function parseThemeSchedule(themeSchedule: readonly ScheduledTheme[]): ParsedScheduledTheme[] {
-  if (themeSchedule.length === 0) throw new Error("Theme schedule cannot be empty");
+  const validatedThemeSchedule = validateThemeSchedule(themeSchedule);
 
-  const parsedThemeSchedule = themeSchedule
+  const parsedThemeSchedule = validatedThemeSchedule
     .map((scheduledTheme) => ({
       ...scheduledTheme,
       minuteOfDay: parseScheduleTime(scheduledTheme.time),
@@ -28,13 +26,6 @@ function parseThemeSchedule(themeSchedule: readonly ScheduledTheme[]): ParsedSch
       (firstScheduledTheme, secondScheduledTheme) =>
         firstScheduledTheme.minuteOfDay - secondScheduledTheme.minuteOfDay
     );
-  const uniqueScheduleTimes = new Set(
-    parsedThemeSchedule.map((scheduledTheme) => scheduledTheme.minuteOfDay)
-  );
-  if (uniqueScheduleTimes.size !== parsedThemeSchedule.length) {
-    throw new Error("Theme schedule cannot contain duplicate times");
-  }
-
   return parsedThemeSchedule;
 }
 
@@ -43,29 +34,47 @@ export function resolveScheduledTheme(
   currentDate: Date
 ): ResolvedScheduledTheme {
   const parsedThemeSchedule = parseThemeSchedule(themeSchedule);
-  const currentMinuteOfDay = currentDate.getHours() * 60 + currentDate.getMinutes();
-  const firstScheduledTheme = parsedThemeSchedule[0];
-  const lastScheduledTheme = parsedThemeSchedule.at(-1);
-  if (!firstScheduledTheme || !lastScheduledTheme) {
-    throw new Error("Theme schedule could not be resolved");
+  if (Number.isNaN(currentDate.getTime())) throw new Error("Theme schedule requires a valid date");
+
+  const localBoundaryDate = (dayOffset: number, minuteOfDay: number): Date | undefined => {
+    const boundaryDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      currentDate.getDate() + dayOffset,
+      Math.floor(minuteOfDay / 60),
+      minuteOfDay % 60,
+      0,
+      0
+    );
+    // Date normalises nonexistent DST times. A boundary that does not round-trip
+    // to its requested local wall-clock time is skipped for that calendar day.
+    if (
+      boundaryDate.getHours() !== Math.floor(minuteOfDay / 60) ||
+      boundaryDate.getMinutes() !== minuteOfDay % 60
+    ) {
+      return undefined;
+    }
+    // An ambiguous fall-back wall-clock time intentionally means the earlier
+    // real occurrence. The local Date constructor selects that occurrence.
+    return boundaryDate;
+  };
+
+  const scheduleBoundaries: Array<{ scheduledTheme: ParsedScheduledTheme; boundaryDate: Date }> =
+    [];
+  for (let dayOffset = -370; dayOffset <= 370; dayOffset += 1) {
+    for (const scheduledTheme of parsedThemeSchedule) {
+      const boundaryDate = localBoundaryDate(dayOffset, scheduledTheme.minuteOfDay);
+      if (boundaryDate) scheduleBoundaries.push({ scheduledTheme, boundaryDate });
+    }
   }
 
-  let activeScheduledTheme = lastScheduledTheme;
-  for (const scheduledTheme of parsedThemeSchedule) {
-    if (scheduledTheme.minuteOfDay > currentMinuteOfDay) break;
-    activeScheduledTheme = scheduledTheme;
-  }
-  const nextScheduledTheme =
-    parsedThemeSchedule.find((scheduledTheme) => scheduledTheme.minuteOfDay > currentMinuteOfDay) ??
-    firstScheduledTheme;
-
-  const nextSwitchDate = new Date(currentDate);
-  nextSwitchDate.setHours(Math.floor(nextScheduledTheme.minuteOfDay / 60));
-  nextSwitchDate.setMinutes(nextScheduledTheme.minuteOfDay % 60, 0, 0);
-  if (nextSwitchDate <= currentDate) nextSwitchDate.setDate(nextSwitchDate.getDate() + 1);
+  const activeBoundary = scheduleBoundaries
+    .filter(({ boundaryDate }) => boundaryDate <= currentDate)
+    .at(-1)!;
+  const nextBoundary = scheduleBoundaries.find(({ boundaryDate }) => boundaryDate > currentDate)!;
 
   return {
-    activeTheme: activeScheduledTheme.theme,
-    millisecondsUntilNextSwitch: nextSwitchDate.getTime() - currentDate.getTime(),
+    activeTheme: activeBoundary.scheduledTheme.theme,
+    millisecondsUntilNextSwitch: nextBoundary.boundaryDate.getTime() - currentDate.getTime(),
   };
 }

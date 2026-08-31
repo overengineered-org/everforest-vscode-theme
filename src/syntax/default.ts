@@ -241,7 +241,7 @@ export function getDefaultSyntax(
       scope: "punctuation.definition.heading.markdown",
       settings: {
         foreground: palette.grey1,
-        fontStyle: "regular",
+        fontStyle: "",
       },
     },
     {
@@ -250,7 +250,7 @@ export function getDefaultSyntax(
         "string.other.link.title.markdown, constant.other.reference.link.markdown, string.other.link.description.markdown",
       settings: {
         foreground: palette.purple,
-        fontStyle: "regular",
+        fontStyle: "",
       },
     },
     {
@@ -274,7 +274,7 @@ export function getDefaultSyntax(
       scope: "punctuation.definition.bold.markdown",
       settings: {
         foreground: palette.grey1,
-        fontStyle: "regular",
+        fontStyle: "",
       },
     },
     {
@@ -358,7 +358,7 @@ export function getDefaultSyntax(
       scope: "punctuation.definition.bold.restructuredtext",
       settings: {
         foreground: palette.grey1,
-        fontStyle: "regular",
+        fontStyle: "",
       },
     },
     {
@@ -664,13 +664,6 @@ export function getDefaultSyntax(
     // }}}
     // TypeScript{{{
     {
-      name: "TypeScript white",
-      scope: "entity.name.type.module.ts",
-      settings: {
-        foreground: palette.fg,
-      },
-    },
-    {
       name: "TypeScript grey",
       scope:
         "keyword.operator.type.annotation.ts, punctuation.accessor.ts, punctuation.separator.key-value.ts",
@@ -716,13 +709,6 @@ export function getDefaultSyntax(
     },
     // }}}
     // TSX{{{
-    {
-      name: "TSX white",
-      scope: "entity.name.type.module.tsx",
-      settings: {
-        foreground: palette.fg,
-      },
-    },
     {
       name: "TSX grey",
       scope:
@@ -1150,7 +1136,7 @@ export function getDefaultSyntax(
     },
     {
       name: "Scala yellow",
-      scope: "entity.name.class, entity.other.inherited-class.scala",
+      scope: "entity.name.class.scala, entity.other.inherited-class.scala",
       settings: {
         foreground: palette.yellow,
       },
@@ -1324,7 +1310,7 @@ export function getDefaultSyntax(
     {
       name: "PHP blue",
       scope:
-        "storage.type.modifier.access.control.public.cpp, storage.type.modifier.access.control.private.cpp",
+        "storage.type.modifier.access.control.public.php, storage.type.modifier.access.control.private.php",
       settings: {
         foreground: palette.blue,
       },

@@ -49,7 +49,7 @@ jobs:
             echo "Release commit must be one full lowercase SHA." >&2
             exit 1
           fi
-          git fetch --no-tags origin main
+          git fetch --tags --force origin main:refs/remotes/origin/main
           checked_out_commit_sha="$(git rev-parse HEAD)"
           current_main_commit_sha="$(git rev-parse origin/main)"
           if [[ "$checked_out_commit_sha" != "$RELEASE_COMMIT_SHA" ]]; then
@@ -58,6 +58,11 @@ jobs:
           fi
           if [[ "$checked_out_commit_sha" != "$current_main_commit_sha" ]]; then
             echo "$checked_out_commit_sha is not current main $current_main_commit_sha." >&2
+            exit 1
+          fi
+          existing_commit_tags="$(git tag --points-at "$checked_out_commit_sha")"
+          if [[ -n "$existing_commit_tags" ]]; then
+            echo "Requested commit is already tagged: $existing_commit_tags" >&2
             exit 1
           fi
           git switch --force-create main "$checked_out_commit_sha"
@@ -70,12 +75,41 @@ jobs:
           node-version: 24.14.0
       - name: Install dependencies
         run: npm ci
+      - name: Audit all dependencies
+        run: npm audit --audit-level=high
       - name: Resolve release version
         id: resolve-release-version
         env:
           RELEASE_INCREMENT: ${{ inputs.release_increment }}
         run: |
+          case "$RELEASE_INCREMENT" in
+            patch|minor|major) ;;
+            *)
+              echo "Unsupported release increment: $RELEASE_INCREMENT" >&2
+              exit 1
+              ;;
+          esac
           release_version="$(npx --no-install release-it "$RELEASE_INCREMENT" --release-version --no-git.push --no-github.release)"
+          if [[ ! "$release_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Release increment resolved to invalid version: $release_version" >&2
+            exit 1
+          fi
+          latest_release_tag="$(git tag --list 'v[0-9]*' --sort=-v:refname | head -n 1)"
+          latest_release_version="${latest_release_tag#v}"
+          if [[ ! "$latest_release_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Could not resolve the latest semantic release tag." >&2
+            exit 1
+          fi
+          IFS=. read -r latest_major latest_minor latest_patch <<<"$latest_release_version"
+          case "$RELEASE_INCREMENT" in
+            patch) expected_release_version="${latest_major}.${latest_minor}.$((latest_patch + 1))" ;;
+            minor) expected_release_version="${latest_major}.$((latest_minor + 1)).0" ;;
+            major) expected_release_version="$((latest_major + 1)).0.0" ;;
+          esac
+          if [[ "$release_version" != "$expected_release_version" ]]; then
+            echo "Release increment $RELEASE_INCREMENT resolved to $release_version, expected $expected_release_version." >&2
+            exit 1
+          fi
           echo "version=$release_version" >> "$GITHUB_OUTPUT"
       - name: Build exact versioned VSIX
         env:
@@ -86,7 +120,11 @@ jobs:
           node scripts/verify-release-package.mjs "$RELEASE_VERSION"
       - name: Verify package contents
         run: npm run package:verify
-      - name: Preserve exact release candidate
+      - name: Verify release package contract
+        run: npm run test:release-package
+      - name: Audit production dependencies
+        run: npm run audit:production
+      - name: Upload exact validated release candidate
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           if-no-files-found: error
@@ -94,11 +132,7 @@ jobs:
           path: |
             dist/*.vsix
             dist/*.vsix.sha256
-          retention-days: 1
-      - name: Verify release package contract
-        run: npm run test:release-package
-      - name: Audit production dependencies
-        run: npm run audit:production
+          retention-days: 7
 
   codeql:
     name: CodeQL
@@ -139,9 +173,38 @@ jobs:
         run: scripts/run-codeql-analysis.sh
       - name: Upload CodeQL results
         if: ${{ always() }}
-        uses: github/codeql-action/upload-sarif@fddeee1a7ece751b577e409a89057319e3172939 # v4
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4
         with:
           sarif_file: .codeql-results
+
+  gitleaks:
+    name: Gitleaks
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Check out main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: main
+      - name: Require unchanged release commit
+        env:
+          EXPECTED_RELEASE_COMMIT_SHA: ${{ needs.build.outputs.release-commit }}
+        run: |
+          if [[ "$(git rev-parse HEAD)" != "$EXPECTED_RELEASE_COMMIT_SHA" ]]; then
+            echo "Main changed after release validation." >&2
+            exit 1
+          fi
+      - name: Scan release commit for secrets
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
 
   integration:
     name: VSIX (${{ matrix.operating-system }}, VS Code ${{ matrix.vscode-version }})
@@ -206,6 +269,7 @@ jobs:
     needs:
       - build
       - codeql
+      - gitleaks
       - integration
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -219,13 +283,13 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          persist-credentials: true
+          persist-credentials: false
           ref: main
       - name: Require unchanged release commit
         env:
           EXPECTED_RELEASE_COMMIT_SHA: ${{ needs.build.outputs.release-commit }}
         run: |
-          git fetch --no-tags origin main
+          git fetch --no-tags origin main:refs/remotes/origin/main
           if [[ "$(git rev-parse HEAD)" != "$EXPECTED_RELEASE_COMMIT_SHA" ]] || \
             [[ "$(git rev-parse origin/main)" != "$EXPECTED_RELEASE_COMMIT_SHA" ]]; then
             echo "Main changed after release validation." >&2
@@ -246,18 +310,21 @@ jobs:
       - name: Create GitHub release
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ github.token }}
           RELEASE_VERSION: ${{ needs.build.outputs.release-version }}
         run: |
           git switch --force-create main HEAD
           git branch --set-upstream-to=origin/main main
           git config user.name "Repository Maintainer"
           git config user.email "repository-maintainer@overengineered.invalid"
+          gh auth setup-git
           npm run release -- "$RELEASE_VERSION"
       - name: Resolve released version
         id: resolve-release
         env:
           EXPECTED_RELEASE_TAG: v${{ needs.build.outputs.release-version }}
         run: |
+          set -euo pipefail
           git fetch --tags origin
           release_tag="$(git tag --points-at HEAD --list 'v*' --sort=-v:refname | head -n 1)"
           if [[ "$release_tag" != "$EXPECTED_RELEASE_TAG" ]]; then
@@ -265,6 +332,85 @@ jobs:
             exit 1
           fi
           echo "tag=$release_tag" >> "$GITHUB_OUTPUT"
+      - name: Read back exact GitHub Release state and assets
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_RELEASE_COMMIT_SHA: ${{ needs.build.outputs.release-commit }}
+          RELEASE_TAG: ${{ steps.resolve-release.outputs.tag }}
+          RELEASE_VERSION: ${{ needs.build.outputs.release-version }}
+        run: |
+          set -euo pipefail
+          release_package_name="everforest-complete-${RELEASE_VERSION}.vsix"
+          release_checksum_name="${release_package_name}.sha256"
+          release_readback_directory="$RUNNER_TEMP/release-readback"
+          mkdir -p "$release_readback_directory"
+
+          resolve_remote_tag_commit_sha() {
+            local remote_tag_object_json remote_tag_object_type remote_tag_object_sha
+            local remote_tag_ref_json remote_tag_peel_depth=0
+            remote_tag_ref_json="$(gh api "repos/${GH_REPO}/git/ref/tags/${RELEASE_TAG}")"
+            remote_tag_object_type="$(jq -r '.object.type' <<<"$remote_tag_ref_json")"
+            remote_tag_object_sha="$(jq -r '.object.sha' <<<"$remote_tag_ref_json")"
+            while [[ "$remote_tag_object_type" == "tag" ]]; do
+              remote_tag_peel_depth=$((remote_tag_peel_depth + 1))
+              if (( remote_tag_peel_depth > 10 )); then
+                echo "${RELEASE_TAG} has too many nested annotated tags." >&2
+                return 1
+              fi
+              remote_tag_object_json="$(gh api "repos/${GH_REPO}/git/tags/${remote_tag_object_sha}")"
+              remote_tag_object_type="$(jq -r '.object.type' <<<"$remote_tag_object_json")"
+              remote_tag_object_sha="$(jq -r '.object.sha' <<<"$remote_tag_object_json")"
+            done
+            if [[ "$remote_tag_object_type" != "commit" ]] || \
+              [[ ! "$remote_tag_object_sha" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "${RELEASE_TAG} does not resolve to a commit." >&2
+              return 1
+            fi
+            printf '%s\n' "$remote_tag_object_sha"
+          }
+
+          release_tag_commit_sha="$(resolve_remote_tag_commit_sha)"
+          if [[ "$release_tag_commit_sha" != "$EXPECTED_RELEASE_COMMIT_SHA" ]]; then
+            echo "${RELEASE_TAG} points to ${release_tag_commit_sha}, expected ${EXPECTED_RELEASE_COMMIT_SHA}." >&2
+            exit 1
+          fi
+
+          release_api_path="repos/${GH_REPO}/releases/tags/${RELEASE_TAG}"
+          release_tag_name="$(gh api "$release_api_path" --jq '.tag_name')"
+          release_is_draft="$(gh api "$release_api_path" --jq '.draft')"
+          release_is_prerelease="$(gh api "$release_api_path" --jq '.prerelease')"
+          release_is_immutable="$(gh api "$release_api_path" --jq '.immutable')"
+          if [[ "$release_tag_name" != "$RELEASE_TAG" ]] || \
+            [[ "$release_is_draft" != false ]] || \
+            [[ "$release_is_prerelease" != false ]] || \
+            [[ "$release_is_immutable" != true ]]; then
+            echo "GitHub Release ${RELEASE_TAG} is not the expected published release." >&2
+            exit 1
+          fi
+
+          release_asset_count="$(gh api "$release_api_path" --jq '.assets | length')"
+          if [[ "$release_asset_count" != 2 ]]; then
+            echo "GitHub Release ${RELEASE_TAG} has ${release_asset_count} assets, expected exactly two." >&2
+            exit 1
+          fi
+          release_asset_names="$(gh api "$release_api_path" --jq '.assets[].name')"
+          if ! grep -Fxq "$release_package_name" <<<"$release_asset_names" || \
+            ! grep -Fxq "$release_checksum_name" <<<"$release_asset_names"; then
+            echo "GitHub Release ${RELEASE_TAG} does not contain the exact VSIX and checksum assets." >&2
+            exit 1
+          fi
+
+          gh release download "$RELEASE_TAG" \
+            --dir "$release_readback_directory" \
+            --pattern "$release_package_name" \
+            --pattern "$release_checksum_name"
+          (
+            cd "$release_readback_directory"
+            sha256sum --check "$release_checksum_name"
+          )
+          cmp -- "dist/${release_package_name}" "$release_readback_directory/${release_package_name}"
+          cmp -- "dist/${release_checksum_name}" "$release_readback_directory/${release_checksum_name}"
 
   marketplace:
     name: Visual Studio Marketplace
@@ -275,6 +421,7 @@ jobs:
     timeout-minutes: 15
     environment: marketplace-production
     permissions:
+      actions: read
       contents: read
     steps:
       - name: Check out main
@@ -297,8 +444,12 @@ jobs:
           node-version: 24.14.0
       - name: Install dependencies
         run: npm ci
-      - name: Download and verify GitHub Release package
-        id: release-package
+      - name: Download exact validated release candidate
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: validated-vsix
+          path: dist
+      - name: Download and compare immutable GitHub Release assets
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.release.outputs.release-tag }}
@@ -309,15 +460,83 @@ jobs:
           release_checksum_name="${release_package_name}.sha256"
           release_asset_directory="$RUNNER_TEMP/marketplace-release"
           mkdir -p "$release_asset_directory"
+          release_api_path="repos/${GITHUB_REPOSITORY}/releases/tags/${RELEASE_TAG}"
+          if [[ "$(gh api "$release_api_path" --jq '.immutable')" != true ]]; then
+            echo "GitHub Release ${RELEASE_TAG} is not immutable." >&2
+            exit 1
+          fi
+          (cd dist && sha256sum --check "$release_checksum_name")
           gh release download "$RELEASE_TAG" \
             --dir "$release_asset_directory" \
             --pattern "$release_package_name" \
             --pattern "$release_checksum_name"
           (cd "$release_asset_directory" && sha256sum --check "$release_checksum_name")
-          echo "path=${release_asset_directory}/${release_package_name}" >> "$GITHUB_OUTPUT"
+          cmp -- "dist/${release_package_name}" "${release_asset_directory}/${release_package_name}"
+          cmp -- "dist/${release_checksum_name}" "${release_asset_directory}/${release_checksum_name}"
+      - name: Require remote release tag target before Marketplace publish
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_RELEASE_COMMIT_SHA: ${{ needs.build.outputs.release-commit }}
+          RELEASE_TAG: ${{ needs.release.outputs.release-tag }}
+        run: |
+          set -euo pipefail
+          remote_tag_ref_json="$(gh api "repos/${GH_REPO}/git/ref/tags/${RELEASE_TAG}")"
+          remote_tag_object_type="$(jq -r '.object.type' <<<"$remote_tag_ref_json")"
+          remote_tag_object_sha="$(jq -r '.object.sha' <<<"$remote_tag_ref_json")"
+          remote_tag_peel_depth=0
+          while [[ "$remote_tag_object_type" == "tag" ]]; do
+            remote_tag_peel_depth=$((remote_tag_peel_depth + 1))
+            if (( remote_tag_peel_depth > 10 )); then
+              echo "${RELEASE_TAG} has too many nested annotated tags." >&2
+              exit 1
+            fi
+            remote_tag_object_json="$(gh api "repos/${GH_REPO}/git/tags/${remote_tag_object_sha}")"
+            remote_tag_object_type="$(jq -r '.object.type' <<<"$remote_tag_object_json")"
+            remote_tag_object_sha="$(jq -r '.object.sha' <<<"$remote_tag_object_json")"
+          done
+          if [[ "$remote_tag_object_type" != "commit" ]] || \
+            [[ "$remote_tag_object_sha" != "$EXPECTED_RELEASE_COMMIT_SHA" ]]; then
+            echo "${RELEASE_TAG} does not resolve to expected release ${EXPECTED_RELEASE_COMMIT_SHA}." >&2
+            exit 1
+          fi
       - name: Publish exact release package
         env:
-          RELEASE_PACKAGE_PATH: ${{ steps.release-package.outputs.path }}
+          RELEASE_VERSION: ${{ needs.build.outputs.release-version }}
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: >-
-          npx --no-install vsce publish --packagePath "$RELEASE_PACKAGE_PATH" --skip-duplicate
+        run: |
+          set -euo pipefail
+          npx --no-install vsce publish \
+            --packagePath "dist/everforest-complete-${RELEASE_VERSION}.vsix" \
+            --skip-duplicate
+      - name: Read back published Marketplace package
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_RELEASE_COMMIT_SHA: ${{ needs.build.outputs.release-commit }}
+          RELEASE_TAG: ${{ needs.release.outputs.release-tag }}
+          RELEASE_VERSION: ${{ needs.build.outputs.release-version }}
+        run: |
+          set -euo pipefail
+          remote_tag_ref_json="$(gh api "repos/${GH_REPO}/git/ref/tags/${RELEASE_TAG}")"
+          remote_tag_object_type="$(jq -r '.object.type' <<<"$remote_tag_ref_json")"
+          remote_tag_object_sha="$(jq -r '.object.sha' <<<"$remote_tag_ref_json")"
+          remote_tag_peel_depth=0
+          while [[ "$remote_tag_object_type" == "tag" ]]; do
+            remote_tag_peel_depth=$((remote_tag_peel_depth + 1))
+            if (( remote_tag_peel_depth > 10 )); then
+              echo "${RELEASE_TAG} has too many nested annotated tags." >&2
+              exit 1
+            fi
+            remote_tag_object_json="$(gh api "repos/${GH_REPO}/git/tags/${remote_tag_object_sha}")"
+            remote_tag_object_type="$(jq -r '.object.type' <<<"$remote_tag_object_json")"
+            remote_tag_object_sha="$(jq -r '.object.sha' <<<"$remote_tag_object_json")"
+          done
+          if [[ "$remote_tag_object_type" != "commit" ]] || \
+            [[ "$remote_tag_object_sha" != "$EXPECTED_RELEASE_COMMIT_SHA" ]]; then
+            echo "${RELEASE_TAG} does not resolve to expected release ${EXPECTED_RELEASE_COMMIT_SHA}." >&2
+            exit 1
+          fi
+          bash scripts/verify-marketplace-publication.sh \
+            "$RELEASE_VERSION" \
+            "dist/everforest-complete-${RELEASE_VERSION}.vsix"

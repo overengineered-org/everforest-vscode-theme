@@ -1,4 +1,4 @@
-import * as vscode from "vscode";
+import type * as vscode from "vscode";
 import {
   createDailyThemeSchedule,
   darkThemeName,
@@ -41,6 +41,14 @@ type AdvancedControlIdentifier = keyof AdvancedThemeConfiguration;
 
 interface AdvancedControlMenuItem extends vscode.QuickPickItem {
   action: AdvancedControlIdentifier | "apply";
+}
+
+export interface ConfigurationUiHost {
+  showQuickPick<QuickPickItem extends vscode.QuickPickItem>(
+    items: readonly QuickPickItem[],
+    options: vscode.QuickPickOptions
+  ): Thenable<QuickPickItem | undefined>;
+  showInputBox(options: vscode.InputBoxOptions): Thenable<string | undefined>;
 }
 
 const contrastChoices: ConfigurationChoice<ThemeContrast>[] = [
@@ -118,13 +126,14 @@ function emphasizeCurrentChoice<ConfigurationValue>(
   ];
 }
 
-async function showConfigurationChoice<ConfigurationValue>(
+export async function showConfigurationChoice<ConfigurationValue>(
   configurationChoices: readonly ConfigurationChoice<ConfigurationValue>[],
   currentConfigurationValue: ConfigurationValue | undefined,
   title: string,
-  placeHolder: string
+  placeHolder: string,
+  configurationUiHost: ConfigurationUiHost
 ): Promise<ConfigurationValue | undefined> {
-  const selectedConfigurationChoice = await vscode.window.showQuickPick(
+  const selectedConfigurationChoice = await configurationUiHost.showQuickPick(
     emphasizeCurrentChoice(configurationChoices, currentConfigurationValue),
     { title, placeHolder, ignoreFocusOut: true }
   );
@@ -154,7 +163,8 @@ function currentGuidedWorkbenchStyle(
 }
 
 export async function collectGuidedThemeSelections(
-  configurationSnapshot: GuidedThemeConfigurationSnapshot
+  configurationSnapshot: GuidedThemeConfigurationSnapshot,
+  configurationUiHost: ConfigurationUiHost
 ): Promise<GuidedThemeSelections | undefined> {
   const appearanceBehaviorChoices: ConfigurationChoice<AppearanceBehavior>[] = [
     {
@@ -186,7 +196,8 @@ export async function collectGuidedThemeSelections(
     appearanceBehaviorChoices,
     configurationSnapshot.appearanceBehavior,
     "Everforest Complete · 1 of 3",
-    "Choose Light and Dark behaviour. Escape discards everything."
+    "Choose Light and Dark behaviour. Escape discards everything.",
+    configurationUiHost
   );
   if (!appearanceBehavior) return undefined;
 
@@ -194,7 +205,8 @@ export async function collectGuidedThemeSelections(
     contrastChoices,
     currentGuidedContrast(configurationSnapshot, appearanceBehavior),
     "Everforest Complete · 2 of 3",
-    "Choose background contrast. Escape discards everything."
+    "Choose background contrast. Escape discards everything.",
+    configurationUiHost
   );
   if (!contrast) return undefined;
 
@@ -202,7 +214,8 @@ export async function collectGuidedThemeSelections(
     workbenchStyleChoices,
     currentGuidedWorkbenchStyle(configurationSnapshot, appearanceBehavior),
     "Everforest Complete · 3 of 3",
-    "Choose workbench depth. Selecting applies all three choices."
+    "Choose workbench depth. Selecting applies all three choices.",
+    configurationUiHost
   );
   if (!workbenchStyle) return undefined;
 
@@ -303,7 +316,8 @@ function accentChoices<AccentColor extends string>(
 
 async function changeAdvancedControl(
   advancedControlIdentifier: AdvancedControlIdentifier,
-  stagedConfiguration: AdvancedThemeConfiguration
+  stagedConfiguration: AdvancedThemeConfiguration,
+  configurationUiHost: ConfigurationUiHost
 ): Promise<AdvancedThemeConfiguration | undefined> {
   const updatedConfiguration = { ...stagedConfiguration };
 
@@ -312,7 +326,8 @@ async function changeAdvancedControl(
       accentChoices("white"),
       stagedConfiguration.darkCursor,
       "Advanced Controls · Dark Cursor",
-      "Choose the Dark editor and terminal cursor."
+      "Choose the Dark editor and terminal cursor.",
+      configurationUiHost
     );
     if (!darkCursor) return undefined;
     updatedConfiguration.darkCursor = darkCursor;
@@ -321,7 +336,8 @@ async function changeAdvancedControl(
       accentChoices("black"),
       stagedConfiguration.lightCursor,
       "Advanced Controls · Light Cursor",
-      "Choose the Light editor and terminal cursor."
+      "Choose the Light editor and terminal cursor.",
+      configurationUiHost
     );
     if (!lightCursor) return undefined;
     updatedConfiguration.lightCursor = lightCursor;
@@ -333,7 +349,8 @@ async function changeAdvancedControl(
       accentChoices("grey"),
       stagedConfiguration[advancedControlIdentifier],
       `Advanced Controls · ${advancedControlIdentifier === "darkSelection" ? "Dark" : "Light"} Selection`,
-      "Choose selection emphasis across editor, terminal, and minimap."
+      "Choose selection emphasis across editor, terminal, and minimap.",
+      configurationUiHost
     );
     if (!selectionColor) return undefined;
     updatedConfiguration[advancedControlIdentifier] = selectionColor;
@@ -349,7 +366,8 @@ async function changeAdvancedControl(
       ],
       stagedConfiguration[advancedControlIdentifier],
       `Advanced Controls · ${advancedControlIdentifier === "italicKeywords" ? "Keyword Italics" : advancedControlIdentifier === "italicComments" ? "Comment Italics" : "Stronger Borders"}`,
-      "Choose one value."
+      "Choose one value.",
+      configurationUiHost
     );
     if (enabled === undefined) return undefined;
     updatedConfiguration[advancedControlIdentifier] = enabled;
@@ -365,7 +383,8 @@ async function changeAdvancedControl(
         ],
         stagedConfiguration.diagnosticTextBackgroundOpacity,
         "Advanced Controls · Diagnostic Backgrounds",
-        "Choose error, warning, and information emphasis."
+        "Choose error, warning, and information emphasis.",
+        configurationUiHost
       );
     if (!diagnosticTextBackgroundOpacity) return undefined;
     updatedConfiguration.diagnosticTextBackgroundOpacity = diagnosticTextBackgroundOpacity;
@@ -375,7 +394,8 @@ async function changeAdvancedControl(
 }
 
 export async function collectAdvancedThemeConfiguration(
-  initialConfiguration: AdvancedThemeConfiguration
+  initialConfiguration: AdvancedThemeConfiguration,
+  configurationUiHost: ConfigurationUiHost
 ): Promise<AdvancedThemeConfiguration | undefined> {
   let stagedConfiguration = { ...initialConfiguration };
 
@@ -384,7 +404,7 @@ export async function collectAdvancedThemeConfiguration(
       initialConfiguration,
       stagedConfiguration
     );
-    const selectedMenuItem = await vscode.window.showQuickPick(
+    const selectedMenuItem = await configurationUiHost.showQuickPick(
       advancedControlMenuItems(stagedConfiguration, changedControlCount),
       {
         title: "Everforest Complete · Advanced Controls",
@@ -397,7 +417,8 @@ export async function collectAdvancedThemeConfiguration(
 
     const updatedConfiguration = await changeAdvancedControl(
       selectedMenuItem.action,
-      stagedConfiguration
+      stagedConfiguration,
+      configurationUiHost
     );
     if (!updatedConfiguration) return undefined;
     stagedConfiguration = updatedConfiguration;
@@ -406,7 +427,8 @@ export async function collectAdvancedThemeConfiguration(
 
 export async function collectAutomaticSwitchingSelection(
   currentSwitchingMode: AutomaticSwitchingMode,
-  currentThemeSchedule: ScheduledTheme[]
+  currentThemeSchedule: ScheduledTheme[],
+  configurationUiHost: ConfigurationUiHost
 ): Promise<AutomaticSwitchingSelection | undefined> {
   const switchingMode = await showConfigurationChoice<AutomaticSwitchingMode>(
     [
@@ -428,12 +450,13 @@ export async function collectAutomaticSwitchingSelection(
     ],
     currentSwitchingMode,
     "Everforest Complete · Automatic Light/Dark",
-    "Choose Off, System, or a local schedule."
+    "Choose Off, System, or a local schedule.",
+    configurationUiHost
   );
   if (!switchingMode) return undefined;
   if (switchingMode !== "schedule") return { switchingMode };
 
-  const lightThemeStartTime = await vscode.window.showInputBox({
+  const lightThemeStartTime = await configurationUiHost.showInputBox({
     title: "Automatic Schedule · 1 of 2",
     prompt: "When should Light begin?",
     placeHolder: "07:00",
@@ -448,7 +471,7 @@ export async function collectAutomaticSwitchingSelection(
   });
   if (!lightThemeStartTime) return undefined;
 
-  const darkThemeStartTime = await vscode.window.showInputBox({
+  const darkThemeStartTime = await configurationUiHost.showInputBox({
     title: "Automatic Schedule · 2 of 2",
     prompt: "When should Dark begin? Selecting Enter applies the schedule.",
     placeHolder: "19:00",
