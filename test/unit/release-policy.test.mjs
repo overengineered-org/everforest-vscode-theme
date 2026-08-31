@@ -414,6 +414,7 @@ test("keeps release recovery manual and cross-platform", () => {
     .flatMap((recoveryJob) => recoveryJob.steps ?? [])
     .filter((recoveryStep) => recoveryStep.uses?.startsWith("actions/setup-node@"))) {
     assert.equal(recoverySetupNodeStep.with["node-version"], "24.14.0");
+    assert.equal(recoverySetupNodeStep.with.cache, undefined);
   }
   assert.ok(recoveryIntegrationJob.includes("operating-system: windows-latest"));
   assert.ok(recoveryIntegrationJob.includes("operating-system: macos-latest"));
@@ -439,10 +440,9 @@ test("keeps release recovery manual and cross-platform", () => {
       step.uses?.startsWith("actions/checkout@")
     );
     assert.ok(recoveryCheckoutStep, `${recoveryJobName} checks out source`);
-    assert.equal(
-      recoveryCheckoutStep.with.ref,
-      "${{ needs.validate-source.outputs.source_commit }}"
-    );
+    assert.equal(recoveryCheckoutStep.with.ref, "main");
+    assert.equal(recoveryCheckoutStep.with["fetch-depth"], 0);
+    assert.equal(recoveryCheckoutStep.with["persist-credentials"], false);
     const recoveryCheckoutStepIndex = recoveryJob.steps.indexOf(recoveryCheckoutStep);
     const recoverySourceGuardStepIndex = recoveryJob.steps.findIndex(
       (step) => step.name === "Require validated source commit"
@@ -457,6 +457,14 @@ test("keeps release recovery manual and cross-platform", () => {
     assert.ok(
       recoveryJob.steps.some((step) => step.name === "Require validated source commit"),
       `${recoveryJobName} asserts the validated source commit`
+    );
+    const recoverySourceGuardStep = recoveryJob.steps[recoverySourceGuardStepIndex];
+    if (recoveryJobName === "integration") {
+      assert.equal(recoverySourceGuardStep.shell, "bash");
+    }
+    assert.ok(
+      recoverySourceGuardStep.run.includes('git checkout --detach "$EXPECTED_SOURCE_COMMIT_SHA"'),
+      `${recoveryJobName} detaches only after the source commit is validated`
     );
   }
   assert.ok(recoveryPublishCreateStep.run.includes("resolve_remote_tag_commit_sha"));

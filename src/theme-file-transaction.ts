@@ -47,7 +47,7 @@ export interface ThemeFileTransactionFileSystem {
     flags: string | number,
     mode?: number
   ): Promise<{
-    writeFile(fileContents: string, encoding: "utf8"): Promise<void>;
+    writeFile(fileContents: string | Buffer, encoding?: "utf8"): Promise<void>;
     read?(
       buffer: Buffer,
       offset: number,
@@ -111,7 +111,13 @@ function createDefaultFileSystem(): ThemeFileTransactionFileSystem {
     open: async (filePath, flags, mode) => {
       const fileHandle = await open(filePath, flags, mode);
       return {
-        writeFile: async (fileContents, encoding) => fileHandle.writeFile(fileContents, encoding),
+        writeFile: async (fileContents, encoding) => {
+          if (typeof fileContents === "string") {
+            await fileHandle.writeFile(fileContents, encoding ?? "utf8");
+          } else {
+            await fileHandle.writeFile(fileContents);
+          }
+        },
         read: async (buffer, offset, length, position) =>
           fileHandle.read(buffer, offset, length, position),
         stat: async () => fileHandle.stat(),
@@ -162,6 +168,7 @@ function isRegularThemeFile(fileStats: ThemeFileStats): boolean {
 }
 
 interface BoundedThemeFileRead {
+  fileBytes: Buffer;
   themeSource: string;
   fileStats: ThemeFileStats;
   fileIdentity?: ThemeFileIdentity;
@@ -223,8 +230,10 @@ async function readBoundedThemeFile(
     if (bytesRead > maximumBytes) {
       throw new Error(`Theme file exceeds ${maximumBytes} bytes: ${filePath}`);
     }
+    const fileBytes = fileBuffer.subarray(0, bytesRead);
     return {
-      themeSource: fileBuffer.subarray(0, bytesRead).toString("utf8"),
+      fileBytes,
+      themeSource: fileBytes.toString("utf8"),
       fileStats: verifiedFileStats,
       fileIdentity: getThemeFileIdentity(verifiedFileStats),
     };
@@ -271,7 +280,7 @@ function parseAndValidateThemeSource(themeSource: string, themePath: string): vo
 }
 
 interface ThemeFilePathState {
-  themeSource: string;
+  themeBytes: Buffer;
   existed: boolean;
   mode?: number;
 }
@@ -424,7 +433,7 @@ async function readThemeFilePathState(
   themePath: string
 ): Promise<ThemeFilePathState> {
   const themeFileStats = await assertNotSymbolicLink(fileSystem, themePath);
-  if (!themeFileStats) return { themeSource: "", existed: false };
+  if (!themeFileStats) return { themeBytes: Buffer.alloc(0), existed: false };
   if (themeFileStats.isDirectory()) throw new Error(`Theme path must be a file: ${themePath}`);
   const boundedThemeFileRead = await readBoundedThemeFile(
     fileSystem,
@@ -432,7 +441,7 @@ async function readThemeFilePathState(
     maximumThemeSourceBytes
   );
   return {
-    themeSource: boundedThemeFileRead.themeSource,
+    themeBytes: boundedThemeFileRead.fileBytes,
     existed: true,
     mode: boundedThemeFileRead.fileStats.mode & 0o7777,
   };
@@ -441,7 +450,7 @@ async function readThemeFilePathState(
 async function writeDurableFile(
   fileSystem: ThemeFileTransactionFileSystem,
   filePath: string,
-  fileContents: string,
+  fileContents: string | Buffer,
   fileMode: number
 ): Promise<void> {
   const fileHandle = await fileSystem.open(filePath, exclusiveWriteNoFollowFlags, fileMode);
@@ -450,7 +459,7 @@ async function writeDurableFile(
     if (fileStats && !isRegularThemeFile(fileStats)) {
       throw new Error(`Theme transaction artifact must be a regular file: ${filePath}`);
     }
-    await fileHandle.writeFile(fileContents, "utf8");
+    await fileHandle.writeFile(fileContents, typeof fileContents === "string" ? "utf8" : undefined);
     await fileHandle.chmod?.(fileMode);
     try {
       await fileHandle.sync?.();
@@ -465,7 +474,7 @@ async function writeDurableFile(
 async function verifyThemeArtifact(
   fileSystem: ThemeFileTransactionFileSystem,
   artifactPath: string,
-  expectedThemeSource: string,
+  expectedThemeContents: string | Buffer,
   expectedThemeMode: number
 ): Promise<ThemeFileIdentity | undefined> {
   const artifactStats = await assertNotSymbolicLink(fileSystem, artifactPath);
@@ -477,11 +486,13 @@ async function verifyThemeArtifact(
     artifactPath,
     maximumThemeSourceBytes
   );
-  const artifactSource = boundedArtifactRead.themeSource;
-  if (artifactSource !== expectedThemeSource) {
+  const expectedThemeBytes =
+    typeof expectedThemeContents === "string"
+      ? Buffer.from(expectedThemeContents, "utf8")
+      : expectedThemeContents;
+  if (!boundedArtifactRead.fileBytes.equals(expectedThemeBytes)) {
     throw new Error(`Theme transaction artifact changed before replacement: ${artifactPath}`);
   }
-  parseAndValidateThemeSource(artifactSource, artifactPath);
   if ((boundedArtifactRead.fileStats.mode & 0o7777) !== expectedThemeMode) {
     throw new Error(`Theme transaction artifact mode changed before replacement: ${artifactPath}`);
   }
@@ -516,7 +527,7 @@ async function verifyPreparedThemeArtifacts(
       ? verifyThemeArtifact(
           fileSystem,
           transactionArtifacts.darkThemeBackupPath,
-          darkThemePathState.themeSource,
+          darkThemePathState.themeBytes,
           darkThemePathState.mode ?? 0o644
         )
       : Promise.resolve(),
@@ -524,7 +535,7 @@ async function verifyPreparedThemeArtifacts(
       ? verifyThemeArtifact(
           fileSystem,
           transactionArtifacts.lightThemeBackupPath,
-          lightThemePathState.themeSource,
+          lightThemePathState.themeBytes,
           lightThemePathState.mode ?? 0o644
         )
       : Promise.resolve(),
@@ -626,8 +637,7 @@ async function restoreThemeFile(
     sourceBackupPath,
     maximumThemeSourceBytes
   );
-  const backupContents = boundedBackupRead.themeSource;
-  parseAndValidateThemeSource(backupContents, targetThemePath);
+  const backupContents = boundedBackupRead.fileBytes;
   if ((boundedBackupRead.fileStats.mode & 0o7777) !== (originalThemeMode ?? 0o644)) {
     throw new Error(`Theme backup mode changed: ${sourceBackupPath}`);
   }
@@ -852,8 +862,8 @@ export async function replaceConfiguredThemeFiles(
   if (
     darkThemePathState.existed &&
     lightThemePathState.existed &&
-    darkThemePathState.themeSource === themeFileSources.darkThemeSource &&
-    lightThemePathState.themeSource === themeFileSources.lightThemeSource
+    darkThemePathState.themeBytes.equals(Buffer.from(themeFileSources.darkThemeSource, "utf8")) &&
+    lightThemePathState.themeBytes.equals(Buffer.from(themeFileSources.lightThemeSource, "utf8"))
   ) {
     return false;
   }
@@ -894,7 +904,7 @@ export async function replaceConfiguredThemeFiles(
       await writeDurableFile(
         fileSystem,
         transactionArtifacts.darkThemeBackupPath,
-        darkThemePathState.themeSource,
+        darkThemePathState.themeBytes,
         darkThemePathState.mode ?? 0o644
       );
     }
@@ -902,7 +912,7 @@ export async function replaceConfiguredThemeFiles(
       await writeDurableFile(
         fileSystem,
         transactionArtifacts.lightThemeBackupPath,
-        lightThemePathState.themeSource,
+        lightThemePathState.themeBytes,
         lightThemePathState.mode ?? 0o644
       );
     }

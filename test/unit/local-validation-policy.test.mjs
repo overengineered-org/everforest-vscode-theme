@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFileSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   chmodSync,
@@ -23,12 +23,51 @@ function repositoryFile(relativePath) {
   return readFileSync(resolve(repositoryDirectory, relativePath), "utf8");
 }
 
+function writeValidationCommandStubs(commandDirectory, commandSourceOverrides = {}) {
+  const commandSources = {
+    act: "#!/bin/sh\nexit 0\n",
+    docker: "#!/bin/sh\nexit 0\n",
+    git: `#!/bin/sh
+set -eu
+if [ "$*" = "rev-parse --show-toplevel" ]; then
+  printf '%s\\n' "$VALIDATION_TEST_WORKTREE"
+  exit 0
+fi
+if [ "$*" = "rev-parse --git-common-dir" ]; then
+  printf '%s\\n' "$VALIDATION_TEST_GIT_COMMON_DIRECTORY"
+  exit 0
+fi
+exit 64
+`,
+    gitleaks: "#!/bin/sh\nexit 0\n",
+    node: "#!/bin/sh\nif [ \"$1\" = -p ]; then printf '%s\\n' '24.14.0'; fi\n",
+    npm: "#!/bin/sh\nexit 0\n",
+    ...commandSourceOverrides,
+  };
+  for (const [commandName, commandSource] of Object.entries(commandSources)) {
+    const commandPath = resolve(commandDirectory, commandName);
+    writeFileSync(commandPath, commandSource, { mode: 0o755 });
+    chmodSync(commandPath, 0o755);
+  }
+}
+
+function validationTestEnvironment(commandDirectory, gitCommonDirectory, overrides = {}) {
+  return {
+    ...process.env,
+    PATH: `${commandDirectory}:${process.env.PATH}`,
+    VALIDATION_TEST_GIT_COMMON_DIRECTORY: gitCommonDirectory,
+    VALIDATION_TEST_WORKTREE: repositoryDirectory,
+    ...overrides,
+  };
+}
+
 function runCodeqlAnalysis(overrides) {
   return spawnSync("bash", [resolve(repositoryDirectory, "scripts/run-codeql-analysis.sh")], {
     cwd: repositoryDirectory,
     encoding: "utf8",
     env: {
       ...process.env,
+      GITHUB_WORKSPACE: repositoryDirectory,
       CODEQL_BINARY_PATH: "/bin/true",
       CODEQL_ANALYSIS_DIRECTORY: "/tmp/everforest-codeql-policy-analysis",
       CODEQL_RESULTS_DIRECTORY: "/tmp/everforest-codeql-policy-results",
@@ -403,6 +442,7 @@ test("rejects zero and over-maximum CodeQL thread overrides", () => {
     CODEQL_BINARY_PATH: "/bin/true",
     CODEQL_ANALYSIS_DIRECTORY: "/tmp/everforest-codeql-policy-analysis",
     CODEQL_RESULTS_DIRECTORY: "/tmp/everforest-codeql-policy-results",
+    GITHUB_WORKSPACE: repositoryDirectory,
   };
 
   for (const rejectedThreadCount of ["0", "5"]) {
@@ -692,15 +732,7 @@ test("refuses a symlinked validation lock without deleting its target", () => {
   );
   const outsideLockTargetDirectory = resolve(temporaryValidationLockTestDirectory, "outside");
   const validationLockStubCommandDirectory = resolve(temporaryValidationLockTestDirectory, "bin");
-  const gitCommonDirectory = realpathSync(
-    resolve(
-      repositoryDirectory,
-      execFileSync("git", ["rev-parse", "--git-common-dir"], {
-        cwd: repositoryDirectory,
-        encoding: "utf8",
-      }).trim()
-    )
-  );
+  const gitCommonDirectory = realpathSync(temporaryValidationLockTestDirectory);
   const commonRepositoryLockFingerprint = createHash("sha256")
     .update(gitCommonDirectory)
     .digest("hex");
@@ -718,14 +750,7 @@ test("refuses a symlinked validation lock without deleting its target", () => {
   writeFileSync(resolve(outsideLockTargetDirectory, "worktree"), `${repositoryDirectory}\n`);
   symlinkSync(outsideLockTargetDirectory, validationLockPath, "dir");
 
-  for (const validationCommandName of ["act", "docker", "gitleaks", "node", "npm"]) {
-    const validationCommandPath = resolve(
-      validationLockStubCommandDirectory,
-      validationCommandName
-    );
-    writeFileSync(validationCommandPath, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
-    chmodSync(validationCommandPath, 0o755);
-  }
+  writeValidationCommandStubs(validationLockStubCommandDirectory);
 
   try {
     const validationRun = spawnSync(
@@ -734,11 +759,9 @@ test("refuses a symlinked validation lock without deleting its target", () => {
       {
         cwd: repositoryDirectory,
         encoding: "utf8",
-        env: {
-          ...process.env,
-          PATH: `${validationLockStubCommandDirectory}:${process.env.PATH}`,
+        env: validationTestEnvironment(validationLockStubCommandDirectory, gitCommonDirectory, {
           TMPDIR: temporaryValidationLockTestDirectory,
-        },
+        }),
       }
     );
     assert.equal(validationRun.status, 75, validationRun.stderr);
@@ -762,15 +785,7 @@ test("refuses symlinked validation lock metadata without overwriting its target"
     "outside-owner-sentinel"
   );
   const validationCommandStubDirectory = resolve(temporaryMetadataSymlinkTestDirectory, "bin");
-  const canonicalGitCommonDirectory = realpathSync(
-    resolve(
-      repositoryDirectory,
-      execFileSync("git", ["rev-parse", "--git-common-dir"], {
-        cwd: repositoryDirectory,
-        encoding: "utf8",
-      }).trim()
-    )
-  );
+  const canonicalGitCommonDirectory = realpathSync(temporaryMetadataSymlinkTestDirectory);
   const commonRepositoryLockFingerprint = createHash("sha256")
     .update(canonicalGitCommonDirectory)
     .digest("hex");
@@ -785,11 +800,7 @@ test("refuses symlinked validation lock metadata without overwriting its target"
   mkdirSync(validationCommandStubDirectory);
   writeFileSync(outsideMetadataSentinelPath, originalOutsideMetadataContents);
   symlinkSync(outsideMetadataSentinelPath, validationLockMetadataPath, "file");
-  for (const validationCommandName of ["act", "docker", "gitleaks", "node", "npm"]) {
-    const validationCommandPath = resolve(validationCommandStubDirectory, validationCommandName);
-    writeFileSync(validationCommandPath, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
-    chmodSync(validationCommandPath, 0o755);
-  }
+  writeValidationCommandStubs(validationCommandStubDirectory);
 
   try {
     const validationRun = spawnSync(
@@ -798,11 +809,11 @@ test("refuses symlinked validation lock metadata without overwriting its target"
       {
         cwd: repositoryDirectory,
         encoding: "utf8",
-        env: {
-          ...process.env,
-          PATH: `${validationCommandStubDirectory}:${process.env.PATH}`,
-          TMPDIR: temporaryMetadataSymlinkTestDirectory,
-        },
+        env: validationTestEnvironment(
+          validationCommandStubDirectory,
+          canonicalGitCommonDirectory,
+          { TMPDIR: temporaryMetadataSymlinkTestDirectory }
+        ),
       }
     );
     assert.equal(validationRun.status, 75, validationRun.stderr);
@@ -835,15 +846,7 @@ test("refuses a replaced validation lock directory without deleting its external
   );
   const externalSentinelPath = resolve(externalLockTargetDirectory, "sentinel");
   const validationCommandStubDirectory = resolve(temporaryReplacementTestDirectory, "bin");
-  const canonicalGitCommonDirectory = realpathSync(
-    resolve(
-      repositoryDirectory,
-      execFileSync("git", ["rev-parse", "--git-common-dir"], {
-        cwd: repositoryDirectory,
-        encoding: "utf8",
-      }).trim()
-    )
-  );
+  const canonicalGitCommonDirectory = realpathSync(temporaryReplacementTestDirectory);
   const commonRepositoryLockFingerprint = createHash("sha256")
     .update(canonicalGitCommonDirectory)
     .digest("hex");
@@ -868,11 +871,7 @@ ln -s -- "$VALIDATION_EXTERNAL_TARGET" "$VALIDATION_LOCK_PATH"
     { mode: 0o755 }
   );
   chmodSync(replacementSleepStubPath, 0o755);
-  for (const validationCommandName of ["act", "docker", "gitleaks", "node", "npm"]) {
-    const validationCommandPath = resolve(validationCommandStubDirectory, validationCommandName);
-    writeFileSync(validationCommandPath, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
-    chmodSync(validationCommandPath, 0o755);
-  }
+  writeValidationCommandStubs(validationCommandStubDirectory);
 
   try {
     const validationRun = spawnSync(
@@ -881,14 +880,16 @@ ln -s -- "$VALIDATION_EXTERNAL_TARGET" "$VALIDATION_LOCK_PATH"
       {
         cwd: repositoryDirectory,
         encoding: "utf8",
-        env: {
-          ...process.env,
-          PATH: `${validationCommandStubDirectory}:${process.env.PATH}`,
-          TMPDIR: temporaryReplacementTestDirectory,
-          VALIDATION_EXTERNAL_TARGET: externalLockTargetDirectory,
-          VALIDATION_LOCK_PATH: validationLockPath,
-          VALIDATION_LOCK_REPLACEMENT_BACKUP: validationLockReplacementBackupDirectory,
-        },
+        env: validationTestEnvironment(
+          validationCommandStubDirectory,
+          canonicalGitCommonDirectory,
+          {
+            TMPDIR: temporaryReplacementTestDirectory,
+            VALIDATION_EXTERNAL_TARGET: externalLockTargetDirectory,
+            VALIDATION_LOCK_PATH: validationLockPath,
+            VALIDATION_LOCK_REPLACEMENT_BACKUP: validationLockReplacementBackupDirectory,
+          }
+        ),
       }
     );
     assert.equal(validationRun.status, 75, validationRun.stderr);
@@ -908,21 +909,10 @@ test("reclaims a SIGKILL-style partial validation owner after initialization gra
     temporaryPartialOwnerTestDirectory,
     "everforest-local-validation"
   );
+  const canonicalGitCommonDirectory = realpathSync(temporaryPartialOwnerTestDirectory);
   const validationLockDirectory = resolve(
     validationLockParentDirectory,
-    `${createHash("sha256")
-      .update(
-        realpathSync(
-          resolve(
-            repositoryDirectory,
-            execFileSync("git", ["rev-parse", "--git-common-dir"], {
-              cwd: repositoryDirectory,
-              encoding: "utf8",
-            }).trim()
-          )
-        )
-      )
-      .digest("hex")}.lock`
+    `${createHash("sha256").update(canonicalGitCommonDirectory).digest("hex")}.lock`
   );
   const validationCommandStubDirectory = resolve(temporaryPartialOwnerTestDirectory, "bin");
   const partialMetadataPath = resolve(validationLockDirectory, ".owner.tmp.999999999");
@@ -930,20 +920,9 @@ test("reclaims a SIGKILL-style partial validation owner after initialization gra
   mkdirSync(validationCommandStubDirectory);
   writeFileSync(partialMetadataPath, "partial owner metadata\n");
 
-  const validationCommandStubs = {
+  writeValidationCommandStubs(validationCommandStubDirectory, {
     act: "#!/bin/sh\nexit 1\n",
-    docker: "#!/bin/sh\nexit 0\n",
-    gitleaks: "#!/bin/sh\nexit 0\n",
-    node: "#!/bin/sh\nif [ \"$1\" = -p ]; then printf '%s\\n' '24.14.0'; fi\n",
-    npm: "#!/bin/sh\nexit 0\n",
-  };
-  for (const [validationCommandName, validationCommandSource] of Object.entries(
-    validationCommandStubs
-  )) {
-    const validationCommandPath = resolve(validationCommandStubDirectory, validationCommandName);
-    writeFileSync(validationCommandPath, validationCommandSource, { mode: 0o755 });
-    chmodSync(validationCommandPath, 0o755);
-  }
+  });
 
   try {
     const validationRun = spawnSync(
@@ -952,11 +931,11 @@ test("reclaims a SIGKILL-style partial validation owner after initialization gra
       {
         cwd: repositoryDirectory,
         encoding: "utf8",
-        env: {
-          ...process.env,
-          PATH: `${validationCommandStubDirectory}:${process.env.PATH}`,
-          TMPDIR: temporaryPartialOwnerTestDirectory,
-        },
+        env: validationTestEnvironment(
+          validationCommandStubDirectory,
+          canonicalGitCommonDirectory,
+          { TMPDIR: temporaryPartialOwnerTestDirectory }
+        ),
       }
     );
     assert.equal(validationRun.status, 1, validationRun.stderr);
@@ -975,21 +954,10 @@ test("does not steal a live partial validation owner", () => {
     temporaryLiveOwnerTestDirectory,
     "everforest-local-validation"
   );
+  const canonicalGitCommonDirectory = realpathSync(temporaryLiveOwnerTestDirectory);
   const validationLockDirectory = resolve(
     validationLockParentDirectory,
-    `${createHash("sha256")
-      .update(
-        realpathSync(
-          resolve(
-            repositoryDirectory,
-            execFileSync("git", ["rev-parse", "--git-common-dir"], {
-              cwd: repositoryDirectory,
-              encoding: "utf8",
-            }).trim()
-          )
-        )
-      )
-      .digest("hex")}.lock`
+    `${createHash("sha256").update(canonicalGitCommonDirectory).digest("hex")}.lock`
   );
   const liveOwnerTemporaryMetadataPath = resolve(
     validationLockDirectory,
@@ -1000,20 +968,7 @@ test("does not steal a live partial validation owner", () => {
   mkdirSync(validationCommandStubDirectory);
   writeFileSync(liveOwnerTemporaryMetadataPath, "live owner\n");
 
-  const validationCommandStubs = {
-    act: "#!/bin/sh\nexit 0\n",
-    docker: "#!/bin/sh\nexit 0\n",
-    gitleaks: "#!/bin/sh\nexit 0\n",
-    node: "#!/bin/sh\nif [ \"$1\" = -p ]; then printf '%s\\n' '24.14.0'; fi\n",
-    npm: "#!/bin/sh\nexit 0\n",
-  };
-  for (const [validationCommandName, validationCommandSource] of Object.entries(
-    validationCommandStubs
-  )) {
-    const validationCommandPath = resolve(validationCommandStubDirectory, validationCommandName);
-    writeFileSync(validationCommandPath, validationCommandSource, { mode: 0o755 });
-    chmodSync(validationCommandPath, 0o755);
-  }
+  writeValidationCommandStubs(validationCommandStubDirectory);
 
   try {
     const validationRun = spawnSync(
@@ -1022,11 +977,11 @@ test("does not steal a live partial validation owner", () => {
       {
         cwd: repositoryDirectory,
         encoding: "utf8",
-        env: {
-          ...process.env,
-          PATH: `${validationCommandStubDirectory}:${process.env.PATH}`,
-          TMPDIR: temporaryLiveOwnerTestDirectory,
-        },
+        env: validationTestEnvironment(
+          validationCommandStubDirectory,
+          canonicalGitCommonDirectory,
+          { TMPDIR: temporaryLiveOwnerTestDirectory }
+        ),
       }
     );
     assert.equal(validationRun.status, 75, validationRun.stderr);

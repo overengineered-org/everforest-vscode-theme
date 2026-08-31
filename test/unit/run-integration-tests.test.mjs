@@ -11,6 +11,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 import JSZip from "jszip";
 import {
@@ -26,6 +27,10 @@ import {
   runWithIntegrationDeadline,
   runTrackedCommand,
 } from "../../scripts/run-integration-tests.mjs";
+
+const descendantHeartbeatFixturePath = fileURLToPath(
+  new URL("../fixtures/descendant-heartbeat-process.mjs", import.meta.url)
+);
 
 function temporaryRunnerTestDirectory() {
   return mkdtempSync(join(tmpdir(), "everforest-integration-runner-"));
@@ -197,36 +202,34 @@ test(
   },
   async () => {
     const testDirectory = temporaryRunnerTestDirectory();
-    const descendantPidPath = join(testDirectory, "descendant.pid");
-    const descendantScript = "setTimeout(() => {}, 5000)";
-    const parentScript = [
-      "const { spawn } = require('node:child_process');",
-      "const { writeFileSync } = require('node:fs');",
-      `const descendantProcess = spawn(process.execPath, ['-e', ${JSON.stringify(descendantScript)}], { stdio: 'ignore' });`,
-      `writeFileSync(${JSON.stringify(descendantPidPath)}, String(descendantProcess.pid));`,
-      "setTimeout(() => {}, 5000);",
-    ].join("\n");
+    const descendantReadyPath = join(testDirectory, "descendant.ready");
+    const descendantHeartbeatPath = join(testDirectory, "descendant.heartbeat");
 
     try {
-      await assert.rejects(
-        runTrackedCommand(process.execPath, ["-e", parentScript], {
+      const timeoutAssertion = assert.rejects(
+        runTrackedCommand(process.execPath, [descendantHeartbeatFixturePath], {
           commandLabel: "descendant liveness test",
-          timeoutMilliseconds: 500,
+          environment: {
+            EVERFOREST_DESCENDANT_HEARTBEAT_PATH: descendantHeartbeatPath,
+            EVERFOREST_DESCENDANT_READY_PATH: descendantReadyPath,
+          },
+          timeoutMilliseconds: 5_000,
         }),
         /descendant liveness test exceeded its \d+ms wall-clock timeout/
       );
-      const descendantProcessId = Number(readFileSync(descendantPidPath, "utf8"));
-      let descendantProcessStillAlive = true;
-      for (let pollAttempt = 0; pollAttempt < 20; pollAttempt += 1) {
-        try {
-          process.kill(descendantProcessId, 0);
-        } catch {
-          descendantProcessStillAlive = false;
+      let descendantProcessStarted = false;
+      for (let pollAttempt = 0; pollAttempt < 400; pollAttempt += 1) {
+        if (existsSync(descendantReadyPath) && existsSync(descendantHeartbeatPath)) {
+          descendantProcessStarted = true;
           break;
         }
-        await new Promise((resolvePoll) => setTimeout(resolvePoll, 20));
+        await new Promise((resolvePoll) => setTimeout(resolvePoll, 10));
       }
-      assert.equal(descendantProcessStillAlive, false);
+      await timeoutAssertion;
+      assert.equal(descendantProcessStarted, true, "descendant fixture did not become ready");
+      const heartbeatAfterTermination = readFileSync(descendantHeartbeatPath, "utf8");
+      await new Promise((resolveHeartbeatCheck) => setTimeout(resolveHeartbeatCheck, 200));
+      assert.equal(readFileSync(descendantHeartbeatPath, "utf8"), heartbeatAfterTermination);
     } finally {
       rmSync(testDirectory, { force: true, recursive: true });
     }

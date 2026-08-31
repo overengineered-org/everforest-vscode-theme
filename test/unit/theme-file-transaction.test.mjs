@@ -48,6 +48,8 @@ const oldDarkThemeSource = createThemeSource(darkThemeName, darkThemeType, "#111
 const oldLightThemeSource = createThemeSource(lightThemeName, lightThemeType, "#222222");
 const newDarkThemeSource = createThemeSource(darkThemeName, darkThemeType, "#333333");
 const newLightThemeSource = createThemeSource(lightThemeName, lightThemeType, "#444444");
+const corruptedDarkThemeBytes = Buffer.from([0xff, 0x00, 0xfe]);
+const corruptedLightThemeBytes = Buffer.from([0x80, 0x81, 0x82]);
 
 function createThemeFileSystem(overrides = {}) {
   return {
@@ -145,6 +147,28 @@ test("replaces both fixed theme files durably and cleans sibling artifacts", asy
       darkThemeFileName,
       lightThemeFileName,
       "unrelated.tmp",
+    ]);
+  });
+});
+
+test("repairs corrupted configured themes", async () => {
+  await withThemeFiles(async (temporaryDirectoryPath, themeFilePaths) => {
+    await Promise.all([
+      writeFile(themeFilePaths.darkThemePath, corruptedDarkThemeBytes),
+      writeFile(themeFilePaths.lightThemePath, corruptedLightThemeBytes),
+    ]);
+
+    assert.equal(
+      await replaceConfiguredThemeFiles(themeFilePaths, createThemeFileSources(), {
+        transactionToken,
+      }),
+      true
+    );
+    assert.equal(await readFile(themeFilePaths.darkThemePath, "utf8"), newDarkThemeSource);
+    assert.equal(await readFile(themeFilePaths.lightThemePath, "utf8"), newLightThemeSource);
+    assert.deepEqual(await readdir(temporaryDirectoryPath), [
+      darkThemeFileName,
+      lightThemeFileName,
     ]);
   });
 });
@@ -272,6 +296,10 @@ test("bounds theme and journal reads and rejects non-regular sentinels", async (
 
 test("rolls back the exact old pair and modes when second rename fails", async () => {
   await withThemeFiles(async (_temporaryDirectoryPath, themeFilePaths) => {
+    await Promise.all([
+      writeFile(themeFilePaths.darkThemePath, corruptedDarkThemeBytes),
+      writeFile(themeFilePaths.lightThemePath, corruptedLightThemeBytes),
+    ]);
     await chmod(themeFilePaths.darkThemePath, 0o600);
     await chmod(themeFilePaths.lightThemePath, 0o640);
     const failingFileSystem = createThemeFileSystem({
@@ -291,8 +319,8 @@ test("rolls back the exact old pair and modes when second rename fails", async (
       }),
       /light rename failed/
     );
-    assert.equal(await readFile(themeFilePaths.darkThemePath, "utf8"), oldDarkThemeSource);
-    assert.equal(await readFile(themeFilePaths.lightThemePath, "utf8"), oldLightThemeSource);
+    assert.deepEqual(await readFile(themeFilePaths.darkThemePath), corruptedDarkThemeBytes);
+    assert.deepEqual(await readFile(themeFilePaths.lightThemePath), corruptedLightThemeBytes);
     assert.equal((await lstat(themeFilePaths.darkThemePath)).mode & 0o7777, 0o600);
     assert.equal((await lstat(themeFilePaths.lightThemePath)).mode & 0o7777, 0o640);
     assert.deepEqual(await readdir(_temporaryDirectoryPath), [
@@ -531,7 +559,7 @@ test("keeps committed files when cleanup fails, then recovery retries cleanup", 
   });
 });
 
-test("preparing recovery removes only artifacts, while prepared recovery restores both files", async () => {
+test("preparing recovery removes only artifacts, while prepared recovery restores exact files", async () => {
   await withThemeFiles(async (temporaryDirectoryPath, themeFilePaths) => {
     const preparingArtifacts = createArtifactPaths(temporaryDirectoryPath, transactionToken);
     await Promise.all([
@@ -548,18 +576,24 @@ test("preparing recovery removes only artifacts, while prepared recovery restore
     await Promise.all([
       writeFile(preparedArtifacts.darkThemeTempPath, newDarkThemeSource),
       writeFile(preparedArtifacts.lightThemeTempPath, newLightThemeSource),
-      writeFile(preparedArtifacts.darkThemeBackupPath, oldDarkThemeSource),
-      writeFile(preparedArtifacts.lightThemeBackupPath, oldLightThemeSource),
+      writeFile(preparedArtifacts.darkThemeBackupPath, corruptedDarkThemeBytes),
+      writeFile(preparedArtifacts.lightThemeBackupPath, corruptedLightThemeBytes),
       writeFile(
         preparedArtifacts.journalPath,
-        JSON.stringify(createJournal(recoveryToken, "prepared"))
+        JSON.stringify(createJournal(recoveryToken, "prepared", { dark: 0o600, light: 0o640 }))
       ),
       writeFile(themeFilePaths.darkThemePath, newDarkThemeSource),
       writeFile(themeFilePaths.lightThemePath, newLightThemeSource),
     ]);
+    await Promise.all([
+      chmod(preparedArtifacts.darkThemeBackupPath, 0o600),
+      chmod(preparedArtifacts.lightThemeBackupPath, 0o640),
+    ]);
     await recoverConfiguredThemeFileTransaction(themeFilePaths);
-    assert.equal(await readFile(themeFilePaths.darkThemePath, "utf8"), oldDarkThemeSource);
-    assert.equal(await readFile(themeFilePaths.lightThemePath, "utf8"), oldLightThemeSource);
+    assert.deepEqual(await readFile(themeFilePaths.darkThemePath), corruptedDarkThemeBytes);
+    assert.deepEqual(await readFile(themeFilePaths.lightThemePath), corruptedLightThemeBytes);
+    assert.equal((await lstat(themeFilePaths.darkThemePath)).mode & 0o7777, 0o600);
+    assert.equal((await lstat(themeFilePaths.lightThemePath)).mode & 0o7777, 0o640);
     await assert.rejects(readFile(preparedArtifacts.journalPath, "utf8"), { code: "ENOENT" });
   });
 });
@@ -740,7 +774,7 @@ test("rejects malformed transaction journals without following journal paths", a
   });
 });
 
-test("preserves a journal when recovery artifacts are missing, malformed, or wrong-mode", async () => {
+test("preserves a journal when recovery artifacts are missing or wrong-mode", async () => {
   await withThemeFiles(async (temporaryDirectoryPath, themeFilePaths) => {
     const artifacts = createArtifactPaths(temporaryDirectoryPath, transactionToken);
     const journal = createJournal(transactionToken, "prepared");
@@ -751,21 +785,6 @@ test("preserves a journal when recovery artifacts are missing, malformed, or wro
     );
     assert.equal(await readFile(artifacts.journalPath, "utf8"), JSON.stringify(journal));
     await unlink(artifacts.journalPath);
-
-    await Promise.all([
-      writeFile(artifacts.journalPath, JSON.stringify(journal)),
-      writeFile(artifacts.darkThemeBackupPath, "not-json"),
-      writeFile(artifacts.lightThemeBackupPath, oldLightThemeSource),
-      writeFile(themeFilePaths.darkThemePath, newDarkThemeSource),
-      writeFile(themeFilePaths.lightThemePath, newLightThemeSource),
-    ]);
-    await assert.rejects(
-      recoverConfiguredThemeFileTransaction(themeFilePaths),
-      /Could not recover interrupted theme file transaction/
-    );
-    await rm(artifacts.journalPath);
-    await rm(artifacts.darkThemeBackupPath);
-    await rm(artifacts.lightThemeBackupPath);
 
     await Promise.all([
       writeFile(artifacts.journalPath, JSON.stringify(journal)),
