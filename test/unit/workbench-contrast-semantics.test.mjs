@@ -14,6 +14,18 @@ const themeVariants = [
   ["light", "hard"],
 ];
 
+function renderedSliderContrastSequence(workbenchColors, sliderIdentifierPrefix, backgroundColor) {
+  return ["background", "hoverBackground", "activeBackground"].map((interactionState) =>
+    contrastRatio(
+      compositeHexColor(
+        workbenchColors[`${sliderIdentifierPrefix}.${interactionState}`],
+        backgroundColor
+      ),
+      backgroundColor
+    )
+  );
+}
+
 test("keeps minimap highlights at 3:1 non-text contrast", () => {
   for (const [themeAppearance, themeContrast] of themeVariants) {
     const rawPalette = getPalette(themeAppearance, themeContrast);
@@ -29,6 +41,7 @@ test("keeps minimap highlights at 3:1 non-text contrast", () => {
       "minimap.selectionHighlight",
       "minimap.selectionOccurrenceHighlight",
       "minimap.chatEditHighlight",
+      "minimap.infoHighlight",
     ]) {
       const compositedMinimapHighlightColor = compositeHexColor(
         workbenchColors[minimapHighlightIdentifier],
@@ -39,6 +52,73 @@ test("keeps minimap highlights at 3:1 non-text contrast", () => {
         `${themeAppearance} ${themeContrast} ${minimapHighlightIdentifier}`
       );
     }
+  }
+});
+
+test("keeps scrollbar and minimap controls subtle with clear interaction states", () => {
+  for (const [themeAppearance, themeContrast] of themeVariants) {
+    const rawPalette = getPalette(themeAppearance, themeContrast);
+    const readableTextPalette = getReadableTextPalette(themeAppearance, rawPalette);
+    const themePreferences = {
+      ...defaultThemePreferences[themeAppearance],
+      contrast: themeContrast,
+    };
+    const workbenchColors = createWorkbenchColors(rawPalette, themePreferences);
+    const editorBackgroundColor = workbenchColors["editor.background"];
+    const themeLabel = `${themeAppearance} ${themeContrast}`;
+    const expectedNeutralSliderColor =
+      themeAppearance === "dark" ? rawPalette.grey0 : readableTextPalette.grey2;
+    const expectedScrollbarSliderAlphaChannels =
+      themeAppearance === "dark" ? ["50", "90", "ff"] : ["58", "88", "d0"];
+    const expectedMinimapSliderAlphaChannels =
+      themeAppearance === "dark" ? ["28", "68", "b0"] : ["40", "68", "98"];
+
+    assert.equal(workbenchColors["scrollbar.background"], `${rawPalette.bg}00`);
+    assert.equal(workbenchColors["minimap.background"], editorBackgroundColor);
+    assert.equal(workbenchColors["editorOverviewRuler.background"], editorBackgroundColor);
+    assert.equal(
+      workbenchColors["minimap.foregroundOpacity"].slice(-2),
+      themeAppearance === "dark" ? "a0" : "c0"
+    );
+
+    const sliderInteractionStates = ["background", "hoverBackground", "activeBackground"];
+    for (const [sliderStateIndex, sliderInteractionState] of sliderInteractionStates.entries()) {
+      assert.equal(
+        workbenchColors[`scrollbarSlider.${sliderInteractionState}`],
+        `${expectedNeutralSliderColor}${expectedScrollbarSliderAlphaChannels[sliderStateIndex]}`,
+        `${themeLabel} scrollbar ${sliderInteractionState}`
+      );
+      assert.equal(
+        workbenchColors[`notebookScrollbarSlider.${sliderInteractionState}`],
+        workbenchColors[`scrollbarSlider.${sliderInteractionState}`],
+        `${themeLabel} notebook scrollbar ${sliderInteractionState}`
+      );
+      assert.equal(
+        workbenchColors[`minimapSlider.${sliderInteractionState}`],
+        `${expectedNeutralSliderColor}${expectedMinimapSliderAlphaChannels[sliderStateIndex]}`,
+        `${themeLabel} minimap slider ${sliderInteractionState}`
+      );
+    }
+
+    const [scrollbarIdleContrast, scrollbarHoverContrast, scrollbarActiveContrast] =
+      renderedSliderContrastSequence(workbenchColors, "scrollbarSlider", editorBackgroundColor);
+    assert.ok(
+      scrollbarIdleContrast >= 1.35 &&
+        scrollbarHoverContrast - scrollbarIdleContrast >= 0.4 &&
+        scrollbarActiveContrast - scrollbarHoverContrast >= 0.4 &&
+        scrollbarActiveContrast >= 3,
+      `${themeLabel} scrollbar states must progress from subtle to prominent`
+    );
+
+    const [minimapSliderIdleContrast, minimapSliderHoverContrast, minimapSliderActiveContrast] =
+      renderedSliderContrastSequence(workbenchColors, "minimapSlider", editorBackgroundColor);
+    assert.ok(
+      minimapSliderIdleContrast >= 1.2 &&
+        minimapSliderHoverContrast - minimapSliderIdleContrast >= 0.25 &&
+        minimapSliderActiveContrast - minimapSliderHoverContrast >= 0.25 &&
+        minimapSliderActiveContrast >= 2,
+      `${themeLabel} minimap slider states must progress without obscuring code`
+    );
   }
 });
 

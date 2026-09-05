@@ -94,6 +94,15 @@ const expectedSemanticWorkbenchStateColorsByThemeType = {
   dark: {
     "minimap.selectionOccurrenceHighlight": "#9ba89ed0",
     "minimap.chatEditHighlight": "#a7c080c0",
+    "scrollbarSlider.background": "#7f897d50",
+    "scrollbarSlider.hoverBackground": "#7f897d90",
+    "scrollbarSlider.activeBackground": "#7f897dff",
+    "notebookScrollbarSlider.background": "#7f897d50",
+    "notebookScrollbarSlider.hoverBackground": "#7f897d90",
+    "notebookScrollbarSlider.activeBackground": "#7f897dff",
+    "minimapSlider.background": "#7f897d28",
+    "minimapSlider.hoverBackground": "#7f897d68",
+    "minimapSlider.activeBackground": "#7f897db0",
     "chart.line": "#7fbbb3",
     "chart.axis": "#d3c6aa66",
     "chart.guide": "#d3c6aa33",
@@ -108,6 +117,15 @@ const expectedSemanticWorkbenchStateColorsByThemeType = {
   light: {
     "minimap.selectionOccurrenceHighlight": "#59646cd0",
     "minimap.chatEditHighlight": "#596600c0",
+    "scrollbarSlider.background": "#59646c58",
+    "scrollbarSlider.hoverBackground": "#59646c88",
+    "scrollbarSlider.activeBackground": "#59646cd0",
+    "notebookScrollbarSlider.background": "#59646c58",
+    "notebookScrollbarSlider.hoverBackground": "#59646c88",
+    "notebookScrollbarSlider.activeBackground": "#59646cd0",
+    "minimapSlider.background": "#59646c40",
+    "minimapSlider.hoverBackground": "#59646c68",
+    "minimapSlider.activeBackground": "#59646c98",
     "chart.line": "#2e5f94",
     "chart.axis": "#59646c99",
     "chart.guide": "#59646c33",
@@ -611,6 +629,23 @@ function validateInstalledSemanticWorkbenchStateColors(theme, themeLabel, contra
       theme.colors[semanticWorkbenchColorIdentifier],
       expectedInstalledSemanticWorkbenchColor,
       `${themeLabel} must install ${semanticWorkbenchColorIdentifier}`
+    );
+  }
+
+  assert.equal(theme.colors["scrollbar.background"], `${theme.colors["editor.background"]}00`);
+  assert.equal(
+    theme.colors["minimap.foregroundOpacity"].slice(-2),
+    theme.type === "dark" ? "a0" : "c0",
+    `${themeLabel} installed minimap foreground opacity`
+  );
+  for (const continuousEditorSurfaceIdentifier of [
+    "minimap.background",
+    "editorOverviewRuler.background",
+  ]) {
+    assert.equal(
+      theme.colors[continuousEditorSurfaceIdentifier],
+      theme.colors["editor.background"],
+      `${themeLabel} installed ${continuousEditorSurfaceIdentifier} must continue the editor surface`
     );
   }
 

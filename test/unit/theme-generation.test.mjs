@@ -1066,7 +1066,6 @@ for (const themeVariant of themeVariants) {
       ["statusBarItem.prominentHoverForeground", "statusBarItem.prominentHoverBackground", 4.5],
       ["editorBracketMatch.foreground", "editorBracketMatch.background", 4.5],
       ["editorBracketMatch.border", "editor.background", 3],
-      ["minimap.foregroundOpacity", "minimap.background", 3],
     ]) {
       assert.ok(
         contrastRatio(
@@ -1076,7 +1075,6 @@ for (const themeVariant of themeVariants) {
         `${foregroundIdentifier} on ${backgroundIdentifier}`
       );
     }
-    assert.match(workbenchColors["minimap.foregroundOpacity"], /^#[0-9a-f]{8}$/i);
   });
 
   test(`${themeVariant.appearance} ${themeVariant.contrast} uses strong high-contrast borders`, () => {

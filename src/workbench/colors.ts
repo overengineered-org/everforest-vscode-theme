@@ -580,6 +580,13 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
   const selectionOccurrenceBackgroundColor = `${selectionColor}${appearance === "dark" ? "20" : "30"}`;
   const minimapSelectionHighlightColor = `${readableSelectionColor}e0`;
   const minimapSelectionOccurrenceHighlightColor = `${readableSelectionColor}d0`;
+  const neutralSliderColor = appearance === "dark" ? palette.grey0 : readableTextPalette.grey2;
+  const scrollbarSliderBackgroundColor = `${neutralSliderColor}${appearance === "dark" ? "50" : "58"}`;
+  const scrollbarSliderHoverBackgroundColor = `${neutralSliderColor}${appearance === "dark" ? "90" : "88"}`;
+  const scrollbarSliderActiveBackgroundColor = `${neutralSliderColor}${appearance === "dark" ? "ff" : "d0"}`;
+  const minimapSliderBackgroundColor = `${neutralSliderColor}${appearance === "dark" ? "28" : "40"}`;
+  const minimapSliderHoverBackgroundColor = `${neutralSliderColor}68`;
+  const minimapSliderActiveBackgroundColor = `${neutralSliderColor}${appearance === "dark" ? "b0" : "98"}`;
   const selectedTextForegroundColor = readableTextPalette.invertedText;
   const resolvedCommentIndicator = readableTextPalette.grey2;
   const unresolvedCommentIndicator = accessibleBlueForeground;
@@ -631,10 +638,14 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "inputValidation.warningBorder": readableWorkbenchAccentColors.yellow,
     "inputValidation.warningBackground": palette.bg2,
     "inputValidation.warningForeground": primaryWorkbenchForeground,
+    "scrollbar.background": `${palette.bg}00`,
     "scrollbar.shadow": palette.shadow,
-    "scrollbarSlider.activeBackground": palette.grey2,
-    "scrollbarSlider.hoverBackground": palette.bg5,
-    "scrollbarSlider.background": `${palette.bg5}80`,
+    "scrollbarSlider.background": scrollbarSliderBackgroundColor,
+    "scrollbarSlider.hoverBackground": scrollbarSliderHoverBackgroundColor,
+    "scrollbarSlider.activeBackground": scrollbarSliderActiveBackgroundColor,
+    "notebookScrollbarSlider.background": scrollbarSliderBackgroundColor,
+    "notebookScrollbarSlider.hoverBackground": scrollbarSliderHoverBackgroundColor,
+    "notebookScrollbarSlider.activeBackground": scrollbarSliderActiveBackgroundColor,
     "badge.background": palette.badge,
     "badge.foreground": accentForeground,
     "progressBar.background": palette.badge,
@@ -669,7 +680,8 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "sideBarSectionHeader.background": `${palette.bg}00`,
     "sideBarTitle.foreground": activeWorkbenchForeground,
     "sideBarSectionHeader.foreground": primaryWorkbenchForeground,
-    "minimap.foregroundOpacity": `${readableTextPalette.fg}d0`,
+    "minimap.background": palette.bg,
+    "minimap.foregroundOpacity": `#000000${appearance === "dark" ? "a0" : "c0"}`,
     "minimap.findMatchHighlight": `${readableWorkbenchAccentColors.cyan}c0`,
     "minimap.selectionHighlight": minimapSelectionHighlightColor,
     "minimap.selectionOccurrenceHighlight": minimapSelectionOccurrenceHighlightColor,
@@ -679,6 +691,9 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "minimapGutter.addedBackground": readableWorkbenchAccentColors.green,
     "minimapGutter.modifiedBackground": readableWorkbenchAccentColors.blue,
     "minimapGutter.deletedBackground": readableWorkbenchAccentColors.red,
+    "minimapSlider.background": minimapSliderBackgroundColor,
+    "minimapSlider.hoverBackground": minimapSliderHoverBackgroundColor,
+    "minimapSlider.activeBackground": minimapSliderActiveBackgroundColor,
     "editorGroup.border": palette.bg4,
     "editorGroupHeader.tabsBackground": palette.bg1,
     "editorGroupHeader.noTabsBackground": palette.bg1,
@@ -747,6 +762,7 @@ export function createWorkbenchColors(palette: Palette, themePreferences: ThemeP
     "editorBracketHighlight.foreground5": readableTextPalette.orange,
     "editorBracketHighlight.foreground6": readableTextPalette.purple,
     "editorBracketHighlight.unexpectedBracket.foreground": readableTextPalette.grey2,
+    "editorOverviewRuler.background": palette.bg,
     "editorOverviewRuler.border": `${palette.bg}00`,
     "editorOverviewRuler.findMatchForeground": `${readableTextPalette.aqua}d0`,
     "editorOverviewRuler.rangeHighlightForeground": `${readableTextPalette.aqua}d0`,

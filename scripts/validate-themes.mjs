@@ -438,6 +438,7 @@ function validateReadableThemeMatrix(themePath, generatedTheme) {
     ["editorCodeLens.foreground", "editor.background", 4.5],
     ["minimap.errorHighlight", "minimap.background", 3],
     ["minimap.warningHighlight", "minimap.background", 3],
+    ["minimap.infoHighlight", "minimap.background", 3],
     ["minimapGutter.modifiedBackground", "minimap.background", 3],
     ["minimapGutter.addedBackground", "minimap.background", 3],
     ["minimapGutter.deletedBackground", "minimap.background", 3],
@@ -563,16 +564,14 @@ function validateReadableThemeMatrix(themePath, generatedTheme) {
   }
 
   const minimapForegroundOpacity = themeColors["minimap.foregroundOpacity"];
-  if (alphaChannelFromHexColor(minimapForegroundOpacity) === undefined) {
-    throw new Error(`${themePath}: minimap.foregroundOpacity must include alpha`);
+  const minimapForegroundAlphaChannel = alphaChannelFromHexColor(minimapForegroundOpacity);
+  if (
+    minimapForegroundAlphaChannel === undefined ||
+    minimapForegroundAlphaChannel < 0x80 ||
+    minimapForegroundAlphaChannel > 0xc0
+  ) {
+    throw new Error(`${themePath}: minimap.foregroundOpacity must stay between 50% and 75%`);
   }
-  assertThemeColorContrast(
-    themePath,
-    minimapForegroundOpacity,
-    resolveWorkbenchBackground(themeColors, "minimap.background"),
-    3,
-    "minimap.foregroundOpacity"
-  );
 
   const diagnosticForegroundByIdentifier = {
     "editorError.foreground": "editorError.background",
