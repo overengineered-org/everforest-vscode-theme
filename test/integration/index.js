@@ -13,6 +13,13 @@ const {
   requiredSemanticTokenIdentifiers,
   requiredSyntaxScopes,
 } = require("../support/theme-manifest.cjs");
+const {
+  canonicalTextMateScopeBySyntaxRole,
+  forbiddenTextMateContainerScopes,
+  requiredSyntaxRoleByScope,
+  resolveSyntaxForeground,
+  semanticTokenIdentifierBySyntaxRole,
+} = require("../support/syntax-role-contract.cjs");
 
 const extensionIdentifier = "overengineered-org.everforest-complete";
 const packagedExtensionDirectory = resolve(__dirname, "../../dist");
@@ -1080,6 +1087,39 @@ async function run() {
       assert.ok(
         installedSyntaxScopes.has(requiredSyntaxScope),
         `${themeContribution.label} must install syntax scope ${requiredSyntaxScope}`
+      );
+    }
+    for (const forbiddenTextMateContainerScope of forbiddenTextMateContainerScopes) {
+      assert.ok(
+        !installedSyntaxScopes.has(forbiddenTextMateContainerScope),
+        `${themeContribution.label} must not install broad scope ${forbiddenTextMateContainerScope}`
+      );
+    }
+    const installedSyntaxForegroundByRole = Object.fromEntries(
+      Object.entries(canonicalTextMateScopeBySyntaxRole).map(
+        ([syntaxRole, canonicalTextMateScope]) => [
+          syntaxRole,
+          resolveSyntaxForeground(theme.tokenColors, canonicalTextMateScope),
+        ]
+      )
+    );
+    for (const [syntaxScope, expectedSyntaxRole] of Object.entries(requiredSyntaxRoleByScope)) {
+      assert.equal(
+        resolveSyntaxForeground(theme.tokenColors, syntaxScope),
+        installedSyntaxForegroundByRole[expectedSyntaxRole],
+        `${themeContribution.label} ${syntaxScope} must install ${expectedSyntaxRole} role`
+      );
+    }
+    for (const [syntaxRole, semanticTokenIdentifier] of Object.entries(
+      semanticTokenIdentifierBySyntaxRole
+    )) {
+      const semanticTokenColor = theme.semanticTokenColors[semanticTokenIdentifier];
+      const semanticTokenForeground =
+        typeof semanticTokenColor === "string" ? semanticTokenColor : semanticTokenColor.foreground;
+      assert.equal(
+        semanticTokenForeground,
+        installedSyntaxForegroundByRole[syntaxRole],
+        `${themeContribution.label} ${semanticTokenIdentifier} must install ${syntaxRole} role`
       );
     }
     for (const searchMatchColorIdentifier of [

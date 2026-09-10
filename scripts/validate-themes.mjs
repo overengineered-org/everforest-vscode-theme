@@ -1,10 +1,18 @@
 import { readFileSync } from "node:fs";
 import { relative, resolve, sep } from "node:path";
 import themeManifest from "../test/support/theme-manifest.cjs";
+import syntaxRoleContract from "../test/support/syntax-role-contract.cjs";
 import { compositeHexColor, contrastRatio, validateHexColor } from "./color-contrast.mjs";
 import { findIndistinguishableHoverBackgroundPairs } from "./workbench-interaction-contract.mjs";
 
 const { requiredSemanticTokenIdentifiers, requiredSyntaxScopes } = themeManifest;
+const {
+  canonicalTextMateScopeBySyntaxRole,
+  forbiddenTextMateContainerScopes,
+  requiredSyntaxRoleByScope,
+  resolveSyntaxForeground,
+  semanticTokenIdentifierBySyntaxRole,
+} = syntaxRoleContract;
 const documentedWorkbenchColorContract = JSON.parse(
   readFileSync(resolve("src", "workbench", "documented-workbench-colors.json"), "utf8")
 );
@@ -356,11 +364,11 @@ function validateReadableThemeMatrix(themePath, generatedTheme) {
     white: themeColors["editorCursor.foreground"],
     black: themeColors["editorCursor.foreground"],
     red: readSemanticForegroundColor(generatedTheme.semanticTokenColors.keyword),
-    orange: readSemanticForegroundColor(generatedTheme.semanticTokenColors.operator),
-    yellow: readSemanticForegroundColor(generatedTheme.semanticTokenColors.string),
-    green: readSemanticForegroundColor(generatedTheme.semanticTokenColors.function),
-    aqua: readSemanticForegroundColor(generatedTheme.semanticTokenColors.namespace),
-    blue: readSemanticForegroundColor(generatedTheme.semanticTokenColors.type),
+    orange: readSemanticForegroundColor(generatedTheme.semanticTokenColors.modifier),
+    yellow: readSemanticForegroundColor(generatedTheme.semanticTokenColors.function),
+    green: readSemanticForegroundColor(generatedTheme.semanticTokenColors.string),
+    aqua: readSemanticForegroundColor(generatedTheme.semanticTokenColors.type),
+    blue: readSemanticForegroundColor(generatedTheme.semanticTokenColors.namespace),
     purple: readSemanticForegroundColor(generatedTheme.semanticTokenColors.enum),
   };
   for (const [cursorChoice, cursorColor] of Object.entries(cursorChoiceColors)) {
@@ -808,6 +816,37 @@ for (const { appearance, expectedBackground, expectedName, fileName } of shipped
   for (const requiredSyntaxScope of requiredSyntaxScopes) {
     if (!contributedSyntaxScopes.has(requiredSyntaxScope)) {
       throw new Error(`${themePath}: missing syntax scope ${requiredSyntaxScope}`);
+    }
+  }
+  for (const forbiddenTextMateContainerScope of forbiddenTextMateContainerScopes) {
+    if (contributedSyntaxScopes.has(forbiddenTextMateContainerScope)) {
+      throw new Error(`${themePath}: forbidden broad scope ${forbiddenTextMateContainerScope}`);
+    }
+  }
+  const syntaxForegroundByRole = Object.fromEntries(
+    Object.entries(canonicalTextMateScopeBySyntaxRole).map(
+      ([syntaxRole, canonicalTextMateScope]) => [
+        syntaxRole,
+        resolveSyntaxForeground(generatedTheme.tokenColors, canonicalTextMateScope),
+      ]
+    )
+  );
+  for (const [syntaxScope, expectedSyntaxRole] of Object.entries(requiredSyntaxRoleByScope)) {
+    const actualSyntaxForeground = resolveSyntaxForeground(generatedTheme.tokenColors, syntaxScope);
+    if (actualSyntaxForeground !== syntaxForegroundByRole[expectedSyntaxRole]) {
+      throw new Error(`${themePath}: ${syntaxScope} must use ${expectedSyntaxRole} syntax role`);
+    }
+  }
+  for (const [syntaxRole, semanticTokenIdentifier] of Object.entries(
+    semanticTokenIdentifierBySyntaxRole
+  )) {
+    const semanticTokenColor = generatedTheme.semanticTokenColors[semanticTokenIdentifier];
+    const semanticTokenForeground =
+      typeof semanticTokenColor === "string" ? semanticTokenColor : semanticTokenColor?.foreground;
+    if (semanticTokenForeground !== syntaxForegroundByRole[syntaxRole]) {
+      throw new Error(
+        `${themePath}: semantic token ${semanticTokenIdentifier} must use ${syntaxRole} syntax role`
+      );
     }
   }
   for (const generatedThemeColor of collectThemeColors(generatedTheme)) {

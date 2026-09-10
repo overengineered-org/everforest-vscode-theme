@@ -5,10 +5,21 @@ import test from "node:test";
 import { compositeHexColor, contrastRatio } from "../../scripts/color-contrast.mjs";
 import { findIndistinguishableHoverBackgroundPairs } from "../../scripts/workbench-interaction-contract.mjs";
 import { getPalette, getReadableTextPalette } from "../../dist/palette/index.js";
-import { getSemantic } from "../../dist/semantic.js";
 import { getDefaultSyntax } from "../../dist/syntax/default.js";
-import { defaultThemePreferences } from "../../dist/theme.js";
+import { getSyntaxRoleColors } from "../../dist/syntax/roles.js";
+import { createTheme, defaultThemePreferences } from "../../dist/theme.js";
 import { createWorkbenchColors } from "../../dist/workbench/colors.js";
+import syntaxRoleContract from "../support/syntax-role-contract.cjs";
+
+const {
+  canonicalTextMateScopeBySyntaxRole,
+  forbiddenTextMateContainerScopes,
+  highUseLanguageSyntaxRoleByScope,
+  normalizedSyntaxScopes,
+  representativeLanguageSyntaxRoleByScope,
+  resolveSyntaxForeground,
+  semanticTokenIdentifierBySyntaxRole,
+} = syntaxRoleContract;
 
 const documentedWorkbenchColorContract = JSON.parse(
   readFileSync(
@@ -249,41 +260,126 @@ function assertReadableWorkbenchStateMatrix(themeLabel, rawPalette, themePrefere
   }
 }
 
-function normalizedSyntaxScopes(syntaxTokenColor) {
-  return (
-    Array.isArray(syntaxTokenColor.scope)
-      ? syntaxTokenColor.scope
-      : syntaxTokenColor.scope.split(",")
-  ).map((syntaxScope) => syntaxScope.trim());
-}
-
 test("keeps language-specific syntax scopes collision-free", () => {
   const palette = getPalette("dark", "medium");
   const syntaxTokenColors = getDefaultSyntax(palette);
-  const scalaClassSyntaxRule = syntaxTokenColors.find(({ name }) => name === "Scala yellow");
+  const syntaxRulesForExactScope = (syntaxScope) =>
+    syntaxTokenColors.filter((syntaxTokenColor) =>
+      normalizedSyntaxScopes(syntaxTokenColor).includes(syntaxScope)
+    );
+  const [scalaClassSyntaxRule] = syntaxRulesForExactScope("entity.name.class.scala");
 
   assert.ok(scalaClassSyntaxRule, "Scala class syntax rule must exist");
+  assert.equal(syntaxRulesForExactScope("entity.name.class.scala").length, 1);
   const scalaClassScopes = normalizedSyntaxScopes(scalaClassSyntaxRule);
   assert.ok(scalaClassScopes.includes("entity.name.class.scala"));
   assert.ok(!scalaClassScopes.includes("entity.name.class"));
 
-  const phpModifierSyntaxRule = syntaxTokenColors.find(({ name }) => name === "PHP blue");
+  const [phpModifierSyntaxRule] = syntaxRulesForExactScope(
+    "storage.type.modifier.access.control.public.php"
+  );
   assert.ok(phpModifierSyntaxRule, "PHP modifier syntax rule must exist");
   assert.deepEqual(normalizedSyntaxScopes(phpModifierSyntaxRule), [
     "storage.type.modifier.access.control.public.php",
     "storage.type.modifier.access.control.private.php",
   ]);
+  assert.equal(phpModifierSyntaxRule.settings.foreground, palette.orange);
 
-  for (const [moduleScope, expectedSyntaxRuleName] of [
-    ["entity.name.type.module.ts", "TypeScript blue"],
-    ["entity.name.type.module.tsx", "TSX blue"],
-  ]) {
-    const moduleSyntaxRules = syntaxTokenColors.filter((syntaxTokenColor) =>
-      normalizedSyntaxScopes(syntaxTokenColor).includes(moduleScope)
-    );
+  for (const moduleScope of ["entity.name.type.module.ts", "entity.name.type.module.tsx"]) {
+    const moduleSyntaxRules = syntaxRulesForExactScope(moduleScope);
     assert.equal(moduleSyntaxRules.length, 1, `${moduleScope} must have one rule`);
-    assert.equal(moduleSyntaxRules[0].name, expectedSyntaxRuleName);
     assert.equal(moduleSyntaxRules[0].settings.foreground, palette.blue);
+  }
+});
+
+test("keeps one syntax meaning across semantic and TextMate highlighting", () => {
+  for (const themeVariant of themeVariants) {
+    const readablePalette = getReadableTextPalette(
+      themeVariant.appearance,
+      getPalette(themeVariant.appearance, themeVariant.contrast)
+    );
+    const syntaxRoleColors = getSyntaxRoleColors(readablePalette);
+    const generatedTheme = createTheme(preferencesForThemeVariant(themeVariant));
+
+    assert.equal(
+      new Set(
+        ["keyword", "declaration", "callable", "string", "type", "property", "constant"].map(
+          (syntaxRole) => syntaxRoleColors[syntaxRole]
+        )
+      ).size,
+      7,
+      `${themeVariant.appearance} ${themeVariant.contrast} core role accents`
+    );
+
+    for (const [syntaxRole, canonicalTextMateScope] of Object.entries(
+      canonicalTextMateScopeBySyntaxRole
+    )) {
+      assert.equal(
+        resolveSyntaxForeground(generatedTheme.tokenColors, canonicalTextMateScope),
+        syntaxRoleColors[syntaxRole],
+        `${themeVariant.appearance} ${themeVariant.contrast} ${syntaxRole} TextMate role`
+      );
+    }
+
+    for (const [syntaxRole, semanticTokenIdentifier] of Object.entries(
+      semanticTokenIdentifierBySyntaxRole
+    )) {
+      const semanticTokenRule = generatedTheme.semanticTokenColors[semanticTokenIdentifier];
+      const semanticTokenForeground =
+        typeof semanticTokenRule === "string" ? semanticTokenRule : semanticTokenRule.foreground;
+      assert.equal(
+        semanticTokenForeground,
+        syntaxRoleColors[syntaxRole],
+        `${themeVariant.appearance} ${themeVariant.contrast} ${syntaxRole} semantic role`
+      );
+    }
+  }
+});
+
+test("avoids broad container scopes that flatten expressions and function bodies", () => {
+  const forbiddenContainerScopes = new Set(forbiddenTextMateContainerScopes);
+  const syntaxTokenColors = getDefaultSyntax(getPalette("dark", "medium"));
+
+  for (const syntaxTokenColor of syntaxTokenColors) {
+    for (const syntaxScope of normalizedSyntaxScopes(syntaxTokenColor)) {
+      assert.ok(
+        !forbiddenContainerScopes.has(syntaxScope),
+        `${syntaxTokenColor.name} must not flatten ${syntaxScope}`
+      );
+    }
+  }
+});
+
+test("keeps popular language families on the shared role hierarchy", () => {
+  const readablePalette = getReadableTextPalette("dark", getPalette("dark", "medium"));
+  const syntaxRoleColors = getSyntaxRoleColors(readablePalette);
+  const syntaxTokenColors = getDefaultSyntax(readablePalette);
+  for (const [representativeScope, expectedSyntaxRole] of Object.entries(
+    representativeLanguageSyntaxRoleByScope
+  )) {
+    assert.equal(
+      resolveSyntaxForeground(syntaxTokenColors, representativeScope),
+      syntaxRoleColors[expectedSyntaxRole],
+      representativeScope
+    );
+  }
+});
+
+test("keeps high-use language grammars on the complete role hierarchy", () => {
+  const readablePalette = getReadableTextPalette("dark", getPalette("dark", "medium"));
+  const syntaxRoleColors = getSyntaxRoleColors(readablePalette);
+  const syntaxTokenColors = getDefaultSyntax(readablePalette);
+
+  for (const [languageIdentifier, syntaxRoleByScope] of Object.entries(
+    highUseLanguageSyntaxRoleByScope
+  )) {
+    for (const [syntaxScope, expectedSyntaxRole] of Object.entries(syntaxRoleByScope)) {
+      assert.equal(
+        resolveSyntaxForeground(syntaxTokenColors, syntaxScope),
+        syntaxRoleColors[expectedSyntaxRole],
+        `${languageIdentifier}: ${syntaxScope}`
+      );
+    }
   }
 });
 
@@ -291,8 +387,8 @@ for (const themeVariant of themeVariants) {
   test(`${themeVariant.appearance} ${themeVariant.contrast} generates complete source colors`, () => {
     const rawPalette = getPalette(themeVariant.appearance, themeVariant.contrast);
     const readableTextPalette = getReadableTextPalette(themeVariant.appearance, rawPalette);
-    const semanticTokenColors = getSemantic(readableTextPalette);
     const themePreferences = preferencesForThemeVariant(themeVariant);
+    const semanticTokenColors = createTheme(themePreferences).semanticTokenColors;
     const syntaxTokenColors = getDefaultSyntax(readableTextPalette, themePreferences);
     const workbenchColors = createWorkbenchColors(rawPalette, themePreferences);
     const missingDocumentedWorkbenchColorIdentifiers =
@@ -302,8 +398,8 @@ for (const themeVariant of themeVariants) {
       );
 
     assert.equal(rawPalette.bg, themeVariant.expectedBackground);
-    assert.equal(semanticTokenColors["class:typescript"], readableTextPalette.aqua);
-    assert.equal(semanticTokenColors["macro:rust"], readableTextPalette.aqua);
+    assert.equal(semanticTokenColors.class, readableTextPalette.aqua);
+    assert.equal(semanticTokenColors.macro, readableTextPalette.purple);
     assert.ok(syntaxTokenColors.length >= 50, "syntax coverage must remain broad");
     assert.deepEqual(missingDocumentedWorkbenchColorIdentifiers, []);
 
@@ -967,7 +1063,7 @@ for (const themeVariant of themeVariants) {
     const readableTextPalette = getReadableTextPalette(themeVariant.appearance, rawPalette);
     const themePreferences = preferencesForThemeVariant(themeVariant);
     const syntaxTokenColors = getDefaultSyntax(readableTextPalette, themePreferences);
-    const semanticTokenColors = getSemantic(readableTextPalette);
+    const semanticTokenColors = createTheme(themePreferences).semanticTokenColors;
 
     for (const syntaxTokenColor of syntaxTokenColors) {
       if (syntaxTokenColor.settings.foreground) {

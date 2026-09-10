@@ -21,6 +21,9 @@ flowchart LR
 | Capability             | Owner                           | Output                                            |
 | ---------------------- | ------------------------------- | ------------------------------------------------- |
 | Palette                | `src/palette/index.ts`          | Everforest colors                                 |
+| Syntax role vocabulary | `src/syntax/roles.ts`           | Shared TextMate and semantic meaning              |
+| TextMate coverage      | `src/syntax/default.ts`         | Generic roles and language-specific refinements   |
+| Semantic compilation   | `src/theme.ts`                  | Generic and provider-specific token roles         |
 | Theme compilation      | `src/theme.ts`                  | Complete preset/configurable data                 |
 | Configuration model    | `src/configuration.ts`          | Staged native setting updates                     |
 | Native controls        | `src/configuration-ui.ts`       | Guided, advanced, and automatic choices           |

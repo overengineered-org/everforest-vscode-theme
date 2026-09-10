@@ -1,7 +1,7 @@
 import { Palette, ThemeAppearance, ThemePreferences } from "./interface";
 import { getPalette, getReadableTextPalette } from "./palette";
-import { getSemantic } from "./semantic";
 import { getDefaultSyntax } from "./syntax/default";
+import { getSyntaxRoleColors } from "./syntax/roles";
 import { createWorkbenchColors } from "./workbench/colors";
 
 export interface GeneratedTheme {
@@ -43,39 +43,57 @@ function createSemanticTokenColors(
   palette: Palette,
   themePreferences: ThemePreferences
 ): GeneratedTheme["semanticTokenColors"] {
+  const syntaxRoleColors = getSyntaxRoleColors(palette);
   return {
-    namespace: palette.aqua,
-    type: palette.blue,
-    class: palette.blue,
-    enum: palette.purple,
-    interface: palette.aqua,
-    struct: palette.blue,
-    typeParameter: palette.yellow,
-    parameter: palette.fg,
-    variable: palette.fg,
-    property: palette.fg,
-    member: palette.fg,
-    enumMember: palette.purple,
-    event: palette.purple,
-    function: palette.green,
-    method: palette.green,
-    macro: palette.aqua,
-    label: palette.aqua,
+    namespace: syntaxRoleColors.namespace,
+    type: syntaxRoleColors.type,
+    class: syntaxRoleColors.type,
+    enum: syntaxRoleColors.constant,
+    interface: syntaxRoleColors.type,
+    struct: syntaxRoleColors.type,
+    typeParameter: syntaxRoleColors.parameter,
+    parameter: syntaxRoleColors.parameter,
+    variable: syntaxRoleColors.variable,
+    property: syntaxRoleColors.property,
+    member: syntaxRoleColors.property,
+    enumMember: syntaxRoleColors.constant,
+    event: syntaxRoleColors.constant,
+    function: syntaxRoleColors.callable,
+    method: syntaxRoleColors.callable,
+    macro: syntaxRoleColors.annotation,
+    label: syntaxRoleColors.escape,
     keyword: {
-      foreground: palette.red,
+      foreground: syntaxRoleColors.keyword,
       fontStyle: themePreferences.italicKeywords ? "italic" : "",
     },
-    modifier: palette.red,
+    modifier: syntaxRoleColors.declaration,
     comment: {
-      foreground: palette.grey1,
+      foreground: syntaxRoleColors.comment,
       fontStyle: themePreferences.italicComments ? "italic" : "",
     },
-    string: palette.yellow,
-    number: palette.purple,
-    regexp: palette.orange,
-    operator: palette.orange,
-    decorator: palette.aqua,
-    ...getSemantic(palette),
+    string: syntaxRoleColors.string,
+    number: syntaxRoleColors.constant,
+    regexp: syntaxRoleColors.annotation,
+    operator: syntaxRoleColors.operator,
+    decorator: syntaxRoleColors.annotation,
+    "variable.readonly": syntaxRoleColors.constant,
+    "property.readonly": syntaxRoleColors.constant,
+    "variable.defaultLibrary": syntaxRoleColors.type,
+    "property.defaultLibrary": syntaxRoleColors.type,
+    "function.defaultLibrary": syntaxRoleColors.callable,
+    "method.defaultLibrary": syntaxRoleColors.callable,
+    "type.defaultLibrary": syntaxRoleColors.type,
+    "class.defaultLibrary": syntaxRoleColors.type,
+    stringLiteral: syntaxRoleColors.string,
+    numberLiteral: syntaxRoleColors.constant,
+    newOperator: syntaxRoleColors.keyword,
+    customLiteral: syntaxRoleColors.callable,
+    operatorOverload: syntaxRoleColors.operator,
+    memberOperatorOverload: syntaxRoleColors.operator,
+    "intrinsic:python": syntaxRoleColors.constant,
+    "module:python": syntaxRoleColors.namespace,
+    "selfKeyword:rust": syntaxRoleColors.constant,
+    "selfTypeKeyword:rust": syntaxRoleColors.constant,
   };
 }
 

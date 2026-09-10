@@ -5,6 +5,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Palette } from "../interface";
+import { getSyntaxRoleColors } from "./roles";
 
 interface SyntaxStylePreferences {
   italicKeywords: boolean;
@@ -20,14 +21,14 @@ export function getDefaultSyntax(
   palette: Palette,
   syntaxStylePreferences: SyntaxStylePreferences = defaultSyntaxStylePreferences
 ) {
+  const syntaxRoleColors = getSyntaxRoleColors(palette);
   const syntax = [
     // Syntax{{{
     {
       name: "Keyword",
-      scope:
-        "keyword, storage.type.function, storage.type.class, storage.type.enum, storage.type.interface, storage.type.property, keyword.operator.new, keyword.operator.expression, keyword.operator.delete, storage.type.extends",
+      scope: "keyword, keyword.operator.new, keyword.operator.expression, keyword.operator.delete",
       settings: {
-        foreground: palette.red,
+        foreground: syntaxRoleColors.keyword,
       },
     },
     {
@@ -39,17 +40,16 @@ export function getDefaultSyntax(
     },
     {
       name: "Storage",
-      scope:
-        "storage, modifier, keyword.var, entity.name.tag, keyword.control.case, keyword.control.switch",
+      scope: "storage, modifier, keyword.var, keyword.control.case, keyword.control.switch",
       settings: {
-        foreground: palette.orange,
+        foreground: syntaxRoleColors.declaration,
       },
     },
     {
       name: "Operator",
       scope: "keyword.operator",
       settings: {
-        foreground: palette.orange,
+        foreground: syntaxRoleColors.operator,
       },
     },
     {
@@ -57,14 +57,14 @@ export function getDefaultSyntax(
       scope:
         "string, punctuation.definition.string.end, punctuation.definition.string.begin, punctuation.definition.string.template.begin, punctuation.definition.string.template.end",
       settings: {
-        foreground: palette.yellow,
+        foreground: syntaxRoleColors.string,
       },
     },
     {
       name: "Attribute",
       scope: "entity.other.attribute-name",
       settings: {
-        foreground: palette.yellow,
+        foreground: syntaxRoleColors.attribute,
       },
     },
     {
@@ -72,15 +72,15 @@ export function getDefaultSyntax(
       scope:
         "constant.character.escape, punctuation.quasi.element, punctuation.definition.template-expression, punctuation.section.embedded, storage.type.format, constant.other.placeholder, variable.interpolation",
       settings: {
-        foreground: palette.green,
+        foreground: syntaxRoleColors.escape,
       },
     },
     {
       name: "Function",
       scope:
-        "entity.name.function, support.function, meta.function, meta.function-call, meta.definition.method",
+        "entity.name.function, entity.name.function.member, entity.name.function.method, entity.name.method, support.function, variable.function",
       settings: {
-        foreground: palette.green,
+        foreground: syntaxRoleColors.callable,
       },
     },
     {
@@ -88,14 +88,15 @@ export function getDefaultSyntax(
       scope:
         "keyword.control.at-rule, keyword.control.import, keyword.control.export, storage.type.namespace, punctuation.decorator, keyword.control.directive, keyword.preprocessor, punctuation.definition.preprocessor, punctuation.definition.directive, keyword.other.import, keyword.other.package, entity.name.type.namespace, entity.name.scope-resolution, keyword.other.using, keyword.package, keyword.import, keyword.map",
       settings: {
-        foreground: palette.aqua,
+        foreground: syntaxRoleColors.annotation,
       },
     },
     {
       name: "Annotation",
-      scope: "storage.type.annotation",
+      scope:
+        "storage.type.annotation, entity.name.function.decorator, entity.name.type.annotation, punctuation.definition.annotation",
       settings: {
-        foreground: palette.aqua,
+        foreground: syntaxRoleColors.annotation,
       },
     },
     {
@@ -108,45 +109,45 @@ export function getDefaultSyntax(
     {
       name: "Modules",
       scope:
-        "support.module, support.node, support.other.module, support.type.object.module, entity.name.type.module, entity.name.type.class.module, keyword.control.module",
+        "support.module, support.node, support.other.module, support.type.object.module, entity.name.type.module, entity.name.type.class.module",
       settings: {
-        foreground: palette.aqua,
+        foreground: syntaxRoleColors.namespace,
       },
     },
     {
       name: "Type",
-      scope: "storage.type, support.type, entity.name.type, keyword.type",
+      scope: "support.type, entity.name.type",
       settings: {
-        foreground: palette.blue,
+        foreground: syntaxRoleColors.type,
       },
     },
     {
       name: "Class",
       scope:
-        "entity.name.type.class, support.class, entity.name.class, entity.other.inherited-class, storage.class",
+        "entity.name.type.class, support.class, entity.name.class, entity.other.inherited-class",
       settings: {
-        foreground: palette.blue,
+        foreground: syntaxRoleColors.type,
       },
     },
     {
       name: "Number",
       scope: "constant.numeric",
       settings: {
-        foreground: palette.purple,
+        foreground: syntaxRoleColors.constant,
       },
     },
     {
       name: "Boolean",
       scope: "constant.language.boolean",
       settings: {
-        foreground: palette.purple,
+        foreground: syntaxRoleColors.constant,
       },
     },
     {
       name: "Macro",
       scope: "entity.name.function.preprocessor",
       settings: {
-        foreground: palette.purple,
+        foreground: syntaxRoleColors.annotation,
       },
     },
     {
@@ -154,21 +155,29 @@ export function getDefaultSyntax(
       scope:
         "variable.language.this, variable.language.self, variable.language.super, keyword.other.this, variable.language.special, constant.language.null, constant.language.undefined, constant.language.nan",
       settings: {
-        foreground: palette.purple,
+        foreground: syntaxRoleColors.constant,
       },
     },
     {
       name: "Constant",
       scope: "constant.language, support.constant",
       settings: {
-        foreground: palette.purple,
+        foreground: syntaxRoleColors.constant,
       },
     },
     {
       name: "Identifier",
-      scope: "variable, support.variable, meta.definition.variable",
+      scope: "variable, support.variable, entity.name.variable",
       settings: {
-        foreground: palette.fg,
+        foreground: syntaxRoleColors.variable,
+      },
+    },
+    {
+      name: "Parameter",
+      scope:
+        "variable.parameter, entity.name.variable.parameter, variable.other.readwrite.parameter, meta.definition.variable.parameter",
+      settings: {
+        foreground: syntaxRoleColors.parameter,
       },
     },
     {
@@ -176,14 +185,14 @@ export function getDefaultSyntax(
       scope:
         "variable.object.property, support.variable.property, variable.other.property, variable.other.object.property, variable.other.enummember, variable.other.member, meta.object-literal.key",
       settings: {
-        foreground: palette.fg,
+        foreground: syntaxRoleColors.property,
       },
     },
     {
       name: "Delimiter",
       scope: "punctuation, meta.brace, meta.delimiter, meta.bracket",
       settings: {
-        foreground: palette.fg,
+        foreground: syntaxRoleColors.punctuation,
       },
     },
     // }}}
@@ -232,7 +241,7 @@ export function getDefaultSyntax(
       name: "Markdown heading6",
       scope: "heading.6.markdown",
       settings: {
-        foreground: palette.purple,
+        foreground: syntaxRoleColors.constant,
         fontStyle: "bold",
       },
     },
@@ -458,9 +467,17 @@ export function getDefaultSyntax(
     {
       name: "Html green",
       scope:
-        "string.quoted.double.html, string.quoted.single.html, punctuation.definition.string.begin.html, punctuation.definition.string.end.html, punctuation.separator.key-value.html, punctuation.definition.string.begin.xml, punctuation.definition.string.end.xml, string.quoted.double.xml, string.quoted.single.xml, punctuation.definition.tag.begin.html, punctuation.definition.tag.end.html, punctuation.definition.tag.xml, meta.tag.xml, meta.tag.preprocessor.xml, meta.tag.other.html, meta.tag.block.any.html, meta.tag.inline.any.html",
+        "string.quoted.double.html, string.quoted.single.html, punctuation.definition.string.begin.html, punctuation.definition.string.end.html, punctuation.definition.string.begin.xml, punctuation.definition.string.end.xml, string.quoted.double.xml, string.quoted.single.xml",
       settings: {
         foreground: palette.green,
+      },
+    },
+    {
+      name: "Html punctuation",
+      scope:
+        "punctuation.separator.key-value.html, punctuation.definition.tag.begin.html, punctuation.definition.tag.end.html, punctuation.definition.tag.xml",
+      settings: {
+        foreground: palette.grey1,
       },
     },
     {
@@ -529,7 +546,7 @@ export function getDefaultSyntax(
     {
       name: "CSS green",
       scope:
-        "string.quoted.single.css, string.quoted.double.css, support.constant.property-value.css, meta.property-value.css, punctuation.definition.string.begin.css, punctuation.definition.string.end.css, constant.numeric.css, support.constant.font-name.css, variable.parameter.keyframe-list.css",
+        "string.quoted.single.css, string.quoted.double.css, support.constant.property-value.css, punctuation.definition.string.begin.css, punctuation.definition.string.end.css, support.constant.font-name.css",
       settings: {
         foreground: palette.green,
       },
@@ -551,7 +568,7 @@ export function getDefaultSyntax(
     {
       name: "CSS purple",
       scope:
-        "entity.name.tag.css, entity.other.keyframe-offset.css, punctuation.definition.keyword.css, keyword.control.at-rule.keyframes.css, meta.selector.css",
+        "entity.name.tag.css, entity.other.keyframe-offset.css, punctuation.definition.keyword.css, keyword.control.at-rule.keyframes.css",
       settings: {
         foreground: palette.purple,
       },
@@ -584,7 +601,7 @@ export function getDefaultSyntax(
     {
       name: "SASS green",
       scope:
-        "punctuation.definition.string.begin.scss, punctuation.definition.string.end.scss, string.quoted.double.scss, string.quoted.single.scss, constant.character.css.sass, meta.property-value.scss",
+        "punctuation.definition.string.begin.scss, punctuation.definition.string.end.scss, string.quoted.double.scss, string.quoted.single.scss, constant.character.css.sass",
       settings: {
         foreground: palette.green,
       },
@@ -600,13 +617,6 @@ export function getDefaultSyntax(
     // }}}
     // Stylus{{{
     {
-      name: "Stylus white",
-      scope: "meta.function.stylus",
-      settings: {
-        foreground: palette.fg,
-      },
-    },
-    {
       name: "Stylus yellow",
       scope: "entity.name.function.stylus",
       settings: {
@@ -616,18 +626,18 @@ export function getDefaultSyntax(
     // }}}
     // JavaScript{{{
     {
-      name: "JavaScript white",
+      name: "JavaScript variable",
       scope: "string.unquoted.js",
       settings: {
-        foreground: palette.fg,
+        foreground: syntaxRoleColors.variable,
       },
     },
     {
-      name: "JavaScript grey",
+      name: "JavaScript punctuation",
       scope:
         "punctuation.accessor.js, punctuation.separator.key-value.js, punctuation.separator.label.js, keyword.operator.accessor.js",
       settings: {
-        foreground: palette.grey1,
+        foreground: syntaxRoleColors.punctuation,
       },
     },
     {
@@ -638,10 +648,18 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "JavaScript orange",
+      name: "JavaScript declaration",
       scope: "storage.type.js, storage.type.function.arrow.js",
       settings: {
-        foreground: palette.orange,
+        foreground: syntaxRoleColors.declaration,
+      },
+    },
+    {
+      name: "JavaScript constant",
+      scope:
+        "variable.other.constant.js, variable.other.constant.object.js, variable.other.constant.object.property.js, variable.other.constant.property.js",
+      settings: {
+        foreground: syntaxRoleColors.constant,
       },
     },
     // }}}
@@ -679,25 +697,33 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "TypeScript aqua",
+      name: "TypeScript type",
       scope:
         "entity.name.type.ts, entity.name.type.interface.ts, entity.other.inherited-class.ts, entity.name.type.alias.ts, entity.name.type.class.ts, entity.name.type.enum.ts",
       settings: {
-        foreground: palette.aqua,
+        foreground: syntaxRoleColors.type,
       },
     },
     {
-      name: "TypeScript orange",
+      name: "TypeScript declaration",
       scope: "storage.type.ts, storage.type.function.arrow.ts, storage.type.type.ts",
       settings: {
-        foreground: palette.orange,
+        foreground: syntaxRoleColors.declaration,
       },
     },
     {
-      name: "TypeScript blue",
+      name: "TypeScript constant",
+      scope:
+        "variable.other.constant.ts, variable.other.constant.object.ts, variable.other.constant.object.property.ts, variable.other.constant.property.ts",
+      settings: {
+        foreground: syntaxRoleColors.constant,
+      },
+    },
+    {
+      name: "TypeScript namespace",
       scope: "entity.name.type.module.ts",
       settings: {
-        foreground: palette.blue,
+        foreground: syntaxRoleColors.namespace,
       },
     },
     {
@@ -714,7 +740,7 @@ export function getDefaultSyntax(
       scope:
         "keyword.operator.type.annotation.tsx, punctuation.accessor.tsx, punctuation.separator.key-value.tsx",
       settings: {
-        foreground: palette.grey1,
+        foreground: syntaxRoleColors.punctuation,
       },
     },
     {
@@ -767,13 +793,6 @@ export function getDefaultSyntax(
     // }}}
     // PureScript{{{
     {
-      name: "PureScript white",
-      scope: "meta.type-signature.purescript",
-      settings: {
-        foreground: palette.fg,
-      },
-    },
-    {
       name: "PureScript orange",
       scope:
         "keyword.other.double-colon.purescript, keyword.other.arrow.purescript, keyword.other.big-arrow.purescript",
@@ -791,9 +810,16 @@ export function getDefaultSyntax(
     {
       name: "PureScript green",
       scope:
-        "string.quoted.single.purescript, string.quoted.double.purescript, punctuation.definition.string.begin.purescript, punctuation.definition.string.end.purescript, string.quoted.triple.purescript, entity.name.type.purescript",
+        "string.quoted.single.purescript, string.quoted.double.purescript, punctuation.definition.string.begin.purescript, punctuation.definition.string.end.purescript, string.quoted.triple.purescript",
       settings: {
         foreground: palette.green,
+      },
+    },
+    {
+      name: "PureScript aqua",
+      scope: "entity.name.type.purescript",
+      settings: {
+        foreground: palette.aqua,
       },
     },
     {
@@ -820,16 +846,22 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "Dart yellow",
+      name: "Dart aqua",
       scope: "support.class.dart",
+      settings: {
+        foreground: palette.aqua,
+      },
+    },
+    {
+      name: "Dart yellow",
+      scope: "entity.name.function.dart",
       settings: {
         foreground: palette.yellow,
       },
     },
     {
       name: "Dart green",
-      scope:
-        "entity.name.function.dart, string.interpolated.single.dart, string.interpolated.double.dart",
+      scope: "string.interpolated.single.dart, string.interpolated.double.dart",
       settings: {
         foreground: palette.green,
       },
@@ -882,8 +914,7 @@ export function getDefaultSyntax(
     // C{{{
     {
       name: "C white",
-      scope:
-        "meta.function-call.c, storage.modifier.array.bracket.square.c, meta.function.definition.parameters.c",
+      scope: "storage.modifier.array.bracket.square.c",
       settings: {
         foreground: palette.fg,
       },
@@ -911,18 +942,17 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "C aqua",
+      name: "C property",
       scope: "variable.other.member.c",
       settings: {
-        foreground: palette.aqua,
+        foreground: syntaxRoleColors.property,
       },
     },
     // }}}
     // C++{{{
     {
       name: "C++ white",
-      scope:
-        "meta.function-call.cpp, storage.modifier.array.bracket.square.cpp, meta.function.definition.parameters.cpp, meta.body.function.definition.cpp",
+      scope: "storage.modifier.array.bracket.square.cpp",
       settings: {
         foreground: palette.fg,
       },
@@ -952,10 +982,10 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "C++ aqua",
+      name: "C++ property",
       scope: "variable.other.member.cpp",
       settings: {
-        foreground: palette.aqua,
+        foreground: syntaxRoleColors.property,
       },
     },
     // }}}
@@ -968,11 +998,18 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "C# yellow",
-      scope:
-        "keyword.type.cs, constant.character.escape.cs, punctuation.definition.interpolation.begin.cs, punctuation.definition.interpolation.end.cs",
+      name: "C# orange",
+      scope: "keyword.type.cs",
       settings: {
-        foreground: palette.yellow,
+        foreground: palette.orange,
+      },
+    },
+    {
+      name: "C# aqua escape",
+      scope:
+        "constant.character.escape.cs, punctuation.definition.interpolation.begin.cs, punctuation.definition.interpolation.end.cs",
+      settings: {
+        foreground: palette.aqua,
       },
     },
     {
@@ -984,17 +1021,17 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "C# aqua",
+      name: "C# blue property",
       scope: "variable.other.object.property.cs",
       settings: {
-        foreground: palette.aqua,
+        foreground: palette.blue,
       },
     },
     {
-      name: "C# purple",
+      name: "C# blue namespace",
       scope: "entity.name.type.namespace.cs",
       settings: {
-        foreground: palette.purple,
+        foreground: palette.blue,
       },
     },
     // }}}
@@ -1007,10 +1044,10 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "F# yellow",
+      name: "F# aqua",
       scope: "keyword.format.specifier.fsharp, entity.name.type.fsharp",
       settings: {
-        foreground: palette.yellow,
+        foreground: palette.aqua,
       },
     },
     {
@@ -1059,18 +1096,25 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "Java aqua",
+      name: "Java blue property",
       scope: "variable.other.property.java",
       settings: {
-        foreground: palette.aqua,
+        foreground: palette.blue,
       },
     },
     {
       name: "Java purple",
       scope:
-        "variable.language.wildcard.java, storage.modifier.import.java, storage.type.annotation.java, punctuation.definition.annotation.java, storage.modifier.package.java, entity.name.type.module.java",
+        "variable.language.wildcard.java, storage.modifier.import.java, storage.type.annotation.java, punctuation.definition.annotation.java, storage.modifier.package.java",
       settings: {
         foreground: palette.purple,
+      },
+    },
+    {
+      name: "Java blue module",
+      scope: "entity.name.type.module.java",
+      settings: {
+        foreground: palette.blue,
       },
     },
     // }}}
@@ -1090,33 +1134,40 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "Kotlin aqua",
+      name: "Kotlin purple constant",
       scope: "constant.language.kotlin",
       settings: {
-        foreground: palette.aqua,
+        foreground: palette.purple,
       },
     },
     {
       name: "Kotlin purple",
-      scope: "entity.name.package.kotlin, storage.type.annotation.kotlin",
+      scope: "storage.type.annotation.kotlin",
       settings: {
         foreground: palette.purple,
+      },
+    },
+    {
+      name: "Kotlin blue package",
+      scope: "entity.name.package.kotlin",
+      settings: {
+        foreground: palette.blue,
       },
     },
     // }}}
     // Scala{{{
     {
-      name: "Scala purple",
+      name: "Scala blue package",
       scope: "entity.name.package.scala",
       settings: {
-        foreground: palette.purple,
+        foreground: palette.blue,
       },
     },
     {
-      name: "Scala blue",
+      name: "Scala purple constant",
       scope: "constant.language.scala",
       settings: {
-        foreground: palette.blue,
+        foreground: palette.purple,
       },
     },
     {
@@ -1135,10 +1186,10 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "Scala yellow",
+      name: "Scala aqua class",
       scope: "entity.name.class.scala, entity.other.inherited-class.scala",
       settings: {
-        foreground: palette.yellow,
+        foreground: palette.aqua,
       },
     },
     {
@@ -1159,8 +1210,7 @@ export function getDefaultSyntax(
     // Groovy{{{
     {
       name: "Groovy white",
-      scope:
-        "keyword.operator.navigation.groovy, meta.method.body.java, meta.definition.method.groovy, meta.definition.method.signature.java",
+      scope: "keyword.operator.navigation.groovy",
       settings: {
         foreground: palette.fg,
       },
@@ -1189,7 +1239,7 @@ export function getDefaultSyntax(
     },
     {
       name: "Groovy green",
-      scope: "variable.other.interpolated.groovy, meta.method.groovy",
+      scope: "variable.other.interpolated.groovy",
       settings: {
         foreground: palette.green,
       },
@@ -1211,17 +1261,24 @@ export function getDefaultSyntax(
     // }}}
     // Go{{{
     {
-      name: "Go red",
+      name: "Go declaration",
       scope: "keyword.type.go",
       settings: {
-        foreground: palette.red,
+        foreground: syntaxRoleColors.declaration,
       },
     },
     {
-      name: "Go aqua",
+      name: "Go namespace",
       scope: "entity.name.package.go",
       settings: {
-        foreground: palette.aqua,
+        foreground: syntaxRoleColors.namespace,
+      },
+    },
+    {
+      name: "Go constant",
+      scope: "variable.other.constant.go",
+      settings: {
+        foreground: syntaxRoleColors.constant,
       },
     },
     {
@@ -1234,10 +1291,10 @@ export function getDefaultSyntax(
     // }}}
     // Rust{{{
     {
-      name: "Rust white",
+      name: "Rust blue module",
       scope: "entity.name.type.mod.rust",
       settings: {
-        foreground: palette.fg,
+        foreground: palette.blue,
       },
     },
     {
@@ -1263,18 +1320,26 @@ export function getDefaultSyntax(
     },
     {
       name: "Rust purple",
-      scope: "meta.attribute.rust, variable.language.rust, storage.type.module.rust",
+      scope:
+        "meta.attribute.rust, variable.language.rust, entity.name.function.macro.rust, entity.name.function.macro.rules.rust",
       settings: {
         foreground: palette.purple,
+      },
+    },
+    {
+      name: "Rust orange module declaration",
+      scope: "storage.type.module.rust",
+      settings: {
+        foreground: palette.orange,
       },
     },
     // }}}
     // Swift{{{
     {
-      name: "Swift white",
-      scope: "meta.function-call.swift, support.function.any-method.swift",
+      name: "Swift yellow callable",
+      scope: "support.function.any-method.swift",
       settings: {
-        foreground: palette.fg,
+        foreground: palette.yellow,
       },
     },
     {
@@ -1301,48 +1366,62 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "PHP aqua",
-      scope: "constant.language.php, support.other.namespace.php",
+      name: "PHP purple constant",
+      scope: "constant.language.php",
       settings: {
-        foreground: palette.aqua,
+        foreground: palette.purple,
       },
     },
     {
-      name: "PHP blue",
-      scope:
-        "storage.type.modifier.access.control.public.php, storage.type.modifier.access.control.private.php",
+      name: "PHP blue namespace",
+      scope: "support.other.namespace.php",
       settings: {
         foreground: palette.blue,
       },
     },
     {
+      name: "PHP orange modifier",
+      scope:
+        "storage.type.modifier.access.control.public.php, storage.type.modifier.access.control.private.php",
+      settings: {
+        foreground: palette.orange,
+      },
+    },
+    {
       name: "PHP purple",
-      scope: "keyword.control.import.include.php, storage.type.php",
+      scope: "keyword.control.import.include.php",
       settings: {
         foreground: palette.purple,
+      },
+    },
+    {
+      name: "PHP orange declaration",
+      scope: "storage.type.php",
+      settings: {
+        foreground: palette.orange,
       },
     },
     // }}}
     // Python{{{
     {
-      name: "Python white",
-      scope: "meta.function-call.arguments.python",
+      name: "Python punctuation",
+      scope: "punctuation.separator.period.python",
       settings: {
-        foreground: palette.fg,
+        foreground: syntaxRoleColors.punctuation,
       },
     },
     {
-      name: "Python grey",
-      scope: "punctuation.definition.decorator.python, punctuation.separator.period.python",
-      settings: {
-        foreground: palette.grey1,
-      },
-    },
-    {
-      name: "Python aqua",
+      name: "Python constant",
       scope: "constant.language.python",
       settings: {
-        foreground: palette.aqua,
+        foreground: syntaxRoleColors.constant,
+      },
+    },
+    {
+      name: "Python annotation",
+      scope: "punctuation.definition.decorator.python",
+      settings: {
+        foreground: syntaxRoleColors.annotation,
       },
     },
     {
@@ -1355,28 +1434,21 @@ export function getDefaultSyntax(
     // }}}
     // Lua{{{
     {
-      name: "Lua aqua",
+      name: "Lua purple constant",
       scope: "constant.language.lua",
+      settings: {
+        foreground: palette.purple,
+      },
+    },
+    {
+      name: "Lua aqua class",
+      scope: "entity.name.class.lua",
       settings: {
         foreground: palette.aqua,
       },
     },
-    {
-      name: "Lua blue",
-      scope: "entity.name.class.lua",
-      settings: {
-        foreground: palette.blue,
-      },
-    },
     // }}}
     // Ruby{{{
-    {
-      name: "Ruby white",
-      scope: "meta.function.method.with-arguments.ruby",
-      settings: {
-        foreground: palette.fg,
-      },
-    },
     {
       name: "Ruby grey",
       scope: "punctuation.separator.method.ruby",
@@ -1392,10 +1464,10 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "Ruby green",
+      name: "Ruby yellow callable",
       scope: "keyword.other.special-method.ruby",
       settings: {
-        foreground: palette.green,
+        foreground: palette.yellow,
       },
     },
     {
@@ -1414,10 +1486,10 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "Ruby blue",
+      name: "Ruby purple constant",
       scope: "variable.other.constant.ruby",
       settings: {
-        foreground: palette.blue,
+        foreground: palette.purple,
       },
     },
     // }}}
@@ -1431,32 +1503,46 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "Haskell yellow",
+      name: "Haskell orange declaration",
       scope: "storage.type.haskell",
       settings: {
-        foreground: palette.yellow,
+        foreground: palette.orange,
       },
     },
     {
       name: "Haskell green",
       scope:
-        "constant.other.haskell, string.quoted.double.haskell, string.quoted.single.haskell, punctuation.definition.string.begin.haskell, punctuation.definition.string.end.haskell",
+        "string.quoted.double.haskell, string.quoted.single.haskell, punctuation.definition.string.begin.haskell, punctuation.definition.string.end.haskell",
       settings: {
         foreground: palette.green,
       },
     },
     {
-      name: "Haskell blue",
+      name: "Haskell purple constant",
+      scope: "constant.other.haskell",
+      settings: {
+        foreground: palette.purple,
+      },
+    },
+    {
+      name: "Haskell yellow callable",
       scope: "entity.name.function.haskell",
+      settings: {
+        foreground: palette.yellow,
+      },
+    },
+    {
+      name: "Haskell blue namespace",
+      scope: "entity.name.namespace",
       settings: {
         foreground: palette.blue,
       },
     },
     {
-      name: "Haskell aqua",
-      scope: "entity.name.namespace, meta.preprocessor.haskell",
+      name: "Haskell purple preprocessor",
+      scope: "meta.preprocessor.haskell",
       settings: {
-        foreground: palette.aqua,
+        foreground: palette.purple,
       },
     },
     // }}}
@@ -1476,10 +1562,10 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "Julia aqua",
+      name: "Julia purple constant",
       scope: "constant.language.julia",
       settings: {
-        foreground: palette.aqua,
+        foreground: palette.purple,
       },
     },
     {
@@ -1499,10 +1585,10 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "Elm yellow",
+      name: "Elm orange declaration",
       scope: "storage.type.elm",
       settings: {
-        foreground: palette.yellow,
+        foreground: palette.orange,
       },
     },
     // }}}
@@ -1515,24 +1601,24 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "R green",
+      name: "R yellow callable",
       scope: "entity.name.function.r, variable.function.r",
       settings: {
-        foreground: palette.green,
+        foreground: palette.yellow,
       },
     },
     {
-      name: "R aqua",
+      name: "R purple constant",
       scope: "constant.language.r",
       settings: {
-        foreground: palette.aqua,
+        foreground: palette.purple,
       },
     },
     {
-      name: "R purple",
+      name: "R blue namespace",
       scope: "entity.namespace.r",
       settings: {
-        foreground: palette.purple,
+        foreground: palette.blue,
       },
     },
     // }}}
@@ -1553,10 +1639,10 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "Erlang yellow",
+      name: "Erlang blue module",
       scope: "entity.name.type.class.module.erlang",
       settings: {
-        foreground: palette.yellow,
+        foreground: palette.blue,
       },
     },
     {
@@ -1578,17 +1664,17 @@ export function getDefaultSyntax(
     // }}}
     // Elixir{{{
     {
-      name: "Elixir aqua",
+      name: "Elixir blue module",
       scope: "variable.other.readwrite.module.elixir, punctuation.definition.variable.elixir",
       settings: {
-        foreground: palette.aqua,
+        foreground: palette.blue,
       },
     },
     {
-      name: "Elixir blue",
+      name: "Elixir purple constant",
       scope: "constant.language.elixir",
       settings: {
-        foreground: palette.blue,
+        foreground: palette.purple,
       },
     },
     {
@@ -1633,13 +1719,6 @@ export function getDefaultSyntax(
     // }}}
     // Common Lisp{{{
     {
-      name: "Lisp white",
-      scope: "meta.function.lisp",
-      settings: {
-        foreground: palette.fg,
-      },
-    },
-    {
       name: "Lisp red",
       scope: "storage.type.function-type.lisp",
       settings: {
@@ -1654,17 +1733,17 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "Lisp aqua",
+      name: "Lisp yellow callable",
       scope: "entity.name.function.lisp",
       settings: {
-        foreground: palette.aqua,
+        foreground: palette.yellow,
       },
     },
     // }}}
     // Clojure{{{
     {
       name: "Clojure green",
-      scope: "constant.keyword.clojure, support.variable.clojure, meta.definition.variable.clojure",
+      scope: "constant.keyword.clojure, support.variable.clojure",
       settings: {
         foreground: palette.green,
       },
@@ -1677,42 +1756,42 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "Clojure blue",
+      name: "Clojure yellow callable",
       scope: "entity.name.function.clojure",
       settings: {
-        foreground: palette.blue,
+        foreground: palette.yellow,
       },
     },
     // }}}
     // Shell{{{
     {
-      name: "Shell white",
-      scope: "meta.scope.if-block.shell, meta.scope.group.shell",
-      settings: {
-        foreground: palette.fg,
-      },
-    },
-    {
-      name: "Shell yellow",
+      name: "Shell callable",
       scope: "support.function.builtin.shell, entity.name.function.shell",
       settings: {
-        foreground: palette.yellow,
+        foreground: syntaxRoleColors.callable,
       },
     },
     {
-      name: "Shell green",
+      name: "Shell string",
       scope:
         "string.quoted.double.shell, string.quoted.single.shell, punctuation.definition.string.begin.shell, punctuation.definition.string.end.shell, string.unquoted.heredoc.shell",
       settings: {
-        foreground: palette.green,
+        foreground: syntaxRoleColors.string,
       },
     },
     {
-      name: "Shell purple",
+      name: "Shell variable",
       scope:
         "keyword.control.heredoc-token.shell, variable.other.normal.shell, punctuation.definition.variable.shell, variable.other.special.shell, variable.other.positional.shell, variable.other.bracket.shell",
       settings: {
-        foreground: palette.purple,
+        foreground: syntaxRoleColors.variable,
+      },
+    },
+    {
+      name: "Shell declaration",
+      scope: "variable.other.assignment.shell",
+      settings: {
+        foreground: syntaxRoleColors.declaration,
       },
     },
     // }}}
@@ -1780,10 +1859,10 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "PowerShell aqua",
+      name: "PowerShell property",
       scope: "variable.other.member.powershell",
       settings: {
-        foreground: palette.aqua,
+        foreground: syntaxRoleColors.property,
       },
     },
     // }}}
@@ -1895,12 +1974,29 @@ export function getDefaultSyntax(
       },
     },
     // }}}
+    // HCL / Terraform{{{
+    {
+      name: "Terraform declaration",
+      scope: "variable.declaration.hcl",
+      settings: {
+        foreground: syntaxRoleColors.declaration,
+      },
+    },
+    {
+      name: "Terraform property",
+      scope:
+        "meta.mapping.key.hcl variable.other.readwrite.hcl, meta.mapping.key.hcl string.quoted.double.hcl, variable.other.member.hcl",
+      settings: {
+        foreground: syntaxRoleColors.property,
+      },
+    },
+    // }}}
     // {{{Dockerfile
     {
-      name: "Dockerfile orange",
+      name: "Dockerfile callable",
       scope: "entity.name.function.package-manager.dockerfile",
       settings: {
-        foreground: palette.orange,
+        foreground: syntaxRoleColors.callable,
       },
     },
     {
@@ -1925,10 +2021,10 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "Dockerfile purple",
+      name: "Dockerfile type",
       scope: "entity.name.type.base-image.dockerfile, entity.name.image.dockerfile",
       settings: {
-        foreground: palette.purple,
+        foreground: syntaxRoleColors.type,
       },
     },
     // }}}
@@ -2014,43 +2110,73 @@ export function getDefaultSyntax(
       },
     },
     // }}}
-    // SQL{{{
+    // Jinja{{{
     {
-      name: "SQL yellow",
-      scope: "support.function.aggregate.sql",
+      name: "Jinja declaration",
+      scope: "variable.other.jinja.block",
       settings: {
-        foreground: palette.yellow,
+        foreground: syntaxRoleColors.declaration,
       },
     },
     {
-      name: "SQL green",
+      name: "Jinja callable",
+      scope: "variable.other.jinja.filter, variable.other.jinja.test",
+      settings: {
+        foreground: syntaxRoleColors.callable,
+      },
+    },
+    {
+      name: "Jinja property",
+      scope: "variable.other.jinja.attribute",
+      settings: {
+        foreground: syntaxRoleColors.property,
+      },
+    },
+    // }}}
+    // SQL{{{
+    {
+      name: "SQL type",
+      scope: "storage.type.sql",
+      settings: {
+        foreground: syntaxRoleColors.type,
+      },
+    },
+    {
+      name: "SQL callable",
+      scope: "support.function.aggregate.sql",
+      settings: {
+        foreground: syntaxRoleColors.callable,
+      },
+    },
+    {
+      name: "SQL string",
       scope:
         "string.quoted.single.sql, punctuation.definition.string.end.sql, punctuation.definition.string.begin.sql, string.quoted.double.sql",
       settings: {
-        foreground: palette.green,
+        foreground: syntaxRoleColors.string,
       },
     },
     // }}}
     // GraphQL{{{
     {
-      name: "GraphQL yellow",
+      name: "GraphQL aqua type",
       scope: "support.type.graphql",
       settings: {
-        foreground: palette.yellow,
+        foreground: palette.aqua,
       },
     },
     {
-      name: "GraphQL blue",
+      name: "GraphQL orange parameter",
       scope: "variable.parameter.graphql",
       settings: {
-        foreground: palette.blue,
+        foreground: palette.orange,
       },
     },
     {
-      name: "GraphQL aqua",
+      name: "GraphQL purple enum",
       scope: "constant.character.enum.graphql",
       settings: {
-        foreground: palette.aqua,
+        foreground: palette.purple,
       },
     },
     // }}}
@@ -2064,17 +2190,17 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "JSON orange",
+      name: "JSON property",
       scope: "support.type.property-name.json",
       settings: {
-        foreground: palette.orange,
+        foreground: syntaxRoleColors.property,
       },
     },
     {
-      name: "JSON green",
+      name: "JSON string",
       scope: "string.quoted.double.json",
       settings: {
-        foreground: palette.green,
+        foreground: syntaxRoleColors.string,
       },
     },
     // }}}
@@ -2087,11 +2213,19 @@ export function getDefaultSyntax(
       },
     },
     {
-      name: "YAML green",
+      name: "YAML string",
       scope:
         "string.unquoted.plain.out.yaml, string.quoted.single.yaml, string.quoted.double.yaml, punctuation.definition.string.begin.yaml, punctuation.definition.string.end.yaml, string.unquoted.plain.in.yaml, string.unquoted.block.yaml",
       settings: {
-        foreground: palette.green,
+        foreground: syntaxRoleColors.string,
+      },
+    },
+    {
+      name: "YAML property",
+      scope:
+        "meta.flow.map.key.yaml string.unquoted.plain.in.yaml entity.name.tag.yaml, meta.map.key.yaml string.quoted.double.yaml entity.name.tag.yaml, meta.map.key.yaml string.unquoted.plain.yaml entity.name.tag.yaml",
+      settings: {
+        foreground: syntaxRoleColors.property,
       },
     },
     {
@@ -2112,25 +2246,31 @@ export function getDefaultSyntax(
     },
     {
       name: "TOML green",
-      scope:
-        "string.quoted.single.basic.line.toml, string.quoted.single.literal.line.toml, punctuation.definition.keyValuePair.toml",
+      scope: "string.quoted.single.basic.line.toml, string.quoted.single.literal.line.toml",
       settings: {
         foreground: palette.green,
       },
     },
     {
-      name: "TOML blue",
-      scope: "constant.other.boolean.toml",
+      name: "TOML grey punctuation",
+      scope: "punctuation.definition.keyValuePair.toml",
       settings: {
-        foreground: palette.blue,
+        foreground: palette.grey1,
       },
     },
     {
-      name: "TOML purple",
+      name: "TOML purple boolean",
+      scope: "constant.other.boolean.toml",
+      settings: {
+        foreground: palette.purple,
+      },
+    },
+    {
+      name: "TOML blue table",
       scope:
         "entity.other.attribute-name.table.toml, punctuation.definition.table.toml, entity.other.attribute-name.table.array.toml, punctuation.definition.table.array.toml",
       settings: {
-        foreground: palette.purple,
+        foreground: palette.blue,
       },
     },
     // }}}
@@ -2147,7 +2287,7 @@ export function getDefaultSyntax(
       name: "Comment",
       scope: "comment, string.comment, punctuation.definition.comment",
       settings: {
-        foreground: palette.grey1,
+        foreground: syntaxRoleColors.comment,
         fontStyle: syntaxStylePreferences.italicComments ? "italic" : "",
       },
     }

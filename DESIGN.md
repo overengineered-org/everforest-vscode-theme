@@ -69,6 +69,27 @@ The palette uses muted forest neutrals for sustained focus and keeps saturated c
 - **Amber Yellow:** warnings, conflicts, untracked and attention states, plus numeric emphasis.
 - **Wildflower Purple:** enums, special values, and distinct tertiary states.
 
+### Source-code roles
+
+Source meaning stays stable when semantic highlighting activates and across Light/Dark modes:
+
+- **Red:** keywords and control flow.
+- **Orange:** declarations, modifiers, and parameters.
+- **Yellow:** functions, methods, and other callables.
+- **Green:** strings and text literals.
+- **Aqua:** classes, interfaces, structs, and types.
+- **Blue:** properties, fields, namespaces, modules, and packages.
+- **Purple:** constants, numbers, enums, annotations, decorators, macros, and regular expressions.
+
+Variables and operators use the main foreground; punctuation uses the structural foreground. This
+keeps expressions readable without turning every character into an accent.
+
+**The Stable Meaning Rule.** A source role keeps one colour across languages, TextMate grammars,
+semantic providers, and Light/Dark themes.
+
+**The Leaf Scope Rule.** Foreground rules target tokens, never whole function bodies, argument
+lists, selectors, property values, tags, or other container scopes.
+
 ### Neutral
 
 - **Forest Canvas:** the default editor surface; panels move one tonal step away.
