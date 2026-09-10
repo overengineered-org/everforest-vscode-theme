@@ -4,62 +4,53 @@
   "type": "light",
   "semanticHighlighting": true,
   "semanticTokenColors": {
-    "namespace": "#2f6a4d",
-    "type": "#2e5f94",
-    "class": "#2e5f94",
+    "namespace": "#2e5f94",
+    "type": "#2f6a4d",
+    "class": "#2f6a4d",
     "enum": "#8a4b7c",
     "interface": "#2f6a4d",
-    "struct": "#2e5f94",
-    "typeParameter": "#7e5200",
-    "parameter": "#59646c",
+    "struct": "#2f6a4d",
+    "typeParameter": "#984b00",
+    "parameter": "#984b00",
     "variable": "#59646c",
-    "property": "#59646c",
-    "member": "#59646c",
+    "property": "#2e5f94",
+    "member": "#2e5f94",
     "enumMember": "#8a4b7c",
     "event": "#8a4b7c",
-    "function": "#596600",
-    "method": "#596600",
-    "macro": "#2f6a4d",
+    "function": "#7e5200",
+    "method": "#7e5200",
+    "macro": "#8a4b7c",
     "label": "#2f6a4d",
     "keyword": {
       "foreground": "#ad3d3d",
       "fontStyle": ""
     },
-    "modifier": "#ad3d3d",
+    "modifier": "#984b00",
     "comment": {
       "foreground": "#59646c",
       "fontStyle": "italic"
     },
-    "string": "#7e5200",
+    "string": "#596600",
     "number": "#8a4b7c",
-    "regexp": "#984b00",
-    "operator": "#984b00",
-    "decorator": "#2f6a4d",
-    "operatorOverload": "#984b00",
-    "memberOperatorOverload": "#984b00",
-    "variable.defaultLibrary:javascript": "#8a4b7c",
-    "property.defaultLibrary:javascript": "#8a4b7c",
-    "variable.defaultLibrary:javascriptreact": "#8a4b7c",
-    "property.defaultLibrary:javascriptreact": "#8a4b7c",
-    "class:typescript": "#2f6a4d",
-    "interface:typescript": "#2f6a4d",
-    "enum:typescript": "#8a4b7c",
-    "enumMember:typescript": "#2e5f94",
-    "namespace:typescript": "#8a4b7c",
-    "variable.defaultLibrary:typescript": "#8a4b7c",
-    "property.defaultLibrary:typescript": "#8a4b7c",
-    "class:typescriptreact": "#2f6a4d",
-    "interface:typescriptreact": "#2f6a4d",
-    "enum:typescriptreact": "#8a4b7c",
-    "enumMember:typescriptreact": "#2e5f94",
-    "namespace:typescriptreact": "#8a4b7c",
-    "variable.defaultLibrary:typescriptreact": "#8a4b7c",
-    "property.defaultLibrary:typescriptreact": "#8a4b7c",
+    "regexp": "#8a4b7c",
+    "operator": "#59646c",
+    "decorator": "#8a4b7c",
+    "variable.readonly": "#8a4b7c",
+    "property.readonly": "#8a4b7c",
+    "variable.defaultLibrary": "#2f6a4d",
+    "property.defaultLibrary": "#2f6a4d",
+    "function.defaultLibrary": "#7e5200",
+    "method.defaultLibrary": "#7e5200",
+    "type.defaultLibrary": "#2f6a4d",
+    "class.defaultLibrary": "#2f6a4d",
+    "stringLiteral": "#596600",
+    "numberLiteral": "#8a4b7c",
+    "newOperator": "#ad3d3d",
+    "customLiteral": "#7e5200",
+    "operatorOverload": "#59646c",
+    "memberOperatorOverload": "#59646c",
     "intrinsic:python": "#8a4b7c",
     "module:python": "#2e5f94",
-    "class:python": "#2f6a4d",
-    "macro:rust": "#2f6a4d",
-    "namespace:rust": "#8a4b7c",
     "selfKeyword:rust": "#8a4b7c",
     "selfTypeKeyword:rust": "#8a4b7c"
   },
@@ -1005,7 +996,7 @@
   "tokenColors": [
     {
       "name": "Keyword",
-      "scope": "keyword, storage.type.function, storage.type.class, storage.type.enum, storage.type.interface, storage.type.property, keyword.operator.new, keyword.operator.expression, keyword.operator.delete, storage.type.extends",
+      "scope": "keyword, keyword.operator.new, keyword.operator.expression, keyword.operator.delete",
       "settings": {
         "foreground": "#ad3d3d"
       }
@@ -1019,7 +1010,7 @@
     },
     {
       "name": "Storage",
-      "scope": "storage, modifier, keyword.var, entity.name.tag, keyword.control.case, keyword.control.switch",
+      "scope": "storage, modifier, keyword.var, keyword.control.case, keyword.control.switch",
       "settings": {
         "foreground": "#984b00"
       }
@@ -1028,14 +1019,14 @@
       "name": "Operator",
       "scope": "keyword.operator",
       "settings": {
-        "foreground": "#984b00"
+        "foreground": "#59646c"
       }
     },
     {
       "name": "String",
       "scope": "string, punctuation.definition.string.end, punctuation.definition.string.begin, punctuation.definition.string.template.begin, punctuation.definition.string.template.end",
       "settings": {
-        "foreground": "#7e5200"
+        "foreground": "#596600"
       }
     },
     {
@@ -1049,28 +1040,28 @@
       "name": "String Escape",
       "scope": "constant.character.escape, punctuation.quasi.element, punctuation.definition.template-expression, punctuation.section.embedded, storage.type.format, constant.other.placeholder, variable.interpolation",
       "settings": {
-        "foreground": "#596600"
+        "foreground": "#2f6a4d"
       }
     },
     {
       "name": "Function",
-      "scope": "entity.name.function, support.function, meta.function, meta.function-call, meta.definition.method",
+      "scope": "entity.name.function, entity.name.function.member, entity.name.function.method, entity.name.method, support.function, variable.function",
       "settings": {
-        "foreground": "#596600"
+        "foreground": "#7e5200"
       }
     },
     {
       "name": "Preproc",
       "scope": "keyword.control.at-rule, keyword.control.import, keyword.control.export, storage.type.namespace, punctuation.decorator, keyword.control.directive, keyword.preprocessor, punctuation.definition.preprocessor, punctuation.definition.directive, keyword.other.import, keyword.other.package, entity.name.type.namespace, entity.name.scope-resolution, keyword.other.using, keyword.package, keyword.import, keyword.map",
       "settings": {
-        "foreground": "#2f6a4d"
+        "foreground": "#8a4b7c"
       }
     },
     {
       "name": "Annotation",
-      "scope": "storage.type.annotation",
+      "scope": "storage.type.annotation, entity.name.function.decorator, entity.name.type.annotation, punctuation.definition.annotation",
       "settings": {
-        "foreground": "#2f6a4d"
+        "foreground": "#8a4b7c"
       }
     },
     {
@@ -1082,23 +1073,23 @@
     },
     {
       "name": "Modules",
-      "scope": "support.module, support.node, support.other.module, support.type.object.module, entity.name.type.module, entity.name.type.class.module, keyword.control.module",
+      "scope": "support.module, support.node, support.other.module, support.type.object.module, entity.name.type.module, entity.name.type.class.module",
+      "settings": {
+        "foreground": "#2e5f94"
+      }
+    },
+    {
+      "name": "Type",
+      "scope": "support.type, entity.name.type",
       "settings": {
         "foreground": "#2f6a4d"
       }
     },
     {
-      "name": "Type",
-      "scope": "storage.type, support.type, entity.name.type, keyword.type",
-      "settings": {
-        "foreground": "#2e5f94"
-      }
-    },
-    {
       "name": "Class",
-      "scope": "entity.name.type.class, support.class, entity.name.class, entity.other.inherited-class, storage.class",
+      "scope": "entity.name.type.class, support.class, entity.name.class, entity.other.inherited-class",
       "settings": {
-        "foreground": "#2e5f94"
+        "foreground": "#2f6a4d"
       }
     },
     {
@@ -1138,16 +1129,23 @@
     },
     {
       "name": "Identifier",
-      "scope": "variable, support.variable, meta.definition.variable",
+      "scope": "variable, support.variable, entity.name.variable",
       "settings": {
         "foreground": "#59646c"
+      }
+    },
+    {
+      "name": "Parameter",
+      "scope": "variable.parameter, entity.name.variable.parameter, variable.other.readwrite.parameter, meta.definition.variable.parameter",
+      "settings": {
+        "foreground": "#984b00"
       }
     },
     {
       "name": "Property",
       "scope": "variable.object.property, support.variable.property, variable.other.property, variable.other.object.property, variable.other.enummember, variable.other.member, meta.object-literal.key",
       "settings": {
-        "foreground": "#59646c"
+        "foreground": "#2e5f94"
       }
     },
     {
@@ -1410,9 +1408,16 @@
     },
     {
       "name": "Html green",
-      "scope": "string.quoted.double.html, string.quoted.single.html, punctuation.definition.string.begin.html, punctuation.definition.string.end.html, punctuation.separator.key-value.html, punctuation.definition.string.begin.xml, punctuation.definition.string.end.xml, string.quoted.double.xml, string.quoted.single.xml, punctuation.definition.tag.begin.html, punctuation.definition.tag.end.html, punctuation.definition.tag.xml, meta.tag.xml, meta.tag.preprocessor.xml, meta.tag.other.html, meta.tag.block.any.html, meta.tag.inline.any.html",
+      "scope": "string.quoted.double.html, string.quoted.single.html, punctuation.definition.string.begin.html, punctuation.definition.string.end.html, punctuation.definition.string.begin.xml, punctuation.definition.string.end.xml, string.quoted.double.xml, string.quoted.single.xml",
       "settings": {
         "foreground": "#596600"
+      }
+    },
+    {
+      "name": "Html punctuation",
+      "scope": "punctuation.separator.key-value.html, punctuation.definition.tag.begin.html, punctuation.definition.tag.end.html, punctuation.definition.tag.xml",
+      "settings": {
+        "foreground": "#59646c"
       }
     },
     {
@@ -1473,7 +1478,7 @@
     },
     {
       "name": "CSS green",
-      "scope": "string.quoted.single.css, string.quoted.double.css, support.constant.property-value.css, meta.property-value.css, punctuation.definition.string.begin.css, punctuation.definition.string.end.css, constant.numeric.css, support.constant.font-name.css, variable.parameter.keyframe-list.css",
+      "scope": "string.quoted.single.css, string.quoted.double.css, support.constant.property-value.css, punctuation.definition.string.begin.css, punctuation.definition.string.end.css, support.constant.font-name.css",
       "settings": {
         "foreground": "#596600"
       }
@@ -1494,7 +1499,7 @@
     },
     {
       "name": "CSS purple",
-      "scope": "entity.name.tag.css, entity.other.keyframe-offset.css, punctuation.definition.keyword.css, keyword.control.at-rule.keyframes.css, meta.selector.css",
+      "scope": "entity.name.tag.css, entity.other.keyframe-offset.css, punctuation.definition.keyword.css, keyword.control.at-rule.keyframes.css",
       "settings": {
         "foreground": "#8a4b7c"
       }
@@ -1522,7 +1527,7 @@
     },
     {
       "name": "SASS green",
-      "scope": "punctuation.definition.string.begin.scss, punctuation.definition.string.end.scss, string.quoted.double.scss, string.quoted.single.scss, constant.character.css.sass, meta.property-value.scss",
+      "scope": "punctuation.definition.string.begin.scss, punctuation.definition.string.end.scss, string.quoted.double.scss, string.quoted.single.scss, constant.character.css.sass",
       "settings": {
         "foreground": "#596600"
       }
@@ -1535,13 +1540,6 @@
       }
     },
     {
-      "name": "Stylus white",
-      "scope": "meta.function.stylus",
-      "settings": {
-        "foreground": "#59646c"
-      }
-    },
-    {
       "name": "Stylus yellow",
       "scope": "entity.name.function.stylus",
       "settings": {
@@ -1549,14 +1547,14 @@
       }
     },
     {
-      "name": "JavaScript white",
+      "name": "JavaScript variable",
       "scope": "string.unquoted.js",
       "settings": {
         "foreground": "#59646c"
       }
     },
     {
-      "name": "JavaScript grey",
+      "name": "JavaScript punctuation",
       "scope": "punctuation.accessor.js, punctuation.separator.key-value.js, punctuation.separator.label.js, keyword.operator.accessor.js",
       "settings": {
         "foreground": "#59646c"
@@ -1570,10 +1568,17 @@
       }
     },
     {
-      "name": "JavaScript orange",
+      "name": "JavaScript declaration",
       "scope": "storage.type.js, storage.type.function.arrow.js",
       "settings": {
         "foreground": "#984b00"
+      }
+    },
+    {
+      "name": "JavaScript constant",
+      "scope": "variable.other.constant.js, variable.other.constant.object.js, variable.other.constant.object.property.js, variable.other.constant.property.js",
+      "settings": {
+        "foreground": "#8a4b7c"
       }
     },
     {
@@ -1605,21 +1610,28 @@
       }
     },
     {
-      "name": "TypeScript aqua",
+      "name": "TypeScript type",
       "scope": "entity.name.type.ts, entity.name.type.interface.ts, entity.other.inherited-class.ts, entity.name.type.alias.ts, entity.name.type.class.ts, entity.name.type.enum.ts",
       "settings": {
         "foreground": "#2f6a4d"
       }
     },
     {
-      "name": "TypeScript orange",
+      "name": "TypeScript declaration",
       "scope": "storage.type.ts, storage.type.function.arrow.ts, storage.type.type.ts",
       "settings": {
         "foreground": "#984b00"
       }
     },
     {
-      "name": "TypeScript blue",
+      "name": "TypeScript constant",
+      "scope": "variable.other.constant.ts, variable.other.constant.object.ts, variable.other.constant.object.property.ts, variable.other.constant.property.ts",
+      "settings": {
+        "foreground": "#8a4b7c"
+      }
+    },
+    {
+      "name": "TypeScript namespace",
       "scope": "entity.name.type.module.ts",
       "settings": {
         "foreground": "#2e5f94"
@@ -1682,13 +1694,6 @@
       }
     },
     {
-      "name": "PureScript white",
-      "scope": "meta.type-signature.purescript",
-      "settings": {
-        "foreground": "#59646c"
-      }
-    },
-    {
       "name": "PureScript orange",
       "scope": "keyword.other.double-colon.purescript, keyword.other.arrow.purescript, keyword.other.big-arrow.purescript",
       "settings": {
@@ -1704,9 +1709,16 @@
     },
     {
       "name": "PureScript green",
-      "scope": "string.quoted.single.purescript, string.quoted.double.purescript, punctuation.definition.string.begin.purescript, punctuation.definition.string.end.purescript, string.quoted.triple.purescript, entity.name.type.purescript",
+      "scope": "string.quoted.single.purescript, string.quoted.double.purescript, punctuation.definition.string.begin.purescript, punctuation.definition.string.end.purescript, string.quoted.triple.purescript",
       "settings": {
         "foreground": "#596600"
+      }
+    },
+    {
+      "name": "PureScript aqua",
+      "scope": "entity.name.type.purescript",
+      "settings": {
+        "foreground": "#2f6a4d"
       }
     },
     {
@@ -1731,15 +1743,22 @@
       }
     },
     {
-      "name": "Dart yellow",
+      "name": "Dart aqua",
       "scope": "support.class.dart",
+      "settings": {
+        "foreground": "#2f6a4d"
+      }
+    },
+    {
+      "name": "Dart yellow",
+      "scope": "entity.name.function.dart",
       "settings": {
         "foreground": "#7e5200"
       }
     },
     {
       "name": "Dart green",
-      "scope": "entity.name.function.dart, string.interpolated.single.dart, string.interpolated.double.dart",
+      "scope": "string.interpolated.single.dart, string.interpolated.double.dart",
       "settings": {
         "foreground": "#596600"
       }
@@ -1788,7 +1807,7 @@
     },
     {
       "name": "C white",
-      "scope": "meta.function-call.c, storage.modifier.array.bracket.square.c, meta.function.definition.parameters.c",
+      "scope": "storage.modifier.array.bracket.square.c",
       "settings": {
         "foreground": "#59646c"
       }
@@ -1815,15 +1834,15 @@
       }
     },
     {
-      "name": "C aqua",
+      "name": "C property",
       "scope": "variable.other.member.c",
       "settings": {
-        "foreground": "#2f6a4d"
+        "foreground": "#2e5f94"
       }
     },
     {
       "name": "C++ white",
-      "scope": "meta.function-call.cpp, storage.modifier.array.bracket.square.cpp, meta.function.definition.parameters.cpp, meta.body.function.definition.cpp",
+      "scope": "storage.modifier.array.bracket.square.cpp",
       "settings": {
         "foreground": "#59646c"
       }
@@ -1850,10 +1869,10 @@
       }
     },
     {
-      "name": "C++ aqua",
+      "name": "C++ property",
       "scope": "variable.other.member.cpp",
       "settings": {
-        "foreground": "#2f6a4d"
+        "foreground": "#2e5f94"
       }
     },
     {
@@ -1864,10 +1883,17 @@
       }
     },
     {
-      "name": "C# yellow",
-      "scope": "keyword.type.cs, constant.character.escape.cs, punctuation.definition.interpolation.begin.cs, punctuation.definition.interpolation.end.cs",
+      "name": "C# orange",
+      "scope": "keyword.type.cs",
       "settings": {
-        "foreground": "#7e5200"
+        "foreground": "#984b00"
+      }
+    },
+    {
+      "name": "C# aqua escape",
+      "scope": "constant.character.escape.cs, punctuation.definition.interpolation.begin.cs, punctuation.definition.interpolation.end.cs",
+      "settings": {
+        "foreground": "#2f6a4d"
       }
     },
     {
@@ -1878,17 +1904,17 @@
       }
     },
     {
-      "name": "C# aqua",
+      "name": "C# blue property",
       "scope": "variable.other.object.property.cs",
       "settings": {
-        "foreground": "#2f6a4d"
+        "foreground": "#2e5f94"
       }
     },
     {
-      "name": "C# purple",
+      "name": "C# blue namespace",
       "scope": "entity.name.type.namespace.cs",
       "settings": {
-        "foreground": "#8a4b7c"
+        "foreground": "#2e5f94"
       }
     },
     {
@@ -1899,10 +1925,10 @@
       }
     },
     {
-      "name": "F# yellow",
+      "name": "F# aqua",
       "scope": "keyword.format.specifier.fsharp, entity.name.type.fsharp",
       "settings": {
-        "foreground": "#7e5200"
+        "foreground": "#2f6a4d"
       }
     },
     {
@@ -1948,17 +1974,24 @@
       }
     },
     {
-      "name": "Java aqua",
+      "name": "Java blue property",
       "scope": "variable.other.property.java",
       "settings": {
-        "foreground": "#2f6a4d"
+        "foreground": "#2e5f94"
       }
     },
     {
       "name": "Java purple",
-      "scope": "variable.language.wildcard.java, storage.modifier.import.java, storage.type.annotation.java, punctuation.definition.annotation.java, storage.modifier.package.java, entity.name.type.module.java",
+      "scope": "variable.language.wildcard.java, storage.modifier.import.java, storage.type.annotation.java, punctuation.definition.annotation.java, storage.modifier.package.java",
       "settings": {
         "foreground": "#8a4b7c"
+      }
+    },
+    {
+      "name": "Java blue module",
+      "scope": "entity.name.type.module.java",
+      "settings": {
+        "foreground": "#2e5f94"
       }
     },
     {
@@ -1976,31 +2009,38 @@
       }
     },
     {
-      "name": "Kotlin aqua",
+      "name": "Kotlin purple constant",
       "scope": "constant.language.kotlin",
       "settings": {
-        "foreground": "#2f6a4d"
+        "foreground": "#8a4b7c"
       }
     },
     {
       "name": "Kotlin purple",
-      "scope": "entity.name.package.kotlin, storage.type.annotation.kotlin",
+      "scope": "storage.type.annotation.kotlin",
       "settings": {
         "foreground": "#8a4b7c"
       }
     },
     {
-      "name": "Scala purple",
-      "scope": "entity.name.package.scala",
-      "settings": {
-        "foreground": "#8a4b7c"
-      }
-    },
-    {
-      "name": "Scala blue",
-      "scope": "constant.language.scala",
+      "name": "Kotlin blue package",
+      "scope": "entity.name.package.kotlin",
       "settings": {
         "foreground": "#2e5f94"
+      }
+    },
+    {
+      "name": "Scala blue package",
+      "scope": "entity.name.package.scala",
+      "settings": {
+        "foreground": "#2e5f94"
+      }
+    },
+    {
+      "name": "Scala purple constant",
+      "scope": "constant.language.scala",
+      "settings": {
+        "foreground": "#8a4b7c"
       }
     },
     {
@@ -2018,10 +2058,10 @@
       }
     },
     {
-      "name": "Scala yellow",
+      "name": "Scala aqua class",
       "scope": "entity.name.class.scala, entity.other.inherited-class.scala",
       "settings": {
-        "foreground": "#7e5200"
+        "foreground": "#2f6a4d"
       }
     },
     {
@@ -2040,7 +2080,7 @@
     },
     {
       "name": "Groovy white",
-      "scope": "keyword.operator.navigation.groovy, meta.method.body.java, meta.definition.method.groovy, meta.definition.method.signature.java",
+      "scope": "keyword.operator.navigation.groovy",
       "settings": {
         "foreground": "#59646c"
       }
@@ -2068,7 +2108,7 @@
     },
     {
       "name": "Groovy green",
-      "scope": "variable.other.interpolated.groovy, meta.method.groovy",
+      "scope": "variable.other.interpolated.groovy",
       "settings": {
         "foreground": "#596600"
       }
@@ -2088,17 +2128,24 @@
       }
     },
     {
-      "name": "Go red",
+      "name": "Go declaration",
       "scope": "keyword.type.go",
       "settings": {
-        "foreground": "#ad3d3d"
+        "foreground": "#984b00"
       }
     },
     {
-      "name": "Go aqua",
+      "name": "Go namespace",
       "scope": "entity.name.package.go",
       "settings": {
-        "foreground": "#2f6a4d"
+        "foreground": "#2e5f94"
+      }
+    },
+    {
+      "name": "Go constant",
+      "scope": "variable.other.constant.go",
+      "settings": {
+        "foreground": "#8a4b7c"
       }
     },
     {
@@ -2109,10 +2156,10 @@
       }
     },
     {
-      "name": "Rust white",
+      "name": "Rust blue module",
       "scope": "entity.name.type.mod.rust",
       "settings": {
-        "foreground": "#59646c"
+        "foreground": "#2e5f94"
       }
     },
     {
@@ -2138,16 +2185,23 @@
     },
     {
       "name": "Rust purple",
-      "scope": "meta.attribute.rust, variable.language.rust, storage.type.module.rust",
+      "scope": "meta.attribute.rust, variable.language.rust, entity.name.function.macro.rust, entity.name.function.macro.rules.rust",
       "settings": {
         "foreground": "#8a4b7c"
       }
     },
     {
-      "name": "Swift white",
-      "scope": "meta.function-call.swift, support.function.any-method.swift",
+      "name": "Rust orange module declaration",
+      "scope": "storage.type.module.rust",
       "settings": {
-        "foreground": "#59646c"
+        "foreground": "#984b00"
+      }
+    },
+    {
+      "name": "Swift yellow callable",
+      "scope": "support.function.any-method.swift",
+      "settings": {
+        "foreground": "#7e5200"
       }
     },
     {
@@ -2172,45 +2226,59 @@
       }
     },
     {
-      "name": "PHP aqua",
-      "scope": "constant.language.php, support.other.namespace.php",
-      "settings": {
-        "foreground": "#2f6a4d"
-      }
-    },
-    {
-      "name": "PHP blue",
-      "scope": "storage.type.modifier.access.control.public.php, storage.type.modifier.access.control.private.php",
-      "settings": {
-        "foreground": "#2e5f94"
-      }
-    },
-    {
-      "name": "PHP purple",
-      "scope": "keyword.control.import.include.php, storage.type.php",
+      "name": "PHP purple constant",
+      "scope": "constant.language.php",
       "settings": {
         "foreground": "#8a4b7c"
       }
     },
     {
-      "name": "Python white",
-      "scope": "meta.function-call.arguments.python",
+      "name": "PHP blue namespace",
+      "scope": "support.other.namespace.php",
+      "settings": {
+        "foreground": "#2e5f94"
+      }
+    },
+    {
+      "name": "PHP orange modifier",
+      "scope": "storage.type.modifier.access.control.public.php, storage.type.modifier.access.control.private.php",
+      "settings": {
+        "foreground": "#984b00"
+      }
+    },
+    {
+      "name": "PHP purple",
+      "scope": "keyword.control.import.include.php",
+      "settings": {
+        "foreground": "#8a4b7c"
+      }
+    },
+    {
+      "name": "PHP orange declaration",
+      "scope": "storage.type.php",
+      "settings": {
+        "foreground": "#984b00"
+      }
+    },
+    {
+      "name": "Python punctuation",
+      "scope": "punctuation.separator.period.python",
       "settings": {
         "foreground": "#59646c"
       }
     },
     {
-      "name": "Python grey",
-      "scope": "punctuation.definition.decorator.python, punctuation.separator.period.python",
-      "settings": {
-        "foreground": "#59646c"
-      }
-    },
-    {
-      "name": "Python aqua",
+      "name": "Python constant",
       "scope": "constant.language.python",
       "settings": {
-        "foreground": "#2f6a4d"
+        "foreground": "#8a4b7c"
+      }
+    },
+    {
+      "name": "Python annotation",
+      "scope": "punctuation.definition.decorator.python",
+      "settings": {
+        "foreground": "#8a4b7c"
       }
     },
     {
@@ -2221,24 +2289,17 @@
       }
     },
     {
-      "name": "Lua aqua",
+      "name": "Lua purple constant",
       "scope": "constant.language.lua",
       "settings": {
-        "foreground": "#2f6a4d"
+        "foreground": "#8a4b7c"
       }
     },
     {
-      "name": "Lua blue",
+      "name": "Lua aqua class",
       "scope": "entity.name.class.lua",
       "settings": {
-        "foreground": "#2e5f94"
-      }
-    },
-    {
-      "name": "Ruby white",
-      "scope": "meta.function.method.with-arguments.ruby",
-      "settings": {
-        "foreground": "#59646c"
+        "foreground": "#2f6a4d"
       }
     },
     {
@@ -2256,10 +2317,10 @@
       }
     },
     {
-      "name": "Ruby green",
+      "name": "Ruby yellow callable",
       "scope": "keyword.other.special-method.ruby",
       "settings": {
-        "foreground": "#596600"
+        "foreground": "#7e5200"
       }
     },
     {
@@ -2277,10 +2338,10 @@
       }
     },
     {
-      "name": "Ruby blue",
+      "name": "Ruby purple constant",
       "scope": "variable.other.constant.ruby",
       "settings": {
-        "foreground": "#2e5f94"
+        "foreground": "#8a4b7c"
       }
     },
     {
@@ -2291,31 +2352,45 @@
       }
     },
     {
-      "name": "Haskell yellow",
+      "name": "Haskell orange declaration",
       "scope": "storage.type.haskell",
       "settings": {
-        "foreground": "#7e5200"
+        "foreground": "#984b00"
       }
     },
     {
       "name": "Haskell green",
-      "scope": "constant.other.haskell, string.quoted.double.haskell, string.quoted.single.haskell, punctuation.definition.string.begin.haskell, punctuation.definition.string.end.haskell",
+      "scope": "string.quoted.double.haskell, string.quoted.single.haskell, punctuation.definition.string.begin.haskell, punctuation.definition.string.end.haskell",
       "settings": {
         "foreground": "#596600"
       }
     },
     {
-      "name": "Haskell blue",
+      "name": "Haskell purple constant",
+      "scope": "constant.other.haskell",
+      "settings": {
+        "foreground": "#8a4b7c"
+      }
+    },
+    {
+      "name": "Haskell yellow callable",
       "scope": "entity.name.function.haskell",
+      "settings": {
+        "foreground": "#7e5200"
+      }
+    },
+    {
+      "name": "Haskell blue namespace",
+      "scope": "entity.name.namespace",
       "settings": {
         "foreground": "#2e5f94"
       }
     },
     {
-      "name": "Haskell aqua",
-      "scope": "entity.name.namespace, meta.preprocessor.haskell",
+      "name": "Haskell purple preprocessor",
+      "scope": "meta.preprocessor.haskell",
       "settings": {
-        "foreground": "#2f6a4d"
+        "foreground": "#8a4b7c"
       }
     },
     {
@@ -2333,10 +2408,10 @@
       }
     },
     {
-      "name": "Julia aqua",
+      "name": "Julia purple constant",
       "scope": "constant.language.julia",
       "settings": {
-        "foreground": "#2f6a4d"
+        "foreground": "#8a4b7c"
       }
     },
     {
@@ -2354,10 +2429,10 @@
       }
     },
     {
-      "name": "Elm yellow",
+      "name": "Elm orange declaration",
       "scope": "storage.type.elm",
       "settings": {
-        "foreground": "#7e5200"
+        "foreground": "#984b00"
       }
     },
     {
@@ -2368,24 +2443,24 @@
       }
     },
     {
-      "name": "R green",
+      "name": "R yellow callable",
       "scope": "entity.name.function.r, variable.function.r",
       "settings": {
-        "foreground": "#596600"
+        "foreground": "#7e5200"
       }
     },
     {
-      "name": "R aqua",
+      "name": "R purple constant",
       "scope": "constant.language.r",
       "settings": {
-        "foreground": "#2f6a4d"
+        "foreground": "#8a4b7c"
       }
     },
     {
-      "name": "R purple",
+      "name": "R blue namespace",
       "scope": "entity.namespace.r",
       "settings": {
-        "foreground": "#8a4b7c"
+        "foreground": "#2e5f94"
       }
     },
     {
@@ -2403,10 +2478,10 @@
       }
     },
     {
-      "name": "Erlang yellow",
+      "name": "Erlang blue module",
       "scope": "entity.name.type.class.module.erlang",
       "settings": {
-        "foreground": "#7e5200"
+        "foreground": "#2e5f94"
       }
     },
     {
@@ -2424,17 +2499,17 @@
       }
     },
     {
-      "name": "Elixir aqua",
+      "name": "Elixir blue module",
       "scope": "variable.other.readwrite.module.elixir, punctuation.definition.variable.elixir",
       "settings": {
-        "foreground": "#2f6a4d"
+        "foreground": "#2e5f94"
       }
     },
     {
-      "name": "Elixir blue",
+      "name": "Elixir purple constant",
       "scope": "constant.language.elixir",
       "settings": {
-        "foreground": "#2e5f94"
+        "foreground": "#8a4b7c"
       }
     },
     {
@@ -2473,13 +2548,6 @@
       }
     },
     {
-      "name": "Lisp white",
-      "scope": "meta.function.lisp",
-      "settings": {
-        "foreground": "#59646c"
-      }
-    },
-    {
       "name": "Lisp red",
       "scope": "storage.type.function-type.lisp",
       "settings": {
@@ -2494,15 +2562,15 @@
       }
     },
     {
-      "name": "Lisp aqua",
+      "name": "Lisp yellow callable",
       "scope": "entity.name.function.lisp",
       "settings": {
-        "foreground": "#2f6a4d"
+        "foreground": "#7e5200"
       }
     },
     {
       "name": "Clojure green",
-      "scope": "constant.keyword.clojure, support.variable.clojure, meta.definition.variable.clojure",
+      "scope": "constant.keyword.clojure, support.variable.clojure",
       "settings": {
         "foreground": "#596600"
       }
@@ -2515,38 +2583,38 @@
       }
     },
     {
-      "name": "Clojure blue",
+      "name": "Clojure yellow callable",
       "scope": "entity.name.function.clojure",
       "settings": {
-        "foreground": "#2e5f94"
+        "foreground": "#7e5200"
       }
     },
     {
-      "name": "Shell white",
-      "scope": "meta.scope.if-block.shell, meta.scope.group.shell",
-      "settings": {
-        "foreground": "#59646c"
-      }
-    },
-    {
-      "name": "Shell yellow",
+      "name": "Shell callable",
       "scope": "support.function.builtin.shell, entity.name.function.shell",
       "settings": {
         "foreground": "#7e5200"
       }
     },
     {
-      "name": "Shell green",
+      "name": "Shell string",
       "scope": "string.quoted.double.shell, string.quoted.single.shell, punctuation.definition.string.begin.shell, punctuation.definition.string.end.shell, string.unquoted.heredoc.shell",
       "settings": {
         "foreground": "#596600"
       }
     },
     {
-      "name": "Shell purple",
+      "name": "Shell variable",
       "scope": "keyword.control.heredoc-token.shell, variable.other.normal.shell, punctuation.definition.variable.shell, variable.other.special.shell, variable.other.positional.shell, variable.other.bracket.shell",
       "settings": {
-        "foreground": "#8a4b7c"
+        "foreground": "#59646c"
+      }
+    },
+    {
+      "name": "Shell declaration",
+      "scope": "variable.other.assignment.shell",
+      "settings": {
+        "foreground": "#984b00"
       }
     },
     {
@@ -2606,10 +2674,10 @@
       }
     },
     {
-      "name": "PowerShell aqua",
+      "name": "PowerShell property",
       "scope": "variable.other.member.powershell",
       "settings": {
-        "foreground": "#2f6a4d"
+        "foreground": "#2e5f94"
       }
     },
     {
@@ -2711,10 +2779,24 @@
       }
     },
     {
-      "name": "Dockerfile orange",
-      "scope": "entity.name.function.package-manager.dockerfile",
+      "name": "Terraform declaration",
+      "scope": "variable.declaration.hcl",
       "settings": {
         "foreground": "#984b00"
+      }
+    },
+    {
+      "name": "Terraform property",
+      "scope": "meta.mapping.key.hcl variable.other.readwrite.hcl, meta.mapping.key.hcl string.quoted.double.hcl, variable.other.member.hcl",
+      "settings": {
+        "foreground": "#2e5f94"
+      }
+    },
+    {
+      "name": "Dockerfile callable",
+      "scope": "entity.name.function.package-manager.dockerfile",
+      "settings": {
+        "foreground": "#7e5200"
       }
     },
     {
@@ -2739,10 +2821,10 @@
       }
     },
     {
-      "name": "Dockerfile purple",
+      "name": "Dockerfile type",
       "scope": "entity.name.type.base-image.dockerfile, entity.name.image.dockerfile",
       "settings": {
-        "foreground": "#8a4b7c"
+        "foreground": "#2f6a4d"
       }
     },
     {
@@ -2823,38 +2905,66 @@
       }
     },
     {
-      "name": "SQL yellow",
+      "name": "Jinja declaration",
+      "scope": "variable.other.jinja.block",
+      "settings": {
+        "foreground": "#984b00"
+      }
+    },
+    {
+      "name": "Jinja callable",
+      "scope": "variable.other.jinja.filter, variable.other.jinja.test",
+      "settings": {
+        "foreground": "#7e5200"
+      }
+    },
+    {
+      "name": "Jinja property",
+      "scope": "variable.other.jinja.attribute",
+      "settings": {
+        "foreground": "#2e5f94"
+      }
+    },
+    {
+      "name": "SQL type",
+      "scope": "storage.type.sql",
+      "settings": {
+        "foreground": "#2f6a4d"
+      }
+    },
+    {
+      "name": "SQL callable",
       "scope": "support.function.aggregate.sql",
       "settings": {
         "foreground": "#7e5200"
       }
     },
     {
-      "name": "SQL green",
+      "name": "SQL string",
       "scope": "string.quoted.single.sql, punctuation.definition.string.end.sql, punctuation.definition.string.begin.sql, string.quoted.double.sql",
       "settings": {
         "foreground": "#596600"
       }
     },
     {
-      "name": "GraphQL yellow",
+      "name": "GraphQL aqua type",
       "scope": "support.type.graphql",
       "settings": {
-        "foreground": "#7e5200"
+        "foreground": "#2f6a4d"
       }
     },
     {
-      "name": "GraphQL blue",
+      "name": "GraphQL orange parameter",
       "scope": "variable.parameter.graphql",
       "settings": {
-        "foreground": "#2e5f94"
+        "foreground": "#984b00"
       }
     },
     {
-      "name": "GraphQL aqua",
+      "name": "GraphQL purple enum",
       "scope": "constant.character.enum.graphql",
       "settings": {
-        "foreground": "#2f6a4d"
+        "foreground": "#8a4b7c"
       }
     },
     {
@@ -2865,14 +2975,14 @@
       }
     },
     {
-      "name": "JSON orange",
+      "name": "JSON property",
       "scope": "support.type.property-name.json",
       "settings": {
-        "foreground": "#984b00"
+        "foreground": "#2e5f94"
       }
     },
     {
-      "name": "JSON green",
+      "name": "JSON string",
       "scope": "string.quoted.double.json",
       "settings": {
         "foreground": "#596600"
@@ -2886,10 +2996,17 @@
       }
     },
     {
-      "name": "YAML green",
+      "name": "YAML string",
       "scope": "string.unquoted.plain.out.yaml, string.quoted.single.yaml, string.quoted.double.yaml, punctuation.definition.string.begin.yaml, punctuation.definition.string.end.yaml, string.unquoted.plain.in.yaml, string.unquoted.block.yaml",
       "settings": {
         "foreground": "#596600"
+      }
+    },
+    {
+      "name": "YAML property",
+      "scope": "meta.flow.map.key.yaml string.unquoted.plain.in.yaml entity.name.tag.yaml, meta.map.key.yaml string.quoted.double.yaml entity.name.tag.yaml, meta.map.key.yaml string.unquoted.plain.yaml entity.name.tag.yaml",
+      "settings": {
+        "foreground": "#2e5f94"
       }
     },
     {
@@ -2908,23 +3025,30 @@
     },
     {
       "name": "TOML green",
-      "scope": "string.quoted.single.basic.line.toml, string.quoted.single.literal.line.toml, punctuation.definition.keyValuePair.toml",
+      "scope": "string.quoted.single.basic.line.toml, string.quoted.single.literal.line.toml",
       "settings": {
         "foreground": "#596600"
       }
     },
     {
-      "name": "TOML blue",
-      "scope": "constant.other.boolean.toml",
+      "name": "TOML grey punctuation",
+      "scope": "punctuation.definition.keyValuePair.toml",
       "settings": {
-        "foreground": "#2e5f94"
+        "foreground": "#59646c"
       }
     },
     {
-      "name": "TOML purple",
-      "scope": "entity.other.attribute-name.table.toml, punctuation.definition.table.toml, entity.other.attribute-name.table.array.toml, punctuation.definition.table.array.toml",
+      "name": "TOML purple boolean",
+      "scope": "constant.other.boolean.toml",
       "settings": {
         "foreground": "#8a4b7c"
+      }
+    },
+    {
+      "name": "TOML blue table",
+      "scope": "entity.other.attribute-name.table.toml, punctuation.definition.table.toml, entity.other.attribute-name.table.array.toml, punctuation.definition.table.array.toml",
+      "settings": {
+        "foreground": "#2e5f94"
       }
     },
     {

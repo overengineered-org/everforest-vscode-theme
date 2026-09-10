@@ -160,7 +160,13 @@ Use `code-insiders` for VS Code Insiders.
 
 - All 910 documented VS Code workbench color keys plus 27 extension-contributed color keys: 937
   mapped keys in total.
-- TextMate and semantic tokens for common programming and markup languages.
+- One stable syntax vocabulary across Light and Dark: red keywords, orange declarations and
+  parameters, yellow callables, green strings, aqua types, blue properties and namespaces, and
+  purple constants and annotations.
+- Language-neutral semantic roles plus targeted TextMate coverage for web, C-family, JVM, systems,
+  scripting, functional, shell, data, configuration, markup, and documentation languages.
+- Deep syntax contracts for Terraform/HCL, JavaScript, TypeScript, Go, Python, Java, Scala, shell,
+  SQL, Jinja SQL, YAML, and JSON, plus representative coverage for other popular grammars.
 - Terminal, Git, diffs, diagnostics, tests, notebooks, minimap, and chat.
 - Git and pull-request extension colors where those extensions contribute supported color keys.
 

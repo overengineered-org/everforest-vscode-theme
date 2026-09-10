@@ -67,6 +67,18 @@ const requiredSemanticTokenIdentifiers = [
   "type",
   "typeParameter",
   "variable",
+  "variable.defaultLibrary",
+  "variable.readonly",
+  "property.defaultLibrary",
+  "property.readonly",
+  "function.defaultLibrary",
+  "method.defaultLibrary",
+  "type.defaultLibrary",
+  "class.defaultLibrary",
+  "stringLiteral",
+  "numberLiteral",
+  "newOperator",
+  "customLiteral",
 ];
 
 const requiredSyntaxScopes = [

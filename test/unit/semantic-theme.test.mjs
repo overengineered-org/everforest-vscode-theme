@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { getPalette, getReadableTextPalette } from "../../dist/palette/index.js";
+import { getSyntaxRoleColors } from "../../dist/syntax/roles.js";
 import { createTheme } from "../../dist/theme.js";
 import themeManifest from "../support/theme-manifest.cjs";
 
@@ -13,7 +14,7 @@ const rustSemanticThemeVariants = [
   { appearance: "light", contrast: "hard" },
 ];
 
-test("maps Rust self type keywords to the existing purple semantic role", () => {
+test("maps Rust semantic tokens to the shared cross-language roles", () => {
   for (const rustSemanticThemeVariant of rustSemanticThemeVariants) {
     const rustThemePreferences = {
       appearance: rustSemanticThemeVariant.appearance,
@@ -31,10 +32,11 @@ test("maps Rust self type keywords to the existing purple semantic role", () => 
       rustSemanticThemeVariant.appearance,
       getPalette(rustSemanticThemeVariant.appearance, rustSemanticThemeVariant.contrast)
     );
+    const rustSyntaxRoleColors = getSyntaxRoleColors(readableRustPalette);
 
     assert.equal(
       generatedRustTheme.semanticTokenColors["selfTypeKeyword:rust"],
-      readableRustPalette.purple,
+      rustSyntaxRoleColors.constant,
       `${rustSemanticThemeVariant.appearance} ${rustSemanticThemeVariant.contrast} self type keyword`
     );
     assert.equal(
@@ -44,19 +46,30 @@ test("maps Rust self type keywords to the existing purple semantic role", () => 
     );
     assert.equal(
       generatedRustTheme.semanticTokenColors.member,
-      readableRustPalette.fg,
+      rustSyntaxRoleColors.property,
       `${rustSemanticThemeVariant.appearance} ${rustSemanticThemeVariant.contrast} member role`
     );
     assert.equal(
       generatedRustTheme.semanticTokenColors.modifier,
-      readableRustPalette.red,
+      rustSyntaxRoleColors.declaration,
       `${rustSemanticThemeVariant.appearance} ${rustSemanticThemeVariant.contrast} modifier role`
     );
+    assert.equal(generatedRustTheme.semanticTokenColors.macro, rustSyntaxRoleColors.annotation);
+    assert.equal(generatedRustTheme.semanticTokenColors.namespace, rustSyntaxRoleColors.namespace);
   }
 });
 
 test("requires standard generic semantic roles in the theme manifest contract", () => {
-  for (const genericSemanticTokenIdentifier of ["member", "modifier"]) {
+  for (const genericSemanticTokenIdentifier of [
+    "member",
+    "modifier",
+    "variable.readonly",
+    "property.readonly",
+    "function.defaultLibrary",
+    "type.defaultLibrary",
+    "stringLiteral",
+    "numberLiteral",
+  ]) {
     assert.ok(
       themeManifest.requiredSemanticTokenIdentifiers.includes(genericSemanticTokenIdentifier),
       genericSemanticTokenIdentifier
