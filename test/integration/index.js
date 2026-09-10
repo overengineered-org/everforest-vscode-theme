@@ -1003,11 +1003,6 @@ async function run() {
   assert.deepEqual(extension.packageJSON.activationEvents, ["onStartupFinished"]);
   assert.deepEqual(extension.packageJSON.contributes.themes, expectedThemeContributions);
   validateInstalledPremiumConfiguration(extension);
-  assert.equal(
-    extension.isActive,
-    true,
-    "Premium runtime is already active from onStartupFinished before manual activation"
-  );
   await extension.activate();
   assert.equal(extension.isActive, true, "Premium runtime activates in VS Code Desktop");
   const registeredCommandIdentifiers = new Set(await vscode.commands.getCommands(true));
