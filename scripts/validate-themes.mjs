@@ -270,6 +270,7 @@ function resolveWorkbenchBackground(themeColors, backgroundIdentifier) {
     "editorInlayHint.background": "editor.background",
     "editorInlayHint.typeBackground": "editor.background",
     "editorInlayHint.parameterBackground": "editor.background",
+    "editorBracketMatch.background": "editor.background",
     "editorGutter.background": "editor.background",
     "list.focusBackground": "editor.background",
     "list.inactiveFocusBackground": "editor.background",

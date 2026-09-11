@@ -165,8 +165,9 @@ Use `code-insiders` for VS Code Insiders.
   purple constants and annotations.
 - Language-neutral semantic roles plus targeted TextMate coverage for web, C-family, JVM, systems,
   scripting, functional, shell, data, configuration, markup, and documentation languages.
-- Deep syntax contracts for Terraform/HCL, JavaScript, TypeScript, Go, Python, Java, Scala, shell,
-  SQL, Jinja SQL, YAML, and JSON, plus representative coverage for other popular grammars.
+- Deep syntax contracts for 24 widely used grammars: JavaScript/JSX, TypeScript/TSX, Python, Java,
+  C, C++, C#, Go, Rust, Swift, PHP, Ruby, HTML, CSS, SCSS, Scala, shell, SQL, YAML, JSON,
+  Terraform/HCL, and Jinja SQL.
 - Terminal, Git, diffs, diagnostics, tests, notebooks, minimap, and chat.
 - Git and pull-request extension colors where those extensions contribute supported color keys.
 
@@ -180,6 +181,9 @@ npm run package:verify
 ```
 
 Edit `src/`, then run `npm run generate`. Do not hand-edit `themes/*.json`.
+
+Use `npm run preview:light` or `npm run preview:dark` for an isolated, editor-first preview across
+12 representative language fixtures without personal extensions, diagnostics, or workbench clutter.
 
 See [Contributing](CONTRIBUTING.md), [Architecture](docs/ARCHITECTURE.md), and
 [Visual testing](docs/VISUAL_TESTING.md). Product decisions live in [PRODUCT.md](PRODUCT.md); visual

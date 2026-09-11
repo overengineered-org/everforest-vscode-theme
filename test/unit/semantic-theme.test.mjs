@@ -32,7 +32,10 @@ test("maps Rust semantic tokens to the shared cross-language roles", () => {
       rustSemanticThemeVariant.appearance,
       getPalette(rustSemanticThemeVariant.appearance, rustSemanticThemeVariant.contrast)
     );
-    const rustSyntaxRoleColors = getSyntaxRoleColors(readableRustPalette);
+    const rustSyntaxRoleColors = getSyntaxRoleColors(
+      rustSemanticThemeVariant.appearance,
+      readableRustPalette
+    );
 
     assert.equal(
       generatedRustTheme.semanticTokenColors["selfTypeKeyword:rust"],

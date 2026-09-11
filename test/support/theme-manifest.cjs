@@ -91,7 +91,7 @@ const requiredSyntaxScopes = [
   "markup.fenced_code.block.markdown",
   "storage.type.rust",
   "string",
-  "support.type.property-name.css",
+  "support.type.property-name",
   "variable",
 ];
 

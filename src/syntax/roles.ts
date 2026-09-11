@@ -1,4 +1,4 @@
-import { Palette } from "../interface";
+import { Palette, ThemeAppearance } from "../interface";
 
 export interface SyntaxRoleColors {
   annotation: string;
@@ -24,23 +24,26 @@ export interface SyntaxRoleColors {
  * tokens consume the same roles so highlighting does not change when a
  * language server starts or stops.
  */
-export function getSyntaxRoleColors(palette: Palette): SyntaxRoleColors {
+export function getSyntaxRoleColors(
+  appearance: ThemeAppearance,
+  palette: Palette
+): SyntaxRoleColors {
   return {
     annotation: palette.purple,
-    attribute: palette.yellow,
-    callable: palette.yellow,
+    attribute: palette.purple,
+    callable: palette.green,
     comment: palette.grey1,
-    constant: palette.purple,
+    constant: palette.aqua,
     declaration: palette.orange,
     escape: palette.aqua,
     keyword: palette.red,
-    namespace: palette.blue,
-    operator: palette.fg,
-    parameter: palette.orange,
+    namespace: palette.yellow,
+    operator: appearance === "light" ? palette.fg : palette.orange,
+    parameter: palette.fg,
     property: palette.blue,
     punctuation: palette.grey1,
     string: palette.green,
-    type: palette.aqua,
+    type: palette.yellow,
     variable: palette.fg,
   };
 }
