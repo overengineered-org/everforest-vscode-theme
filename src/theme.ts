@@ -43,7 +43,7 @@ function createSemanticTokenColors(
   palette: Palette,
   themePreferences: ThemePreferences
 ): GeneratedTheme["semanticTokenColors"] {
-  const syntaxRoleColors = getSyntaxRoleColors(palette);
+  const syntaxRoleColors = getSyntaxRoleColors(themePreferences.appearance, palette);
   return {
     namespace: syntaxRoleColors.namespace,
     type: syntaxRoleColors.type,
@@ -123,7 +123,11 @@ export function createTheme(
     semanticHighlighting: true,
     semanticTokenColors: createSemanticTokenColors(readableTextPalette, themePreferences),
     colors: createWorkbenchColors(rawPalette, themePreferences),
-    tokenColors: getDefaultSyntax(readableTextPalette, themePreferences),
+    tokenColors: getDefaultSyntax(
+      readableTextPalette,
+      themePreferences.appearance,
+      themePreferences
+    ),
   };
 }
 

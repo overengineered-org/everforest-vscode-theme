@@ -560,6 +560,8 @@
     "compile": "tsc --project tsconfig.json",
     "generate": "npm run compile && node dist/generate-themes.js",
     "generate:check": "node scripts/check-generated-themes.mjs",
+    "preview:dark": "npm run generate && node scripts/open-theme-preview.mjs dark",
+    "preview:light": "npm run generate && node scripts/open-theme-preview.mjs light",
     "validate": "node scripts/validate-themes.mjs",
     "check:format": "prettier --check .",
     "test:unit": "npm run compile && npm run test:unit:compiled",

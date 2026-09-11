@@ -1,0 +1,10 @@
+$minimum-contrast: 4.5;
+
+@mixin theme-card($mode) {
+  --theme-mode: #{$mode};
+  color: var(--theme-foreground);
+}
+
+.theme-card {
+  @include theme-card("dark");
+}

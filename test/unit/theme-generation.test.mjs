@@ -206,6 +206,7 @@ function actualWorkbenchBackgroundColor(workbenchColors, backgroundIdentifier) {
     "button.secondaryHoverBackground": "button.secondaryBackground",
     "extensionButton.hoverBackground": "extensionButton.background",
     "extensionButton.prominentHoverBackground": "extensionButton.prominentBackground",
+    "editorBracketMatch.background": "editor.background",
     "statusBarItem.hoverBackground": "statusBar.background",
     "statusBarItem.activeBackground": "statusBar.background",
     "statusBarItem.compactHoverBackground": "statusBar.background",
@@ -262,7 +263,8 @@ function assertReadableWorkbenchStateMatrix(themeLabel, rawPalette, themePrefere
 
 test("keeps language-specific syntax scopes collision-free", () => {
   const palette = getPalette("dark", "medium");
-  const syntaxTokenColors = getDefaultSyntax(palette);
+  const syntaxRoleColors = getSyntaxRoleColors("dark", palette);
+  const syntaxTokenColors = getDefaultSyntax(palette, "dark");
   const syntaxRulesForExactScope = (syntaxScope) =>
     syntaxTokenColors.filter((syntaxTokenColor) =>
       normalizedSyntaxScopes(syntaxTokenColor).includes(syntaxScope)
@@ -286,9 +288,10 @@ test("keeps language-specific syntax scopes collision-free", () => {
   assert.equal(phpModifierSyntaxRule.settings.foreground, palette.orange);
 
   for (const moduleScope of ["entity.name.type.module.ts", "entity.name.type.module.tsx"]) {
-    const moduleSyntaxRules = syntaxRulesForExactScope(moduleScope);
-    assert.equal(moduleSyntaxRules.length, 1, `${moduleScope} must have one rule`);
-    assert.equal(moduleSyntaxRules[0].settings.foreground, palette.blue);
+    assert.equal(
+      resolveSyntaxForeground(syntaxTokenColors, moduleScope),
+      syntaxRoleColors.namespace
+    );
   }
 });
 
@@ -298,7 +301,7 @@ test("keeps one syntax meaning across semantic and TextMate highlighting", () =>
       themeVariant.appearance,
       getPalette(themeVariant.appearance, themeVariant.contrast)
     );
-    const syntaxRoleColors = getSyntaxRoleColors(readablePalette);
+    const syntaxRoleColors = getSyntaxRoleColors(themeVariant.appearance, readablePalette);
     const generatedTheme = createTheme(preferencesForThemeVariant(themeVariant));
 
     assert.equal(
@@ -307,7 +310,7 @@ test("keeps one syntax meaning across semantic and TextMate highlighting", () =>
           (syntaxRole) => syntaxRoleColors[syntaxRole]
         )
       ).size,
-      7,
+      6,
       `${themeVariant.appearance} ${themeVariant.contrast} core role accents`
     );
 
@@ -338,7 +341,7 @@ test("keeps one syntax meaning across semantic and TextMate highlighting", () =>
 
 test("avoids broad container scopes that flatten expressions and function bodies", () => {
   const forbiddenContainerScopes = new Set(forbiddenTextMateContainerScopes);
-  const syntaxTokenColors = getDefaultSyntax(getPalette("dark", "medium"));
+  const syntaxTokenColors = getDefaultSyntax(getPalette("dark", "medium"), "dark");
 
   for (const syntaxTokenColor of syntaxTokenColors) {
     for (const syntaxScope of normalizedSyntaxScopes(syntaxTokenColor)) {
@@ -352,8 +355,8 @@ test("avoids broad container scopes that flatten expressions and function bodies
 
 test("keeps popular language families on the shared role hierarchy", () => {
   const readablePalette = getReadableTextPalette("dark", getPalette("dark", "medium"));
-  const syntaxRoleColors = getSyntaxRoleColors(readablePalette);
-  const syntaxTokenColors = getDefaultSyntax(readablePalette);
+  const syntaxRoleColors = getSyntaxRoleColors("dark", readablePalette);
+  const syntaxTokenColors = getDefaultSyntax(readablePalette, "dark");
   for (const [representativeScope, expectedSyntaxRole] of Object.entries(
     representativeLanguageSyntaxRoleByScope
   )) {
@@ -365,20 +368,28 @@ test("keeps popular language families on the shared role hierarchy", () => {
   }
 });
 
-test("keeps high-use language grammars on the complete role hierarchy", () => {
-  const readablePalette = getReadableTextPalette("dark", getPalette("dark", "medium"));
-  const syntaxRoleColors = getSyntaxRoleColors(readablePalette);
-  const syntaxTokenColors = getDefaultSyntax(readablePalette);
+test("keeps 24 high-use language grammars on each appearance role hierarchy", () => {
+  assert.equal(Object.keys(highUseLanguageSyntaxRoleByScope).length, 24);
 
-  for (const [languageIdentifier, syntaxRoleByScope] of Object.entries(
-    highUseLanguageSyntaxRoleByScope
-  )) {
-    for (const [syntaxScope, expectedSyntaxRole] of Object.entries(syntaxRoleByScope)) {
-      assert.equal(
-        resolveSyntaxForeground(syntaxTokenColors, syntaxScope),
-        syntaxRoleColors[expectedSyntaxRole],
-        `${languageIdentifier}: ${syntaxScope}`
+  for (const appearance of ["dark", "light"]) {
+    const readablePalette = getReadableTextPalette(appearance, getPalette(appearance, "medium"));
+    const syntaxRoleColors = getSyntaxRoleColors(appearance, readablePalette);
+    const syntaxTokenColors = getDefaultSyntax(readablePalette, appearance);
+
+    for (const [languageIdentifier, syntaxRoleByScope] of Object.entries(
+      highUseLanguageSyntaxRoleByScope
+    )) {
+      assert.ok(
+        new Set(Object.values(syntaxRoleByScope)).size >= 6,
+        `${languageIdentifier} must cover at least six distinct syntax roles`
       );
+      for (const [syntaxScope, expectedSyntaxRole] of Object.entries(syntaxRoleByScope)) {
+        assert.equal(
+          resolveSyntaxForeground(syntaxTokenColors, syntaxScope),
+          syntaxRoleColors[expectedSyntaxRole],
+          `${appearance} ${languageIdentifier}: ${syntaxScope}`
+        );
+      }
     }
   }
 });
@@ -389,7 +400,11 @@ for (const themeVariant of themeVariants) {
     const readableTextPalette = getReadableTextPalette(themeVariant.appearance, rawPalette);
     const themePreferences = preferencesForThemeVariant(themeVariant);
     const semanticTokenColors = createTheme(themePreferences).semanticTokenColors;
-    const syntaxTokenColors = getDefaultSyntax(readableTextPalette, themePreferences);
+    const syntaxTokenColors = getDefaultSyntax(
+      readableTextPalette,
+      themeVariant.appearance,
+      themePreferences
+    );
     const workbenchColors = createWorkbenchColors(rawPalette, themePreferences);
     const missingDocumentedWorkbenchColorIdentifiers =
       documentedWorkbenchColorContract.identifiers.filter(
@@ -398,7 +413,7 @@ for (const themeVariant of themeVariants) {
       );
 
     assert.equal(rawPalette.bg, themeVariant.expectedBackground);
-    assert.equal(semanticTokenColors.class, readableTextPalette.aqua);
+    assert.equal(semanticTokenColors.class, readableTextPalette.yellow);
     assert.equal(semanticTokenColors.macro, readableTextPalette.purple);
     assert.ok(syntaxTokenColors.length >= 50, "syntax coverage must remain broad");
     assert.deepEqual(missingDocumentedWorkbenchColorIdentifiers, []);
@@ -505,9 +520,9 @@ for (const themeVariant of themeVariants) {
       "scmGraph.historyItemBaseRefColor": palette.orange,
       "scmGraph.historyItemHoverLabelForeground": "#1b2024",
       "scmGraph.historyItemHoverAdditionsForeground":
-        themeVariant.appearance === "dark" ? palette.green : "#596600",
+        themeVariant.appearance === "dark" ? palette.green : "#586401",
       "scmGraph.historyItemHoverDeletionsForeground":
-        themeVariant.appearance === "dark" ? "#f8a0a0" : "#ad3d3d",
+        themeVariant.appearance === "dark" ? "#f8a0a0" : "#a63937",
     };
 
     for (const [
@@ -701,19 +716,19 @@ for (const themeVariant of themeVariants) {
       preferencesForThemeVariant(themeVariant)
     );
     const expectedAccessibleBlueForeground =
-      themeVariant.appearance === "dark" ? palette.blue : "#2e5f94";
+      themeVariant.appearance === "dark" ? palette.blue : "#276486";
     const expectedAccessibleAquaForeground =
-      themeVariant.appearance === "dark" ? palette.aqua : "#2f6a4d";
+      themeVariant.appearance === "dark" ? palette.aqua : "#226a4f";
     const expectedResolvedCommentIndicator =
-      themeVariant.appearance === "dark" ? "#9ba89e" : "#59646c";
+      themeVariant.appearance === "dark" ? "#9ba89e" : "#53625c";
     const expectedSemanticWorkbenchStateColors = {
       "minimap.selectionOccurrenceHighlight": `${
-        themeVariant.appearance === "dark" ? "#9ba89e" : "#59646c"
+        themeVariant.appearance === "dark" ? "#9ba89e" : "#606d65"
       }d0`,
-      "minimap.chatEditHighlight": `${themeVariant.appearance === "dark" ? palette.green : "#596600"}c0`,
+      "minimap.chatEditHighlight": `${themeVariant.appearance === "dark" ? palette.green : "#586401"}c0`,
       "chart.line": expectedAccessibleBlueForeground,
-      "chart.axis": `${themeVariant.appearance === "dark" ? palette.fg : "#59646c"}${themeVariant.appearance === "dark" ? "66" : "99"}`,
-      "chart.guide": `${themeVariant.appearance === "dark" ? palette.fg : "#59646c"}33`,
+      "chart.axis": `${themeVariant.appearance === "dark" ? palette.fg : "#46535b"}${themeVariant.appearance === "dark" ? "66" : "99"}`,
+      "chart.guide": `${themeVariant.appearance === "dark" ? palette.fg : "#46535b"}33`,
       "gitDecoration.renamedResourceForeground": expectedAccessibleAquaForeground,
       "debugView.valueChangedHighlight": expectedAccessibleBlueForeground,
       "settings.modifiedItemIndicator": expectedAccessibleBlueForeground,
@@ -1062,7 +1077,11 @@ for (const themeVariant of themeVariants) {
     const rawPalette = getPalette(themeVariant.appearance, themeVariant.contrast);
     const readableTextPalette = getReadableTextPalette(themeVariant.appearance, rawPalette);
     const themePreferences = preferencesForThemeVariant(themeVariant);
-    const syntaxTokenColors = getDefaultSyntax(readableTextPalette, themePreferences);
+    const syntaxTokenColors = getDefaultSyntax(
+      readableTextPalette,
+      themeVariant.appearance,
+      themePreferences
+    );
     const semanticTokenColors = createTheme(themePreferences).semanticTokenColors;
 
     for (const syntaxTokenColor of syntaxTokenColors) {
@@ -1267,12 +1286,14 @@ test("pins readable palette roles while preserving Everforest fill accents", () 
 
   const rawLightPalette = getPalette("light", "soft");
   const readableLightPalette = getReadableTextPalette("light", rawLightPalette);
-  assert.equal(readableLightPalette.fg, "#59646c");
-  assert.equal(readableLightPalette.red, "#ad3d3d");
-  assert.equal(readableLightPalette.orange, "#984b00");
+  assert.equal(readableLightPalette.fg, "#46535b");
+  assert.equal(readableLightPalette.grey1, "#606d65");
+  assert.equal(readableLightPalette.grey2, "#53625c");
+  assert.equal(readableLightPalette.red, "#a63937");
+  assert.equal(readableLightPalette.orange, "#934b17");
   assert.equal(readableLightPalette.accentForeground, "#2d353b");
   assert.equal(readableLightPalette.invertedText, "#2d353b");
-  assert.equal(readableLightPalette.strongBorder, "#59646c");
+  assert.equal(readableLightPalette.strongBorder, "#46535b");
   assert.equal(readableLightPalette.strongBorderOnAccent, "#2d353b");
   assert.equal(readableLightPalette.strongBorderOnSubsurface, "#2d353b");
   assert.equal(readableLightPalette.bg, rawLightPalette.bg);

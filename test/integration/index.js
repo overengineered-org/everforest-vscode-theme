@@ -34,17 +34,28 @@ const documentedWorkbenchColorContract = require(
   resolve(__dirname, "../../src/workbench/documented-workbench-colors.json")
 );
 const fixtureLanguageIdentifiers = new Map([
+  ["Dockerfile", "dockerfile"],
+  ["showcase.c", "c"],
+  ["showcase.cpp", "cpp"],
+  ["showcase.cs", "csharp"],
   ["showcase.css", "css"],
   ["showcase.go", "go"],
   ["showcase.html", "html"],
+  ["showcase.java", "java"],
   ["showcase.js", "javascript"],
+  ["showcase.jsx", "javascriptreact"],
   ["showcase.json", "json"],
   ["showcase.md", "markdown"],
+  ["showcase.php", "php"],
   ["showcase.py", "python"],
+  ["showcase.rb", "ruby"],
   ["showcase.rs", "rust"],
+  ["showcase.scss", "scss"],
   ["showcase.sh", "shellscript"],
   ["showcase.sql", "sql"],
+  ["showcase.swift", "swift"],
   ["showcase.ts", "typescript"],
+  ["showcase.tsx", "typescriptreact"],
   ["showcase.yaml", "yaml"],
 ]);
 const nativeConfigurationCommandIdentifiers = [
@@ -122,27 +133,27 @@ const expectedSemanticWorkbenchStateColorsByThemeType = {
     "editorCommentsWidget.unresolvedBorder": "#7fbbb3",
   },
   light: {
-    "minimap.selectionOccurrenceHighlight": "#59646cd0",
-    "minimap.chatEditHighlight": "#596600c0",
-    "scrollbarSlider.background": "#59646c58",
-    "scrollbarSlider.hoverBackground": "#59646c88",
-    "scrollbarSlider.activeBackground": "#59646cd0",
-    "notebookScrollbarSlider.background": "#59646c58",
-    "notebookScrollbarSlider.hoverBackground": "#59646c88",
-    "notebookScrollbarSlider.activeBackground": "#59646cd0",
-    "minimapSlider.background": "#59646c40",
-    "minimapSlider.hoverBackground": "#59646c68",
-    "minimapSlider.activeBackground": "#59646c98",
-    "chart.line": "#2e5f94",
-    "chart.axis": "#59646c99",
-    "chart.guide": "#59646c33",
-    "gitDecoration.renamedResourceForeground": "#2f6a4d",
-    "debugView.valueChangedHighlight": "#2e5f94",
-    "settings.modifiedItemIndicator": "#2e5f94",
-    "commentsView.resolvedIcon": "#59646c",
-    "commentsView.unresolvedIcon": "#2e5f94",
-    "editorCommentsWidget.resolvedBorder": "#59646c",
-    "editorCommentsWidget.unresolvedBorder": "#2e5f94",
+    "minimap.selectionOccurrenceHighlight": "#606d65d0",
+    "minimap.chatEditHighlight": "#586401c0",
+    "scrollbarSlider.background": "#53625c58",
+    "scrollbarSlider.hoverBackground": "#53625c88",
+    "scrollbarSlider.activeBackground": "#53625cd0",
+    "notebookScrollbarSlider.background": "#53625c58",
+    "notebookScrollbarSlider.hoverBackground": "#53625c88",
+    "notebookScrollbarSlider.activeBackground": "#53625cd0",
+    "minimapSlider.background": "#53625c40",
+    "minimapSlider.hoverBackground": "#53625c68",
+    "minimapSlider.activeBackground": "#53625c98",
+    "chart.line": "#276486",
+    "chart.axis": "#46535b99",
+    "chart.guide": "#46535b33",
+    "gitDecoration.renamedResourceForeground": "#226a4f",
+    "debugView.valueChangedHighlight": "#276486",
+    "settings.modifiedItemIndicator": "#276486",
+    "commentsView.resolvedIcon": "#53625c",
+    "commentsView.unresolvedIcon": "#276486",
+    "editorCommentsWidget.resolvedBorder": "#53625c",
+    "editorCommentsWidget.unresolvedBorder": "#276486",
   },
 };
 const quickPickDisplayDelayMilliseconds = process.platform === "linux" ? 750 : 250;
@@ -568,8 +579,8 @@ function validateInstalledSourceControlGraphColors(theme, themeLabel, contrastRa
           "scmGraph.historyItemRemoteRefColor": "#df69ba",
           "scmGraph.historyItemBaseRefColor": "#f57d26",
           "scmGraph.historyItemHoverLabelForeground": "#1b2024",
-          "scmGraph.historyItemHoverAdditionsForeground": "#596600",
-          "scmGraph.historyItemHoverDeletionsForeground": "#ad3d3d",
+          "scmGraph.historyItemHoverAdditionsForeground": "#586401",
+          "scmGraph.historyItemHoverDeletionsForeground": "#a63937",
         };
 
   for (const [
@@ -713,7 +724,8 @@ function validateInstalledSemanticWorkbenchStateColors(theme, themeLabel, contra
 
 function validateInstalledSelectionColors(theme, themeLabel, compositeHexColor, contrastRatio) {
   const selectionAccent = theme.type === "dark" ? "#859289" : "#939f91";
-  const readableSelectionBorder = theme.type === "dark" ? "#9ba89e" : "#59646c";
+  const readableSelectionAccent = theme.type === "dark" ? "#9ba89e" : "#606d65";
+  const readableSelectionBorder = theme.type === "dark" ? "#9ba89e" : "#46535b";
   const expectedSelectionColors = {
     "editor.selectionBackground": `${selectionAccent}${theme.type === "dark" ? "80" : "a0"}`,
     "editor.selectionForeground": theme.type === "dark" ? "#fdf6e3" : "#2d353b",
@@ -751,7 +763,7 @@ function validateInstalledSelectionColors(theme, themeLabel, compositeHexColor, 
     theme.colors["editor.selectionBackground"],
     `${themeLabel} editor and terminal active selections must match`
   );
-  assert.equal(theme.colors["minimap.selectionHighlight"], `${readableSelectionBorder}e0`);
+  assert.equal(theme.colors["minimap.selectionHighlight"], `${readableSelectionAccent}e0`);
   assert.ok(
     contrastRatio(
       compositeHexColor(
