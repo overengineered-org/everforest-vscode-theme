@@ -593,7 +593,7 @@
     "jszip": "^3.10.1",
     "pngjs": "^7.0.0",
     "prettier": "^3.9.6",
-    "release-it": "21.0.2",
+    "release-it": "21.1.2",
     "typescript": "^7.0.2"
   }
 }
